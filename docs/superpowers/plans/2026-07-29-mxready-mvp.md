@@ -129,6 +129,7 @@ Each module above owns one responsibility. In particular, repository acquisition
 
 **Files:**
 - Create: `.gitignore`
+- Create: `README.md`
 - Create: `pyproject.toml`
 - Create: `backend/mxready/__init__.py`
 - Create: `backend/mxready/config.py`
@@ -197,7 +198,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "httpx>=0.28,<1",
+  "httpx2>=2,<3",
   "pytest>=8,<9",
   "pytest-cov>=6,<8",
   "ruff>=0.11,<1",
@@ -285,7 +286,7 @@ Run: `python -m ruff check backend tests/backend/test_app.py`
 Expected: PASS.
 
 ```bash
-git add .gitignore pyproject.toml backend/mxready tests/backend/test_app.py
+git add .gitignore README.md pyproject.toml backend/mxready tests/backend/test_app.py
 git commit -m "chore: establish MXReady backend foundation"
 ```
 
