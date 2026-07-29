@@ -7,10 +7,12 @@ from fastapi import APIRouter, BackgroundTasks, Request, status
 from fastapi.responses import Response
 from pydantic import Field, HttpUrl
 
+from mxready.errors import MxReadyError
 from mxready.models import ScanJob, ScanReport, StrictModel
 from mxready.reporting.badge import render_badge
 from mxready.reporting.markdown import render_markdown
 from mxready.verification.bundle import build_verification_bundle
+from mxready.verification.validation import MAX_VERIFICATION_UPLOAD_BYTES
 
 router = APIRouter(prefix="/scans", tags=["scans"])
 
@@ -87,6 +89,45 @@ def download_verification_bundle(scan_id: UUID, request: Request) -> Response:
             label="mxready-verification",
         ),
     )
+
+
+@router.post("/{scan_id}/verification-runs", response_model=ScanReport)
+async def upload_verification_run(
+    scan_id: UUID,
+    request: Request,
+) -> ScanReport:
+    content_type = request.headers.get("content-type", "").partition(";")[0].strip().casefold()
+    if content_type != "application/json":
+        raise MxReadyError(
+            "VERIFICATION_SCHEMA_INVALID",
+            "Verification results must use application/json.",
+        )
+    payload = await _read_limited_body(request)
+    return request.app.state.scan_service.attach_verification(scan_id, payload)
+
+
+async def _read_limited_body(request: Request) -> bytes:
+    declared_size = request.headers.get("content-length")
+    if declared_size is not None:
+        try:
+            if int(declared_size) > MAX_VERIFICATION_UPLOAD_BYTES:
+                raise MxReadyError(
+                    "UPLOAD_TOO_LARGE",
+                    "Verification results must not exceed 1 MiB.",
+                )
+        except ValueError:
+            pass
+
+    body = bytearray()
+    async for chunk in request.stream():
+        remaining = MAX_VERIFICATION_UPLOAD_BYTES + 1 - len(body)
+        body.extend(chunk[: max(0, remaining)])
+        if len(body) > MAX_VERIFICATION_UPLOAD_BYTES or len(chunk) > remaining:
+            raise MxReadyError(
+                "UPLOAD_TOO_LARGE",
+                "Verification results must not exceed 1 MiB.",
+            )
+    return bytes(body)
 
 
 def _attachment_headers(

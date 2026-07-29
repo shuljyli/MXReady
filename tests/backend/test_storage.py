@@ -62,7 +62,7 @@ def test_verification_round_trips_without_global_connection(tmp_path):
         scan_id=job.id,
         repository_commit="a" * 40,
         runner_version="0.1.0",
-        environment_fingerprint="sha256:fixture",
+        environment_fingerprint=f"sha256:{'f' * 64}",
         checks=[],
         commands=[],
         started_at=started,

@@ -164,10 +164,7 @@ class SQLiteStore:
                     "Scan interrupted",
                     datetime.now(UTC).isoformat(),
                     "SCAN_INTERRUPTED",
-                    (
-                        "The MXReady service restarted before this scan completed. "
-                        "Start a new scan."
-                    ),
+                    ("The MXReady service restarted before this scan completed. Start a new scan."),
                     ScanStatus.QUEUED.value,
                     ScanStatus.CLONING.value,
                     ScanStatus.INDEXING.value,
@@ -203,6 +200,30 @@ class SQLiteStore:
                 "UPDATE scan_jobs SET verification_json = ?, updated_at = ? WHERE id = ?",
                 (
                     run.model_dump_json(),
+                    datetime.now(UTC).isoformat(),
+                    str(scan_id),
+                ),
+            )
+        self._ensure_updated(cursor.rowcount, scan_id)
+
+    def save_verification_and_report(
+        self,
+        scan_id: UUID,
+        run: VerificationRun,
+        report: ScanReport,
+    ) -> None:
+        if report.scan_id != scan_id or run.scan_id != scan_id:
+            raise ValueError("verification, report, and scan ids must match")
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE scan_jobs
+                SET verification_json = ?, report_json = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    run.model_dump_json(),
+                    report.model_dump_json(),
                     datetime.now(UTC).isoformat(),
                     str(scan_id),
                 ),

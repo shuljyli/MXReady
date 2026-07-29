@@ -3,7 +3,13 @@ from enum import StrEnum
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 
 class StrictModel(BaseModel):
@@ -132,37 +138,93 @@ class ScanReport(StrictModel):
 
 
 class VerificationCheck(StrictModel):
-    id: str
-    command: list[str]
+    id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
+    command: list[str] = Field(min_length=1, max_length=32)
     status: Literal["passed", "failed", "unavailable"]
     return_code: int | None = None
-    stdout: str = ""
-    stderr: str = ""
+    stdout: str = Field(default="", max_length=16_384)
+    stderr: str = Field(default="", max_length=16_384)
     duration_ms: int = Field(ge=0)
+
+    @field_validator("command")
+    @classmethod
+    def command_arguments_are_bounded(cls, value: list[str]) -> list[str]:
+        return _validate_result_command(value)
+
+    @model_validator(mode="after")
+    def status_matches_return_code(self) -> "VerificationCheck":
+        if self.status == "passed" and self.return_code != 0:
+            raise ValueError("passed checks must have return_code 0")
+        if self.status == "failed" and self.return_code == 0:
+            raise ValueError("failed checks cannot have return_code 0")
+        if self.status == "unavailable" and self.return_code is not None:
+            raise ValueError("unavailable checks cannot have a return code")
+        return self
 
 
 class VerificationCommand(StrictModel):
-    id: str
-    command: list[str]
+    id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
+    command: list[str] = Field(min_length=1, max_length=32)
     timeout_seconds: int = Field(ge=1, le=600)
     status: Literal["passed", "failed", "timeout", "cancelled"]
     return_code: int | None = None
-    stdout: str = ""
-    stderr: str = ""
+    stdout: str = Field(default="", max_length=16_384)
+    stderr: str = Field(default="", max_length=16_384)
     duration_ms: int = Field(ge=0)
+
+    @field_validator("command")
+    @classmethod
+    def command_arguments_are_bounded(cls, value: list[str]) -> list[str]:
+        return _validate_result_command(value)
+
+    @model_validator(mode="after")
+    def status_matches_return_code(self) -> "VerificationCommand":
+        if self.status == "passed" and self.return_code != 0:
+            raise ValueError("passed commands must have return_code 0")
+        if self.status == "failed" and self.return_code == 0:
+            raise ValueError("failed commands cannot have return_code 0")
+        if self.status in {"timeout", "cancelled"} and self.return_code is not None:
+            raise ValueError("timed out or cancelled commands cannot have a return code")
+        return self
 
 
 class VerificationRun(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     scan_id: UUID
     repository_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
-    runner_version: str
-    environment_fingerprint: str
-    checks: list[VerificationCheck]
-    commands: list[VerificationCommand]
+    runner_version: str = Field(pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$")
+    environment_fingerprint: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    checks: list[VerificationCheck] = Field(max_length=64)
+    commands: list[VerificationCommand] = Field(max_length=64)
     started_at: datetime
     finished_at: datetime
     overall_status: Literal["passed", "failed", "cancelled"]
+
+    @model_validator(mode="after")
+    def result_is_semantically_consistent(self) -> "VerificationRun":
+        identifiers = [
+            item.id
+            for item in [
+                *self.checks,
+                *self.commands,
+            ]
+        ]
+        if len(identifiers) != len(set(identifiers)):
+            raise ValueError("verification result ids must be unique")
+        if self.overall_status == "passed" and any(
+            item.status != "passed" for item in self.commands
+        ):
+            raise ValueError("passed results cannot contain failed commands")
+        return self
+
+
+def _validate_result_command(value: list[str]) -> list[str]:
+    if any(
+        not argument or len(argument) > 4_096 or any(ord(character) < 32 for character in argument)
+        for argument in value
+    ):
+        raise ValueError("command arguments must be bounded printable strings")
+    return value
 
 
 def summarize_findings(findings: list[Finding]) -> ScanSummary:

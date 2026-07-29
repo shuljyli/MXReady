@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import UUID
@@ -12,6 +13,7 @@ from mxready.repository.git_client import GitClient
 from mxready.repository.identity import parse_repository_url, validate_git_ref
 from mxready.scanning.analyzer import ScanAnalyzer
 from mxready.storage import SQLiteStore
+from mxready.verification.validation import validate_verification_upload
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +132,27 @@ class ScanService:
                 "SCAN_INTERNAL_ERROR",
                 "The scan failed unexpectedly. Start a new scan and try again.",
             )
+
+    def attach_verification(
+        self,
+        scan_id: UUID,
+        payload: bytes,
+        *,
+        now: datetime | None = None,
+    ) -> ScanReport:
+        report = self.get_report(scan_id)
+        validated = validate_verification_upload(
+            report,
+            payload,
+            now=now or datetime.now(UTC),
+        )
+        updated_report = report.model_copy(update={"verification_status": validated.status})
+        self.store.save_verification_and_report(
+            scan_id,
+            validated.run,
+            updated_report,
+        )
+        return updated_report
 
     def _mark_failed(
         self,
