@@ -5,6 +5,8 @@ import json
 import zipfile
 from pathlib import Path
 
+from mxready_runner.inspect import DEFAULT_CHECKS
+
 from mxready import __version__
 from mxready.errors import MxReadyError
 from mxready.models import ScanReport
@@ -80,38 +82,11 @@ def _build_manifest(report: ScanReport) -> dict:
         "runner_version": __version__,
         "checks": [
             {
-                "id": "uname",
-                "command": ["uname", "-a"],
-                "timeout_seconds": 10,
-            },
-            {
-                "id": "python-version",
-                "command": ["python", "--version"],
-                "timeout_seconds": 10,
-            },
-            {
-                "id": "mx-smi-version",
-                "command": ["mx-smi", "--version"],
-                "timeout_seconds": 10,
-            },
-            {
-                "id": "mx-smi",
-                "command": ["mx-smi"],
-                "timeout_seconds": 20,
-            },
-            {
-                "id": "pytorch-device",
-                "command": [
-                    "python",
-                    "-c",
-                    (
-                        "import torch; print(torch.__version__); "
-                        "print(torch.cuda.is_available()); "
-                        "print(torch.cuda.device_count())"
-                    ),
-                ],
-                "timeout_seconds": 30,
-            },
+                "id": check.id,
+                "command": check.command,
+                "timeout_seconds": check.timeout_seconds,
+            }
+            for check in DEFAULT_CHECKS
         ],
         "project_commands": [],
     }

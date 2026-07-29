@@ -45,11 +45,31 @@ def test_fresh_success_is_verified(report_factory) -> None:
         scan_id=report.scan_id,
         repository_commit=report.repository.commit,
         finished_at=now,
+        checks=passed_gpu_checks(),
     )
 
     validated = validate_verification_upload(report, payload, now=now)
 
     assert validated.status is VerificationStatus.VERIFIED
+
+
+def test_claimed_success_without_required_gpu_checks_is_failed(
+    report_factory,
+) -> None:
+    now = datetime.now(UTC)
+    report = report_factory()
+
+    validated = validate_verification_upload(
+        report,
+        make_payload(
+            scan_id=report.scan_id,
+            repository_commit=report.repository.commit,
+            finished_at=now,
+        ),
+        now=now,
+    )
+
+    assert validated.status is VerificationStatus.FAILED
 
 
 @pytest.mark.parametrize("overall_status", ["failed", "cancelled"])
@@ -158,12 +178,46 @@ def test_rejects_semantically_inconsistent_passed_result(report_factory) -> None
     assert error.value.code == "VERIFICATION_SCHEMA_INVALID"
 
 
+def test_rejects_passed_result_with_failed_environment_check(
+    report_factory,
+) -> None:
+    now = datetime.now(UTC)
+    report = report_factory()
+    body = make_payload_dict(
+        scan_id=report.scan_id,
+        repository_commit=report.repository.commit,
+        finished_at=now,
+        checks=[
+            *passed_gpu_checks(),
+            {
+                "id": "uname",
+                "command": ["uname", "-a"],
+                "status": "failed",
+                "return_code": 1,
+                "stdout": "",
+                "stderr": "failed",
+                "duration_ms": 1,
+            },
+        ],
+    )
+
+    with pytest.raises(MxReadyError) as error:
+        validate_verification_upload(
+            report,
+            json.dumps(body).encode(),
+            now=now,
+        )
+
+    assert error.value.code == "VERIFICATION_SCHEMA_INVALID"
+
+
 def make_payload(
     *,
     scan_id,
     repository_commit: str,
     finished_at: datetime,
     overall_status: str = "passed",
+    checks: list[dict] | None = None,
 ) -> bytes:
     return json.dumps(
         make_payload_dict(
@@ -171,6 +225,7 @@ def make_payload(
             repository_commit=repository_commit,
             finished_at=finished_at,
             overall_status=overall_status,
+            checks=checks,
         )
     ).encode()
 
@@ -181,6 +236,7 @@ def make_payload_dict(
     repository_commit: str,
     finished_at: datetime,
     overall_status: str = "passed",
+    checks: list[dict] | None = None,
 ) -> dict:
     started_at = finished_at - timedelta(minutes=1)
     return {
@@ -189,9 +245,24 @@ def make_payload_dict(
         "repository_commit": repository_commit,
         "runner_version": "0.1.0",
         "environment_fingerprint": f"sha256:{'f' * 64}",
-        "checks": [],
+        "checks": checks or [],
         "commands": [],
         "started_at": started_at.isoformat(),
         "finished_at": finished_at.isoformat(),
         "overall_status": overall_status,
     }
+
+
+def passed_gpu_checks() -> list[dict]:
+    return [
+        {
+            "id": identifier,
+            "command": [identifier],
+            "status": "passed",
+            "return_code": 0,
+            "stdout": "ok",
+            "stderr": "",
+            "duration_ms": 1,
+        }
+        for identifier in ("mx-smi", "pytorch-device")
+    ]

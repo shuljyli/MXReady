@@ -8,7 +8,7 @@ from pathlib import Path
 
 from mxready_runner import __version__
 from mxready_runner.execute import environment_fingerprint, run_manifest
-from mxready_runner.inspect import collect_environment
+from mxready_runner.inspect import collect_environment, environment_checks_passed
 from mxready_runner.schema import ManifestError, RunResult, load_manifest
 
 
@@ -59,7 +59,7 @@ def _inspect_manifest(path: Path) -> RunResult:
         commands=[],
         started_at=started,
         finished_at=datetime.now(UTC).isoformat(),
-        overall_status="passed",
+        overall_status="passed" if environment_checks_passed(checks) else "failed",
     )
 
 

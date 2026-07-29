@@ -21,8 +21,10 @@ DEFAULT_CHECKS = (
             "python",
             "-c",
             (
-                "import torch; print(torch.__version__); "
-                "print(torch.cuda.is_available()); print(torch.cuda.device_count())"
+                "import torch; available=torch.cuda.is_available(); "
+                "count=torch.cuda.device_count(); print(torch.__version__); "
+                "print(available); print(count); "
+                "raise SystemExit(0 if available and count > 0 else 1)"
             ),
         ],
         30,
@@ -80,6 +82,10 @@ def collect_environment(
             )
         results.append(result)
     return results
+
+
+def environment_checks_passed(results: Iterable[CheckResult]) -> bool:
+    return all(result.status == "passed" for result in results)
 
 
 def _duration_ms(started: float) -> int:

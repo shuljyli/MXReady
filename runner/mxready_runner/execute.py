@@ -10,7 +10,12 @@ from pathlib import Path
 from subprocess import TimeoutExpired
 
 from mxready_runner import __version__
-from mxready_runner.inspect import CommandRunner, collect_environment, run_command
+from mxready_runner.inspect import (
+    CommandRunner,
+    collect_environment,
+    environment_checks_passed,
+    run_command,
+)
 from mxready_runner.redact import sanitize_output
 from mxready_runner.schema import CommandResult, RunResult, load_manifest
 
@@ -84,7 +89,12 @@ def run_manifest(
             )
         results.append(result)
 
-    overall_status = "passed" if all(item.status == "passed" for item in results) else "failed"
+    overall_status = (
+        "passed"
+        if environment_checks_passed(checks)
+        and all(item.status == "passed" for item in results)
+        else "failed"
+    )
     return RunResult(
         schema_version="1.0",
         scan_id=manifest.scan_id,

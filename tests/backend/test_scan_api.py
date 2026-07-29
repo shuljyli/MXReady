@@ -150,7 +150,18 @@ def _make_payload(
             "repository_commit": repository_commit,
             "runner_version": "0.1.0",
             "environment_fingerprint": f"sha256:{'f' * 64}",
-            "checks": [],
+            "checks": [
+                {
+                    "id": identifier,
+                    "command": [identifier],
+                    "status": "passed",
+                    "return_code": 0,
+                    "stdout": "ok",
+                    "stderr": "",
+                    "duration_ms": 1,
+                }
+                for identifier in ("mx-smi", "pytorch-device")
+            ],
             "commands": [],
             "started_at": (finished_at - timedelta(minutes=1)).isoformat(),
             "finished_at": finished_at.isoformat(),

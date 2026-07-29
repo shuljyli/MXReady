@@ -212,6 +212,10 @@ class VerificationRun(StrictModel):
         if len(identifiers) != len(set(identifiers)):
             raise ValueError("verification result ids must be unique")
         if self.overall_status == "passed" and any(
+            item.status != "passed" for item in self.checks
+        ):
+            raise ValueError("passed results cannot contain failed environment checks")
+        if self.overall_status == "passed" and any(
             item.status != "passed" for item in self.commands
         ):
             raise ValueError("passed results cannot contain failed commands")

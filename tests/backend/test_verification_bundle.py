@@ -9,6 +9,7 @@ from uuid import UUID
 
 from mxready.models import ScanStatus, VerificationRun
 from mxready.verification.bundle import build_verification_bundle
+from mxready_runner.inspect import DEFAULT_CHECKS
 
 
 def test_bundle_contains_pinned_identity_runner_schema_and_safety_note(
@@ -26,6 +27,14 @@ def test_bundle_contains_pinned_identity_runner_schema_and_safety_note(
         assert manifest["scan_id"] == str(report.scan_id)
         assert manifest["repository_commit"] == "a" * 40
         assert manifest["runner_version"] == "0.1.0"
+        assert manifest["checks"] == [
+            {
+                "id": check.id,
+                "command": check.command,
+                "timeout_seconds": check.timeout_seconds,
+            }
+            for check in DEFAULT_CHECKS
+        ]
         assert "SECURITY.md" in names
         assert "schemas/verification-result-v1.json" in names
         assert "mxready_runner/__main__.py" in names

@@ -11,6 +11,7 @@ from mxready.models import ScanReport, VerificationRun, VerificationStatus
 MAX_VERIFICATION_UPLOAD_BYTES = 1_048_576
 MAX_FUTURE_SKEW = timedelta(minutes=10)
 VERIFICATION_MAX_AGE = timedelta(days=30)
+_REQUIRED_HARDWARE_CHECKS = frozenset({"mx-smi", "pytorch-device"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,11 +57,16 @@ def validate_verification_upload(
 
     if now_utc - finished_at > VERIFICATION_MAX_AGE:
         status = VerificationStatus.STALE
-    elif run.overall_status == "passed":
+    elif run.overall_status == "passed" and _hardware_checks_passed(run):
         status = VerificationStatus.VERIFIED
     else:
         status = VerificationStatus.FAILED
     return ValidatedVerification(run=run, status=status)
+
+
+def _hardware_checks_passed(run: VerificationRun) -> bool:
+    passed = {check.id for check in run.checks if check.status == "passed"}
+    return passed >= _REQUIRED_HARDWARE_CHECKS
 
 
 def _require_aware(value: datetime, label: str) -> datetime:

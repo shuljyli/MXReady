@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from subprocess import TimeoutExpired
+from subprocess import CompletedProcess, TimeoutExpired
 
 from mxready.models import VerificationRun
 from mxready_runner.execute import run_manifest
@@ -55,6 +55,38 @@ def test_run_maps_timeout_to_failed_result(manifest_path) -> None:
     assert result.overall_status == "failed"
     assert result.commands[0].status == "timeout"
     assert result.commands[0].return_code is None
+
+
+def test_failed_environment_check_makes_run_fail(tmp_path) -> None:
+    path = tmp_path / "mxready.yml"
+    document = {
+        "schema_version": "1.0",
+        "scan_id": "00000000-0000-0000-0000-000000000000",
+        "repository_url": "https://github.com/example/project",
+        "repository_commit": "a" * 40,
+        "runner_version": "0.1.0",
+        "checks": [
+            {
+                "id": "mx-smi",
+                "command": ["mx-smi"],
+                "timeout_seconds": 10,
+            }
+        ],
+        "project_commands": [],
+    }
+    path.write_text(json.dumps(document), encoding="utf-8")
+
+    def failed_check(command, *, timeout):
+        return CompletedProcess(command, 1, stdout="", stderr="no device")
+
+    result = run_manifest(
+        path,
+        approve=lambda commands: True,
+        command_runner=failed_check,
+    )
+
+    assert result.checks[0].status == "failed"
+    assert result.overall_status == "failed"
 
 
 def test_result_matches_backend_contract_and_redacts_command_arguments(
