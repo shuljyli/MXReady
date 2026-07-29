@@ -1,0 +1,76 @@
+- id: MXR-TOOLCHAIN-001
+  version: 1
+  title: 检测直接 nvcc 工具调用
+  category: toolchain
+  severity: blocker
+  file_globs:
+    - "**/*.py"
+    - "**/*.sh"
+    - "**/*.cmake"
+    - "**/CMakeLists.txt"
+  patterns:
+    - type: regex
+      expression: '\bnvcc\b'
+      flags: [IGNORECASE]
+  message: 项目直接引用 nvcc，迁移到 MXMACA/cu-bridge 时工具入口或参数可能需要调整。
+  recommendation: 请复核调用点，依据 cu-bridge 当前版本说明配置对应工具链，并在沐曦环境验证构建。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-PATH-001
+  version: 1
+  title: 检测硬编码 CUDA 安装路径
+  category: path
+  severity: warning
+  file_globs:
+    - "**/*.py"
+    - "**/*.sh"
+    - "**/*.cmake"
+    - "**/CMakeLists.txt"
+    - "**/*.toml"
+    - "**/*.cfg"
+  patterns:
+    - type: regex
+      expression: '/usr/local/cuda(?:/|\b)'
+  message: 项目硬编码了 /usr/local/cuda，可能绕过 MXMACA/cu-bridge 环境提供的工具链路径。
+  recommendation: 请将路径改为可配置项，复核 cu-bridge 环境变量，并在沐曦服务器验证实际解析结果。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-PYTORCH-001
+  version: 1
+  title: 识别 PyTorch CUDAExtension
+  category: pytorch-extension
+  severity: info
+  file_globs:
+    - "**/*.py"
+  patterns:
+    - type: fact
+      name: uses_torch_cuda_extension
+      equals: true
+  message: 项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。
+  recommendation: 请复核扩展源文件、编译器参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。
+  references:
+    - title: PyTorch C++/CUDA extensions
+      url: https://docs.pytorch.org/docs/stable/cpp_extension.html
+
+- id: MXR-DEPENDENCY-001
+  version: 1
+  title: 检测 flash-attn 依赖
+  category: dependency
+  severity: warning
+  file_globs:
+    - "**/requirements*.txt"
+    - "**/pyproject.toml"
+    - "**/setup.cfg"
+    - "**/setup.py"
+  patterns:
+    - type: dependency
+      name: flash-attn
+  message: 项目声明了 flash-attn；其原生扩展、架构参数与版本组合需要在目标平台单独验证。
+  recommendation: 请复核 flash-attn 的版本和构建选项，先进行最小导入与算子测试，再运行项目级测试。
+  references:
+    - title: PyTorch C++/CUDA extensions
+      url: https://docs.pytorch.org/docs/stable/cpp_extension.html

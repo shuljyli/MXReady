@@ -1,0 +1,4 @@
+- id: not-a-valid-rule-id
+  version: 1
+  title: Missing required rule fields
+  unexpected_field: true

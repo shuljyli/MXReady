@@ -1,0 +1,3 @@
+schema_version: "1.0"
+ruleset_version: "invalid-fixture"
+rule_files: [invalid.yml]

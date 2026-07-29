@@ -1,0 +1,4 @@
+schema_version: "1.0"
+ruleset_version: "1"
+rule_files:
+  - core.yml
