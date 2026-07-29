@@ -10,6 +10,7 @@ from pydantic import Field, HttpUrl
 from mxready.models import ScanJob, ScanReport, StrictModel
 from mxready.reporting.badge import render_badge
 from mxready.reporting.markdown import render_markdown
+from mxready.verification.bundle import build_verification_bundle
 
 router = APIRouter(prefix="/scans", tags=["scans"])
 
@@ -74,14 +75,33 @@ def get_badge(scan_id: UUID, request: Request) -> Response:
     )
 
 
-def _attachment_headers(report: ScanReport, extension: str) -> dict[str, str]:
+@router.get("/{scan_id}/verification-bundle")
+def download_verification_bundle(scan_id: UUID, request: Request) -> Response:
+    report = request.app.state.scan_service.get_report(scan_id)
+    return Response(
+        content=build_verification_bundle(report),
+        media_type="application/zip",
+        headers=_attachment_headers(
+            report,
+            "zip",
+            label="mxready-verification",
+        ),
+    )
+
+
+def _attachment_headers(
+    report: ScanReport,
+    extension: str,
+    *,
+    label: str = "mxready",
+) -> dict[str, str]:
     safe_repository_name = re.sub(
         r"[^A-Za-z0-9_-]+",
         "-",
         report.repository.name,
     ).strip("-_")[:64]
     safe_repository_name = safe_repository_name or "repository"
-    filename = f"{safe_repository_name}-{report.repository.commit[:12]}-mxready.{extension}"
+    filename = f"{safe_repository_name}-{report.repository.commit[:12]}-{label}.{extension}"
     return {
         "Content-Disposition": f'attachment; filename="{filename}"',
         "Cache-Control": "no-store",

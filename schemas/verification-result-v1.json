@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mxready.local/schemas/verification-result-v1.json",
+  "title": "MXReady verification result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scan_id",
+    "repository_commit",
+    "runner_version",
+    "environment_fingerprint",
+    "checks",
+    "commands",
+    "started_at",
+    "finished_at",
+    "overall_status"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "scan_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "repository_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "runner_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "environment_fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "checks": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/check"
+      }
+    },
+    "commands": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/command"
+      }
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "overall_status": {
+      "enum": ["passed", "failed", "cancelled"]
+    }
+  },
+  "$defs": {
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "command",
+        "status",
+        "return_code",
+        "stdout",
+        "stderr",
+        "duration_ms"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "enum": ["passed", "failed", "unavailable"]
+        },
+        "return_code": {
+          "type": ["integer", "null"]
+        },
+        "stdout": {
+          "type": "string",
+          "maxLength": 16384
+        },
+        "stderr": {
+          "type": "string",
+          "maxLength": 16384
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "command",
+        "timeout_seconds",
+        "status",
+        "return_code",
+        "stdout",
+        "stderr",
+        "duration_ms"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "string"
+          }
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        },
+        "status": {
+          "enum": ["passed", "failed", "timeout", "cancelled"]
+        },
+        "return_code": {
+          "type": ["integer", "null"]
+        },
+        "stdout": {
+          "type": "string",
+          "maxLength": 16384
+        },
+        "stderr": {
+          "type": "string",
+          "maxLength": 16384
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

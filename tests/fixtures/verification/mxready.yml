@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "scan_id": "00000000-0000-0000-0000-000000000000",
+  "repository_url": "https://github.com/example/project",
+  "repository_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "runner_version": "0.1.0",
+  "checks": [
+    {
+      "id": "python-version",
+      "command": ["python", "--version"],
+      "timeout_seconds": 10
+    }
+  ],
+  "project_commands": [
+    {
+      "id": "tests",
+      "command": ["python", "-m", "pytest", "-q"],
+      "timeout_seconds": 60
+    }
+  ]
+}
