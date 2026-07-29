@@ -1,7 +1,12 @@
 from datetime import UTC, datetime
+from pathlib import Path
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
+from fastapi.testclient import TestClient
+from mxready.app import create_app
+from mxready.config import Settings
 from mxready.models import (
     RepositorySnapshot,
     ScanReport,
@@ -9,6 +14,20 @@ from mxready.models import (
     VerificationStatus,
     summarize_findings,
 )
+
+
+@pytest.fixture
+def client(tmp_path):
+    app = create_app(
+        Settings(
+            data_dir=tmp_path / "data",
+            rules_dir=Path("rules/v1"),
+            temp_dir=tmp_path / "tmp",
+        )
+    )
+    with TestClient(app) as http:
+        app.state.scan_service.run_scan = Mock()
+        yield http
 
 
 @pytest.fixture
@@ -46,4 +65,3 @@ def report_factory():
         )
 
     return factory
-
