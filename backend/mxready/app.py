@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 from mxready import __version__
 from mxready.api import rules_router, scans_router
@@ -90,4 +92,41 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             },
         )
 
+    _mount_built_frontend(app, resolved.frontend_dist)
     return app
+
+
+class _ImmutableStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope) -> Response:
+        response = await super().get_response(path, scope)
+        if response.status_code < 400:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
+
+
+def _mount_built_frontend(app: FastAPI, frontend_dist: Path) -> None:
+    index_path = frontend_dist / "index.html"
+    if not index_path.is_file():
+        return
+
+    assets_path = frontend_dist / "assets"
+    if assets_path.is_dir():
+        app.mount(
+            "/assets",
+            _ImmutableStaticFiles(directory=assets_path),
+            name="frontend-assets",
+        )
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str) -> FileResponse:
+        if full_path == "api" or full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not found")
+        return FileResponse(
+            index_path,
+            media_type="text/html",
+            headers={
+                "Cache-Control": "no-store",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
