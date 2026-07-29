@@ -75,3 +75,17 @@ export function getReport(id: string): Promise<ScanReport> {
     `/api/scans/${encodeURIComponent(id)}/report`,
   );
 }
+
+export function uploadVerification(
+  scanId: string,
+  file: File,
+): Promise<ScanReport> {
+  return request<ScanReport>(
+    `/api/scans/${encodeURIComponent(scanId)}/verification-runs`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: file,
+    },
+  );
+}

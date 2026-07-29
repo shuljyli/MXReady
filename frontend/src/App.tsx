@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { getReport, getScan, MxReadyApiError } from "./api/client";
 import type { ScanJob, ScanReport } from "./api/types";
+import { ReportView } from "./components/ReportView";
 import { ScanForm } from "./components/ScanForm";
 import { ScanProgress } from "./components/ScanProgress";
 
@@ -31,19 +32,6 @@ function visibleError(error: unknown): { code: string; message: string } {
     code: "POLLING_FAILED",
     message: "读取扫描进度失败，请稍后重新开始。",
   };
-}
-
-function statusCopy(report: ScanReport) {
-  if (report.static_status === "passed") {
-    return "静态检查已通过";
-  }
-  if (report.static_status === "warnings") {
-    return "发现需要复核的迁移风险";
-  }
-  if (report.static_status === "blocked") {
-    return "发现阻塞迁移的问题";
-  }
-  return "静态检查失败";
 }
 
 export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
@@ -165,19 +153,11 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
         {view.kind === "scanning" ? <ScanProgress job={view.job} /> : null}
 
         {view.kind === "report" ? (
-          <section className="result-placeholder">
-            <p className="eyebrow">扫描完成</p>
-            <span className="result-symbol" aria-hidden="true">
-              ✓
-            </span>
-            <h1>{statusCopy(view.report)}</h1>
-            <p>
-              共记录 {view.report.summary.total_count} 项结果；完整报告视图正在载入。
-            </p>
-            <button className="secondary-button" onClick={reset} type="button">
-              扫描另一个仓库
-            </button>
-          </section>
+          <ReportView
+            onReset={reset}
+            onUpdated={(report) => setView({ kind: "report", report })}
+            report={view.report}
+          />
         ) : null}
 
         {view.kind === "error" ? (
