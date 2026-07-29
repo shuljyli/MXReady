@@ -12,7 +12,7 @@
       expression: '(?m)^\s*(?:NVCC|CMAKE_CUDA_COMPILER)\s*=\s*[^\n]*\bnvcc\b'
       flags: [IGNORECASE]
     - type: regex
-      expression: '(?m)^\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S+\s+)*(?:\S*/)?nvcc(?:\s|$)'
+      expression: '(?m)^\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S+\s+)*(?:\S*/)?nvcc(?!\s*=)(?:\s|$)'
       flags: [IGNORECASE]
   message: 项目直接调用或固定指定 nvcc，迁移到 MXMACA/cu-bridge 时工具入口与参数需要复核。
   recommendation: 请复核调用点，按 cu-bridge 当前版本配置对应工具链，并在沐曦环境验证构建。

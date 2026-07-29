@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import re
 import tomllib
+import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 
@@ -193,7 +194,9 @@ def _extract_requirements(
 
 def _extract_python(indexed_file: IndexedFile, collector: _FactCollector) -> None:
     try:
-        tree = ast.parse(indexed_file.text, filename=indexed_file.relative_path)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SyntaxWarning)
+            tree = ast.parse(indexed_file.text, filename=indexed_file.relative_path)
     except (SyntaxError, ValueError):
         return
 

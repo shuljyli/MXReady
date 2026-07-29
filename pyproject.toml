@@ -25,7 +25,9 @@ dev = [
 ]
 
 [project.scripts]
+mxready-build-bundle = "scripts.build_verification_bundle:main"
 mxready-scan = "scripts.scan_repository:main"
+mxready-scan-public = "scripts.generate_public_report:main"
 mxready-runner = "mxready_runner.cli:main"
 
 [tool.setuptools.packages.find]

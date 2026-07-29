@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 from mxready.scanning.facts import extract_project_facts
@@ -95,3 +96,18 @@ def test_requirement_parser_normalizes_names_and_ignores_include_options(
 
     assert facts.dependencies == frozenset({"flash-attn"})
     assert facts.locations["dependency:flash-attn"][0].relative_path == "requirements-dev.txt"
+
+
+def test_python_fact_parsing_does_not_emit_repository_syntax_warnings(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "setup.py").write_text(
+        r'pattern = "\d"' + "\n",
+        encoding="utf-8",
+    )
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        extract_project_facts(build_file_index(tmp_path))
+
+    assert caught == []

@@ -104,6 +104,28 @@ mxready-scan tests/fixtures/repositories/cuda_extension --repo-url https://githu
 
 命令生成 `<仓库>-<commit12>.json`、`.md` 和 `.svg`。退出码为：`0` 表示通过或仅有警告，`2` 表示存在阻塞项，`1` 表示操作失败。
 
+## 公开仓库证据与验证包
+
+需要生成固定文件名的申报证据时，可使用同一套主机白名单、Git 限制和只读分析器：
+
+```bash
+mxready-scan-public https://github.com/pytorch/extension-cpp \
+  --ref 1c325b202ae5e11de3cefb9a65be28f47949edd4 \
+  --label pytorch-extension-cpp \
+  --output examples/reports
+```
+
+GitHub 的 Git 传输超时或内部失败时，该本地证据命令可以改用提交锁定的安全归档；压缩与展开后的内容仍受 60 秒、50 MiB 和 10,000 文件限制。Web API 仍使用受限 Git 获取路径。
+
+从 JSON 报告生成安全默认验证 ZIP：
+
+```bash
+mxready-build-bundle examples/reports/pytorch-extension-cpp.json \
+  --output examples/verification/pytorch-extension-cpp-verification.zip
+```
+
+生成清单默认不含项目命令。请先阅读 [申报证据](docs/application-evidence.md) 与 [真机验证交接](examples/verification/README.md)，再在自己控制的沐曦服务器上人工补充并执行命令。
+
 ## 状态含义
 
 | 状态 | 含义 |

@@ -40,7 +40,10 @@ RULE_CASES = {
     "MXR-TOOLCHAIN-001": (
         "setup.py",
         'import subprocess\nsubprocess.run(["nvcc", "kernel.cu"], check=True)\n',
-        'compiler_documentation = "nvcc is described in the build guide"\n',
+        (
+            'compiler_documentation = "nvcc is described in the build guide"\n'
+            "nvcc = _join_rocm_home('bin', 'hipcc')\n"
+        ),
     ),
     "MXR-PATH-001": (
         "setup.py",

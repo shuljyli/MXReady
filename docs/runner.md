@@ -87,3 +87,5 @@ python -m mxready_runner run \
 | 全部通过 | 0 |
 | 有命令失败 | 1 |
 | 用户取消或清单/文件错误 | 2 |
+
+一个固定到真实公开提交、但尚未执行真机验证的完整示例见 [`examples/verification/README.md`](../examples/verification/README.md)。
