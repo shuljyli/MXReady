@@ -1,0 +1,3074 @@
+{
+  "schema_version": "1.0",
+  "scan_id": "d9fda1dc-dfb9-59e4-b6d2-41df071e89d8",
+  "repository": {
+    "provider": "github",
+    "owner": "NVIDIA",
+    "name": "apex",
+    "url": "https://github.com/NVIDIA/apex",
+    "commit": "6424da3b4faa6c8f062da4a48c424fff3f02d42d"
+  },
+  "tool_version": "0.1.0",
+  "ruleset_version": "1",
+  "scanned_at": "2026-07-29T19:12:42.560205Z",
+  "summary": {
+    "total_count": 143,
+    "blocker_count": 1,
+    "warning_count": 78,
+    "info_count": 64
+  },
+  "findings": [
+    {
+      "rule_id": "MXR-TOOLCHAIN-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "toolchain",
+      "title": "检测直接 nvcc 工具调用",
+      "relative_path": "setup.py",
+      "line_start": 66,
+      "line_end": 66,
+      "evidence": "raw_output = subprocess.check_output([cuda_dir + \"/bin/nvcc\", \"-V\"], universal_newlines=True)",
+      "message": "项目直接调用或固定指定 nvcc，迁移到 MXMACA/cu-bridge 时工具入口与参数需要复核。",
+      "recommendation": "请复核调用点，按 cu-bridge 当前版本配置对应工具链，并在沐曦环境验证构建。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc_bwd_one_pass_kernel.cuh",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "__global__ __launch_bounds__(THREADS_PER_BLOCK_) void group_norm_nhwc_bwd_one_pass_kernel(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc_fwd_one_pass_kernel.cuh",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "__global__ __launch_bounds__(THREADS_PER_BLOCK_) void group_norm_nhwc_fwd_one_pass_kernel(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 195,
+      "line_end": 195,
+      "evidence": "__global__ __launch_bounds__(BLOCK_DIM_X, BLOCKS_PER_SM) void gn_cuda_kernel(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 292,
+      "line_end": 292,
+      "evidence": "frag_sum_per_channel[i].x += __shfl_xor_sync(FINAL_MASK, frag_sum_per_channel[i].x, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 293,
+      "line_end": 293,
+      "evidence": "frag_sum_per_channel[i].y += __shfl_xor_sync(FINAL_MASK, frag_sum_per_channel[i].y, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 324,
+      "line_end": 324,
+      "evidence": "sum.x += __shfl_xor_sync(FINAL_MASK, sum.x, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 325,
+      "line_end": 325,
+      "evidence": "sum.y += __shfl_xor_sync(FINAL_MASK, sum.y, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 366,
+      "line_end": 366,
+      "evidence": "sum_local_group.x += __shfl_xor_sync(FINAL_MASK, sum_local_group.x, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 367,
+      "line_end": 367,
+      "evidence": "sum_local_group.y += __shfl_xor_sync(FINAL_MASK, sum_local_group.y, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 411,
+      "line_end": 411,
+      "evidence": "sum_local_group.x += __shfl_xor_sync(FINAL_MASK, sum_local_group.x, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 412,
+      "line_end": 412,
+      "evidence": "sum_local_group.y += __shfl_xor_sync(FINAL_MASK, sum_local_group.y, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 512,
+      "line_end": 512,
+      "evidence": "sum_global_group.x += __shfl_xor_sync(FINAL_MASK, sum_global_group.x, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 513,
+      "line_end": 513,
+      "evidence": "sum_global_group.y += __shfl_xor_sync(FINAL_MASK, sum_global_group.y, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 596,
+      "line_end": 596,
+      "evidence": "__global__ __launch_bounds__(BLOCK_DIM_X, BLOCKS_PER_SM) void gn_bwd_cuda_kernel(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 777,
+      "line_end": 777,
+      "evidence": "frag_sum_per_channel[i].x += __shfl_xor_sync(FINAL_MASK, frag_sum_per_channel[i].x, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 778,
+      "line_end": 778,
+      "evidence": "frag_sum_per_channel[i].y += __shfl_xor_sync(FINAL_MASK, frag_sum_per_channel[i].y, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 823,
+      "line_end": 823,
+      "evidence": "sum.x += __shfl_xor_sync(FINAL_MASK, sum.x, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 824,
+      "line_end": 824,
+      "evidence": "sum.y += __shfl_xor_sync(FINAL_MASK, sum.y, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 865,
+      "line_end": 865,
+      "evidence": "dw_block += __shfl_xor_sync(FINAL_MASK, dw_block, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 866,
+      "line_end": 866,
+      "evidence": "db_block += __shfl_xor_sync(FINAL_MASK, db_block, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 902,
+      "line_end": 902,
+      "evidence": "sum_local_group.x += __shfl_xor_sync(FINAL_MASK, sum_local_group.x, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 903,
+      "line_end": 903,
+      "evidence": "sum_local_group.y += __shfl_xor_sync(FINAL_MASK, sum_local_group.y, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 947,
+      "line_end": 947,
+      "evidence": "sum_local_group.x += __shfl_xor_sync(FINAL_MASK, sum_local_group.x, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 948,
+      "line_end": 948,
+      "evidence": "sum_local_group.y += __shfl_xor_sync(FINAL_MASK, sum_local_group.y, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 1079,
+      "line_end": 1079,
+      "evidence": "sum_global_group.x += __shfl_xor_sync(FINAL_MASK, sum_global_group.x, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 1080,
+      "line_end": 1080,
+      "evidence": "sum_global_group.y += __shfl_xor_sync(FINAL_MASK, sum_global_group.y, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 1201,
+      "line_end": 1201,
+      "evidence": "sum_wgrad += __shfl_xor_sync((uint64_t(1) << warp_num_pow2) - 1, sum_wgrad, mask, warp_num_pow2);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 1202,
+      "line_end": 1202,
+      "evidence": "sum_bgrad += __shfl_xor_sync((uint64_t(1) << warp_num_pow2) - 1, sum_bgrad, mask, warp_num_pow2);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 381,
+      "line_end": 381,
+      "evidence": "x[i] += __shfl_sync(0xffffffffU, x[i], THREADS_PER_PIXEL + lane_id);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 407,
+      "line_end": 407,
+      "evidence": "x[i] += __shfl_sync(0xffffffffU, x[i], THREADS_PER_PIXEL + lane_id);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 484,
+      "line_end": 484,
+      "evidence": "x[i] += __shfl_sync(0xffffffffU, x[i], THREADS_PER_PIXEL + lane_id);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 485,
+      "line_end": 485,
+      "evidence": "x[i] += __shfl_sync(0xffffffffU, x[i], THREADS_PER_PIXEL * 2 + lane_id);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 511,
+      "line_end": 511,
+      "evidence": "x[i] += __shfl_sync(0xffffffffU, x[i], THREADS_PER_PIXEL + lane_id);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 512,
+      "line_end": 512,
+      "evidence": "x[i] += __shfl_sync(0xffffffffU, x[i], THREADS_PER_PIXEL * 2 + lane_id);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 695,
+      "line_end": 695,
+      "evidence": "__global__ __launch_bounds__(THREADS_PER_CTA) void nhwc_batch_norm_fwd_inference(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 816,
+      "line_end": 816,
+      "evidence": "__global__ __launch_bounds__(THREADS_PER_CTA,",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 1249,
+      "line_end": 1249,
+      "evidence": "unsigned int local_relu_mask = __ballot_sync(0xFFFFFFFFU, rectified);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 1311,
+      "line_end": 1311,
+      "evidence": "unsigned int local_relu_mask = __ballot_sync(0xFFFFFFFFU, rectified);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 1466,
+      "line_end": 1466,
+      "evidence": "__global__ __launch_bounds__(THREADS_PER_CTA,",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 1815,
+      "line_end": 1815,
+      "evidence": "__global__ __launch_bounds__(THREADS_PER_CTA,",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 2187,
+      "line_end": 2187,
+      "evidence": "__global__ __launch_bounds__(THREADS_PER_CTA,",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 2312,
+      "line_end": 2312,
+      "evidence": "rectified[j] = ((__shfl_sync(0xFFFFFFFFU, relu_mask[i], j) & (1U << lane_id)) != 0);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 2366,
+      "line_end": 2366,
+      "evidence": "rectified[j] = ((__shfl_sync(0xFFFFFFFFU, relu_mask, j) & (1U << lane_id)) != 0);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/layer_norm/ln_bwd_kernels.cuh",
+      "line_start": 8,
+      "line_end": 8,
+      "evidence": "__global__ __launch_bounds__(Ktraits::THREADS_PER_CTA) void ln_bwd_kernel(layer_norm::BwdParams params) {",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/layer_norm/ln_bwd_kernels.cuh",
+      "line_start": 202,
+      "line_end": 202,
+      "evidence": "__global__ __launch_bounds__(Kernel_traits::THREADS_PER_CTA) void ln_bwd_finalize_kernel(BwdParams params) {",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/layer_norm/ln_fwd_kernels.cuh",
+      "line_start": 9,
+      "line_end": 9,
+      "evidence": "__global__ __launch_bounds__(Ktraits::THREADS_PER_CTA) void ln_fwd_kernel(FwdParams params) {",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/layer_norm/ln_utils.cuh",
+      "line_start": 82,
+      "line_end": 82,
+      "evidence": "return __shfl_xor_sync(uint32_t(-1), x, idx);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/layer_norm/ln_utils.cuh",
+      "line_start": 92,
+      "line_end": 92,
+      "evidence": "return __shfl_down_sync(uint32_t(-1), x, idx);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/layer_norm/ln_utils.cuh",
+      "line_start": 531,
+      "line_end": 531,
+      "evidence": "m_a = __shfl_sync(uint32_t(-1), m_a, 0);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/layer_norm/ln_utils.cuh",
+      "line_start": 532,
+      "line_end": 532,
+      "evidence": "m2_a = __shfl_sync(uint32_t(-1), m2_a, 0);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/peer_memory/peer_memory_cuda.cu",
+      "line_start": 258,
+      "line_end": 258,
+      "evidence": "__launch_bounds__(THREADS_PER_CTA)",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/transducer/transducer_joint_kernel.cu",
+      "line_start": 25,
+      "line_end": 25,
+      "evidence": "x += __shfl_down_sync(0xffffffff, x, offset, width);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-COMM-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "communication",
+      "title": "检测 NCCL 环境变量覆盖",
+      "relative_path": "apex/contrib/nccl_allocator/nccl_allocator.py",
+      "line_start": 37,
+      "line_end": 37,
+      "evidence": "os.environ[\"NCCL_NVLS_ENABLE\"] = \"1\"",
+      "message": "项目覆盖了 NVIDIA NCCL 环境变量，多卡通信配置包含平台特定假设。",
+      "recommendation": "请复核通信后端、环境变量和拓扑配置，并在沐曦多卡环境进行针对性验证。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-COMM-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "communication",
+      "title": "检测 NCCL 环境变量覆盖",
+      "relative_path": "apex/contrib/nccl_allocator/nccl_allocator.py",
+      "line_start": 38,
+      "line_end": 38,
+      "evidence": "os.environ[\"TORCH_NCCL_USE_TENSOR_REGISTER_ALLOCATOR_HOOK\"] = \"0\"",
+      "message": "项目覆盖了 NVIDIA NCCL 环境变量，多卡通信配置包含平台特定假设。",
+      "recommendation": "请复核通信后端、环境变量和拓扑配置，并在沐曦多卡环境进行针对性验证。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-TOOL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "tool",
+      "title": "检测直接 nvidia-smi 调用",
+      "relative_path": "apex/contrib/sparsity/permutation_search_kernels/permutation_utilities.py",
+      "line_start": 31,
+      "line_end": 31,
+      "evidence": "gpus_found = str(subprocess.check_output([\"nvidia-smi\", \"-L\"])).count(\"UUID\")",
+      "message": "项目直接调用 nvidia-smi，设备发现或诊断流程依赖 NVIDIA 专用工具。",
+      "recommendation": "请复核诊断逻辑并提供可替换工具入口，再在沐曦服务器验证设备信息采集。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/megatron/generic_scaled_masked_softmax.h",
+      "line_start": 43,
+      "line_end": 43,
+      "evidence": "return __shfl_down_sync(mask, value, laneMask, width);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/megatron/scaled_masked_softmax.h",
+      "line_start": 82,
+      "line_end": 82,
+      "evidence": "return __shfl_xor_sync(mask, value, laneMask, width);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/megatron/scaled_upper_triang_masked_softmax.h",
+      "line_start": 105,
+      "line_end": 105,
+      "evidence": "return __shfl_xor_sync(mask, value, laneMask, width);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/type_shim.h",
+      "line_start": 291,
+      "line_end": 291,
+      "evidence": "for (int i = 16; i >= lanes; i >>= 1) final = final + __shfl_down_sync(0xffffffff, final, i);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/type_shim.h",
+      "line_start": 333,
+      "line_end": 333,
+      "evidence": "for (int i = 16; i >= lanes; i >>= 1) final = fmaxf(fabsf(final), fabsf(__shfl_down_sync(0xffffffff, final, i)));",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/welford.cu",
+      "line_start": 42,
+      "line_end": 42,
+      "evidence": "for (int i = WARP_SIZE / 2; i > 0; i >>= 1) val = val + __shfl_down_sync(0xffffffff, val, i);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/welford.cu",
+      "line_start": 110,
+      "line_end": 110,
+      "evidence": "auto num_new = __shfl_down_sync(0xffffffff, num, i);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/welford.cu",
+      "line_start": 111,
+      "line_end": 111,
+      "evidence": "auto mean_new = __shfl_down_sync(0xffffffff, mean, i);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/welford.cu",
+      "line_start": 112,
+      "line_end": 112,
+      "evidence": "auto m2n_new = __shfl_down_sync(0xffffffff, m2n, i);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-BUILD-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "build",
+      "title": "检测 TORCH_CUDA_ARCH_LIST 覆盖",
+      "relative_path": "setup.py",
+      "line_start": 131,
+      "line_end": 131,
+      "evidence": "os.environ[\"TORCH_CUDA_ARCH_LIST\"] = \"7.5;8.0;8.6;9.0;10.0;11.0;12.0\"",
+      "message": "项目显式覆盖 TORCH_CUDA_ARCH_LIST，构建产物可能绑定 NVIDIA 架构列表。",
+      "recommendation": "请复核 PyTorch 扩展的架构选择方式，移除不适用假设，并在 MXMACA 环境验证构建。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-BUILD-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "build",
+      "title": "检测 TORCH_CUDA_ARCH_LIST 覆盖",
+      "relative_path": "setup.py",
+      "line_start": 133,
+      "line_end": 133,
+      "evidence": "os.environ[\"TORCH_CUDA_ARCH_LIST\"] = \"7.0;7.5;8.0;8.6;9.0;10.0;12.0\"",
+      "message": "项目显式覆盖 TORCH_CUDA_ARCH_LIST，构建产物可能绑定 NVIDIA 架构列表。",
+      "recommendation": "请复核 PyTorch 扩展的架构选择方式，移除不适用假设，并在 MXMACA 环境验证构建。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-BUILD-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "build",
+      "title": "检测 TORCH_CUDA_ARCH_LIST 覆盖",
+      "relative_path": "setup.py",
+      "line_start": 135,
+      "line_end": 135,
+      "evidence": "os.environ[\"TORCH_CUDA_ARCH_LIST\"] = \"6.0;6.1;6.2;7.0;7.5;8.0;8.6;9.0\"",
+      "message": "项目显式覆盖 TORCH_CUDA_ARCH_LIST，构建产物可能绑定 NVIDIA 架构列表。",
+      "recommendation": "请复核 PyTorch 扩展的架构选择方式，移除不适用假设，并在 MXMACA 环境验证构建。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-BUILD-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "build",
+      "title": "检测 TORCH_CUDA_ARCH_LIST 覆盖",
+      "relative_path": "setup.py",
+      "line_start": 137,
+      "line_end": 137,
+      "evidence": "os.environ[\"TORCH_CUDA_ARCH_LIST\"] = \"6.0;6.1;6.2;7.0;7.5;8.0;8.6\"",
+      "message": "项目显式覆盖 TORCH_CUDA_ARCH_LIST，构建产物可能绑定 NVIDIA 架构列表。",
+      "recommendation": "请复核 PyTorch 扩展的架构选择方式，移除不适用假设，并在 MXMACA 环境验证构建。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-BUILD-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "build",
+      "title": "检测 TORCH_CUDA_ARCH_LIST 覆盖",
+      "relative_path": "setup.py",
+      "line_start": 139,
+      "line_end": 139,
+      "evidence": "os.environ[\"TORCH_CUDA_ARCH_LIST\"] = \"6.0;6.1;6.2;7.0;7.5;8.0\"",
+      "message": "项目显式覆盖 TORCH_CUDA_ARCH_LIST，构建产物可能绑定 NVIDIA 架构列表。",
+      "recommendation": "请复核 PyTorch 扩展的架构选择方式，移除不适用假设，并在 MXMACA 环境验证构建。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-BUILD-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "build",
+      "title": "检测 TORCH_CUDA_ARCH_LIST 覆盖",
+      "relative_path": "setup.py",
+      "line_start": 141,
+      "line_end": 141,
+      "evidence": "os.environ[\"TORCH_CUDA_ARCH_LIST\"] = \"6.0;6.1;6.2;7.0;7.5\"",
+      "message": "项目显式覆盖 TORCH_CUDA_ARCH_LIST，构建产物可能绑定 NVIDIA 架构列表。",
+      "recommendation": "请复核 PyTorch 扩展的架构选择方式，移除不适用假设，并在 MXMACA 环境验证构建。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-ARCH-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "architecture",
+      "title": "检测 CUDA gencode 参数",
+      "relative_path": "setup.py",
+      "line_start": 545,
+      "line_end": 545,
+      "evidence": "\"-gencode=arch=compute_90,code=sm_90\",",
+      "message": "构建参数显式生成 NVIDIA compute/sm 目标，可能固化了设备架构假设。",
+      "recommendation": "请复核目标架构参数，依据 MXMACA 工具链要求调整，并在沐曦设备验证生成物。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-ARCH-002",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "architecture",
+      "title": "检测硬编码 sm 或 compute 架构",
+      "relative_path": "setup.py",
+      "line_start": 545,
+      "line_end": 545,
+      "evidence": "\"-gencode=arch=compute_90,code=sm_90\",",
+      "message": "项目硬编码了 NVIDIA sm/compute 架构编号，需要确认目标编译器如何处理该配置。",
+      "recommendation": "请复核架构列表是否可配置，并在 MXMACA 工具链上验证编译参数和运行结果。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-ARCH-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "architecture",
+      "title": "检测 CUDA gencode 参数",
+      "relative_path": "setup.py",
+      "line_start": 546,
+      "line_end": 546,
+      "evidence": "\"-gencode=arch=compute_100,code=sm_100\",",
+      "message": "构建参数显式生成 NVIDIA compute/sm 目标，可能固化了设备架构假设。",
+      "recommendation": "请复核目标架构参数，依据 MXMACA 工具链要求调整，并在沐曦设备验证生成物。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-ARCH-002",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "architecture",
+      "title": "检测硬编码 sm 或 compute 架构",
+      "relative_path": "setup.py",
+      "line_start": 546,
+      "line_end": 546,
+      "evidence": "\"-gencode=arch=compute_100,code=sm_100\",",
+      "message": "项目硬编码了 NVIDIA sm/compute 架构编号，需要确认目标编译器如何处理该配置。",
+      "recommendation": "请复核架构列表是否可配置，并在 MXMACA 工具链上验证编译参数和运行结果。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-ARCH-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "architecture",
+      "title": "检测 CUDA gencode 参数",
+      "relative_path": "setup.py",
+      "line_start": 547,
+      "line_end": 547,
+      "evidence": "\"-gencode=arch=compute_120,code=compute_120\",",
+      "message": "构建参数显式生成 NVIDIA compute/sm 目标，可能固化了设备架构假设。",
+      "recommendation": "请复核目标架构参数，依据 MXMACA 工具链要求调整，并在沐曦设备验证生成物。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-ARCH-002",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "architecture",
+      "title": "检测硬编码 sm 或 compute 架构",
+      "relative_path": "setup.py",
+      "line_start": 547,
+      "line_end": 547,
+      "evidence": "\"-gencode=arch=compute_120,code=compute_120\",",
+      "message": "项目硬编码了 NVIDIA sm/compute 架构编号，需要确认目标编译器如何处理该配置。",
+      "recommendation": "请复核架构列表是否可配置，并在 MXMACA 工具链上验证编译参数和运行结果。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-ARCH-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "architecture",
+      "title": "检测 CUDA gencode 参数",
+      "relative_path": "setup.py",
+      "line_start": 550,
+      "line_end": 550,
+      "evidence": "arch_flags = [\"-gencode=arch=compute_90,code=compute_90\"]",
+      "message": "构建参数显式生成 NVIDIA compute/sm 目标，可能固化了设备架构假设。",
+      "recommendation": "请复核目标架构参数，依据 MXMACA 工具链要求调整，并在沐曦设备验证生成物。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-ARCH-002",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "architecture",
+      "title": "检测硬编码 sm 或 compute 架构",
+      "relative_path": "setup.py",
+      "line_start": 550,
+      "line_end": 550,
+      "evidence": "arch_flags = [\"-gencode=arch=compute_90,code=compute_90\"]",
+      "message": "项目硬编码了 NVIDIA sm/compute 架构编号，需要确认目标编译器如何处理该配置。",
+      "recommendation": "请复核架构列表是否可配置，并在 MXMACA 工具链上验证编译参数和运行结果。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn.hpp",
+      "line_start": 2,
+      "line_end": 3,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda.cu",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_host_template.cuh",
+      "line_start": 5,
+      "line_end": 5,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_utils.hpp",
+      "line_start": 2,
+      "line_end": 3,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/groupbn/batch_norm.cu",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/groupbn/batch_norm_add_relu.cu",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/groupbn/ipc.cu",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/optimizers/fused_adam_cuda_kernel.cu",
+      "line_start": 1,
+      "line_end": 1,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/optimizers/fused_adam_cuda_kernel.cu",
+      "line_start": 2,
+      "line_end": 2,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/transducer/transducer_joint_kernel.cu",
+      "line_start": 2,
+      "line_end": 2,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/transducer/transducer_joint_kernel.cu",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/transducer/transducer_loss_kernel.cu",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/transducer/transducer_loss_kernel.cu",
+      "line_start": 5,
+      "line_end": 5,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/fused_dense_cuda.cu",
+      "line_start": 11,
+      "line_end": 11,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/layer_norm_cuda_kernel.cu",
+      "line_start": 1,
+      "line_end": 1,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/layer_norm_cuda_kernel.cu",
+      "line_start": 2,
+      "line_end": 2,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/fused_rotary_positional_embedding.h",
+      "line_start": 22,
+      "line_end": 22,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/fused_weight_gradient_dense_16bit_prec_cuda.cu",
+      "line_start": 12,
+      "line_end": 12,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/fused_weight_gradient_dense_cuda.cu",
+      "line_start": 12,
+      "line_end": 12,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/megatron/generic_scaled_masked_softmax_cuda.cu",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/generic_scaled_masked_softmax_cuda.cu",
+      "line_start": 22,
+      "line_end": 22,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/megatron/scaled_masked_softmax_cuda.cu",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/scaled_masked_softmax_cuda.cu",
+      "line_start": 22,
+      "line_end": 22,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/megatron/scaled_softmax_cuda.cu",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/scaled_softmax_cuda.cu",
+      "line_start": 22,
+      "line_end": 22,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/megatron/scaled_upper_triang_masked_softmax_cuda.cu",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/scaled_upper_triang_masked_softmax_cuda.cu",
+      "line_start": 22,
+      "line_end": 22,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/mlp_cuda.cu",
+      "line_start": 11,
+      "line_end": 11,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/multi_tensor_sgd_kernel.cu",
+      "line_start": 6,
+      "line_end": 6,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/welford.cu",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/welford.cu",
+      "line_start": 5,
+      "line_end": 5,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 178,
+      "line_end": 178,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 197,
+      "line_end": 197,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 218,
+      "line_end": 218,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 249,
+      "line_end": 249,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 260,
+      "line_end": 260,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 271,
+      "line_end": 271,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 281,
+      "line_end": 281,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 292,
+      "line_end": 292,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 313,
+      "line_end": 313,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 334,
+      "line_end": 334,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 355,
+      "line_end": 355,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 376,
+      "line_end": 376,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 397,
+      "line_end": 397,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 430,
+      "line_end": 430,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 454,
+      "line_end": 454,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 484,
+      "line_end": 484,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 503,
+      "line_end": 503,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 523,
+      "line_end": 523,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 553,
+      "line_end": 553,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 582,
+      "line_end": 582,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 601,
+      "line_end": 601,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 620,
+      "line_end": 620,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 648,
+      "line_end": 648,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 681,
+      "line_end": 681,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 697,
+      "line_end": 697,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 726,
+      "line_end": 726,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 742,
+      "line_end": 742,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 758,
+      "line_end": 758,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 784,
+      "line_end": 784,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 808,
+      "line_end": 808,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch JIT 原生扩展",
+      "relative_path": "setup.py",
+      "line_start": 821,
+      "line_end": 821,
+      "evidence": "_nccl_version_getter = load(",
+      "message": "项目使用 torch.utils.cpp_extension.load 在运行时编译扩展，执行环境必须具备完整工具链。",
+      "recommendation": "请复核 JIT 源码、缓存、编译参数与依赖，并在 MXMACA 环境验证首次和重复加载。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 831,
+      "line_end": 831,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch JIT 原生扩展",
+      "relative_path": "tests/distributed/synced_batchnorm/single_gpu_unit_test.py",
+      "line_start": 12,
+      "line_end": 12,
+      "evidence": "syncbn = load(name=\"syncbn\", sources=[\"../../csrc/syncbn.cpp\", \"../../csrc/welford.cu\"])",
+      "message": "项目使用 torch.utils.cpp_extension.load 在运行时编译扩展，执行环境必须具备完整工具链。",
+      "recommendation": "请复核 JIT 源码、缓存、编译参数与依赖，并在 MXMACA 环境验证首次和重复加载。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ]
+    }
+  ],
+  "migration_checklist": [
+    {
+      "rule_id": "MXR-TOOLCHAIN-001",
+      "title": "检测直接 nvcc 工具调用",
+      "action": "请复核调用点，按 cu-bridge 当前版本配置对应工具链，并在沐曦环境验证构建。",
+      "affected_files": [
+        "setup.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "action": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "affected_files": [
+        "apex/contrib/csrc/group_norm/group_norm_nhwc_bwd_one_pass_kernel.cuh",
+        "apex/contrib/csrc/group_norm/group_norm_nhwc_fwd_one_pass_kernel.cuh",
+        "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+        "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+        "apex/contrib/csrc/layer_norm/ln_bwd_kernels.cuh",
+        "apex/contrib/csrc/layer_norm/ln_fwd_kernels.cuh",
+        "apex/contrib/csrc/peer_memory/peer_memory_cuda.cu"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "title": "检测 CUDA warp 同步内建函数",
+      "action": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "affected_files": [
+        "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+        "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+        "apex/contrib/csrc/layer_norm/ln_utils.cuh",
+        "apex/contrib/csrc/transducer/transducer_joint_kernel.cu",
+        "csrc/megatron/generic_scaled_masked_softmax.h",
+        "csrc/megatron/scaled_masked_softmax.h",
+        "csrc/megatron/scaled_upper_triang_masked_softmax.h",
+        "csrc/type_shim.h",
+        "csrc/welford.cu"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-COMM-001",
+      "title": "检测 NCCL 环境变量覆盖",
+      "action": "请复核通信后端、环境变量和拓扑配置，并在沐曦多卡环境进行针对性验证。",
+      "affected_files": [
+        "apex/contrib/nccl_allocator/nccl_allocator.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-TOOL-001",
+      "title": "检测直接 nvidia-smi 调用",
+      "action": "请复核诊断逻辑并提供可替换工具入口，再在沐曦服务器验证设备信息采集。",
+      "affected_files": [
+        "apex/contrib/sparsity/permutation_search_kernels/permutation_utilities.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-BUILD-001",
+      "title": "检测 TORCH_CUDA_ARCH_LIST 覆盖",
+      "action": "请复核 PyTorch 扩展的架构选择方式，移除不适用假设，并在 MXMACA 环境验证构建。",
+      "affected_files": [
+        "setup.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-ARCH-001",
+      "title": "检测 CUDA gencode 参数",
+      "action": "请复核目标架构参数，依据 MXMACA 工具链要求调整，并在沐曦设备验证生成物。",
+      "affected_files": [
+        "setup.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-ARCH-002",
+      "title": "检测硬编码 sm 或 compute 架构",
+      "action": "请复核架构列表是否可配置，并在 MXMACA 工具链上验证编译参数和运行结果。",
+      "affected_files": [
+        "setup.py"
+      ],
+      "completed": false
+    }
+  ],
+  "analysis_warnings": [],
+  "static_status": "blocked",
+  "verification_status": "not-run"
+}

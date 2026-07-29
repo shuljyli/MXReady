@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0",
+  "scan_id": "3c0f0348-2141-587b-b964-e253df29bd5a",
+  "repository": {
+    "provider": "github",
+    "owner": "pytorch",
+    "name": "extension-cpp",
+    "url": "https://github.com/pytorch/extension-cpp",
+    "commit": "1c325b202ae5e11de3cefb9a65be28f47949edd4"
+  },
+  "tool_version": "0.1.0",
+  "ruleset_version": "1",
+  "scanned_at": "2026-07-29T19:12:29.351728Z",
+  "summary": {
+    "total_count": 4,
+    "blocker_count": 0,
+    "warning_count": 0,
+    "info_count": 4
+  },
+  "findings": [
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "extension_cpp/extension_cpp/csrc/cuda/muladd.cu",
+      "line_start": 4,
+      "line_end": 5,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "extension_cpp/extension_cpp/csrc/cuda/muladd.cu",
+      "line_start": 6,
+      "line_end": 6,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "extension_cpp_stable/extension_cpp_stable/csrc/cuda/muladd.cu",
+      "line_start": 9,
+      "line_end": 10,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "extension_cpp_stable/extension_cpp_stable/csrc/cuda/muladd.cu",
+      "line_start": 11,
+      "line_end": 11,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ]
+    }
+  ],
+  "migration_checklist": [],
+  "analysis_warnings": [],
+  "static_status": "passed",
+  "verification_status": "not-run"
+}
