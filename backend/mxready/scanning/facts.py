@@ -295,6 +295,7 @@ class _PythonFactVisitor(ast.NodeVisitor):
 
 def _extract_cmake(indexed_file: IndexedFile, collector: _FactCollector) -> None:
     collector.add_build_system("cmake", _location(indexed_file, 1))
+    cmake_source = _strip_cmake_comments(indexed_file.text)
     patterns = {
         "uses_cmake_cuda_language": re.compile(
             r"\b(?:project|enable_language)\s*\([^)]*\bCUDA\b",
@@ -310,17 +311,32 @@ def _extract_cmake(indexed_file: IndexedFile, collector: _FactCollector) -> None
         ),
     }
     for flag, pattern in patterns.items():
-        match = pattern.search(indexed_file.text)
+        match = pattern.search(cmake_source)
         if match:
-            line_number = indexed_file.text.count("\n", 0, match.start()) + 1
+            line_number = cmake_source.count("\n", 0, match.start()) + 1
             collector.set_flag(flag, _location(indexed_file, line_number))
 
-    for line_number, line in enumerate(indexed_file.text.splitlines(), start=1):
+    for line_number, line in enumerate(cmake_source.splitlines(), start=1):
         if re.search(r"\b(?:CUDA_HOME|CUDA_PATH|CUDA_ROOT)\b", line):
             collector.set_flag(
                 "references_cuda_home",
                 _location(indexed_file, line_number),
             )
+
+
+def _strip_cmake_comments(value: str) -> str:
+    lines = []
+    for line in value.splitlines(keepends=True):
+        content, marker, comment = line.partition("#")
+        if marker:
+            lines.append(content + " " * (len(marker) + len(comment.rstrip("\r\n"))))
+            if line.endswith("\r\n"):
+                lines.append("\r\n")
+            elif line.endswith("\n"):
+                lines.append("\n")
+        else:
+            lines.append(line)
+    return "".join(lines)
 
 
 def _extract_shell(indexed_file: IndexedFile, collector: _FactCollector) -> None:

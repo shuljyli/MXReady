@@ -3,17 +3,19 @@
   title: 检测直接 nvcc 工具调用
   category: toolchain
   severity: blocker
-  file_globs:
-    - "**/*.py"
-    - "**/*.sh"
-    - "**/*.cmake"
-    - "**/CMakeLists.txt"
+  file_globs: ["**/*.py", "**/*.sh", "**/*.cmake", "**/CMakeLists.txt"]
   patterns:
     - type: regex
-      expression: '\bnvcc\b'
+      expression: '(?:subprocess\.(?:run|Popen|call|check_call|check_output)|os\.system)\s*\([^\n]{0,200}\bnvcc\b'
       flags: [IGNORECASE]
-  message: 项目直接引用 nvcc，迁移到 MXMACA/cu-bridge 时工具入口或参数可能需要调整。
-  recommendation: 请复核调用点，依据 cu-bridge 当前版本说明配置对应工具链，并在沐曦环境验证构建。
+    - type: regex
+      expression: '(?m)^\s*(?:NVCC|CMAKE_CUDA_COMPILER)\s*=\s*[^\n]*\bnvcc\b'
+      flags: [IGNORECASE]
+    - type: regex
+      expression: '(?m)^\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S+\s+)*(?:\S*/)?nvcc(?:\s|$)'
+      flags: [IGNORECASE]
+  message: 项目直接调用或固定指定 nvcc，迁移到 MXMACA/cu-bridge 时工具入口与参数需要复核。
+  recommendation: 请复核调用点，按 cu-bridge 当前版本配置对应工具链，并在沐曦环境验证构建。
   references:
     - title: MetaX-MACA cu-bridge
       url: https://gitee.com/metax-maca/cu-bridge
@@ -23,18 +25,12 @@
   title: 检测硬编码 CUDA 安装路径
   category: path
   severity: warning
-  file_globs:
-    - "**/*.py"
-    - "**/*.sh"
-    - "**/*.cmake"
-    - "**/CMakeLists.txt"
-    - "**/*.toml"
-    - "**/*.cfg"
+  file_globs: ["**/*.py", "**/*.sh", "**/*.cmake", "**/CMakeLists.txt", "**/*.toml", "**/*.cfg"]
   patterns:
     - type: regex
       expression: '/usr/local/cuda(?:/|\b)'
-  message: 项目硬编码了 /usr/local/cuda，可能绕过 MXMACA/cu-bridge 环境提供的工具链路径。
-  recommendation: 请将路径改为可配置项，复核 cu-bridge 环境变量，并在沐曦服务器验证实际解析结果。
+  message: 项目硬编码了 /usr/local/cuda，可能绕过 MXMACA/cu-bridge 提供的工具链路径。
+  recommendation: 请将路径改为可配置项，复核 cu-bridge 环境变量，并在沐曦服务器验证解析结果。
   references:
     - title: MetaX-MACA cu-bridge
       url: https://gitee.com/metax-maca/cu-bridge
@@ -44,14 +40,13 @@
   title: 识别 PyTorch CUDAExtension
   category: pytorch-extension
   severity: info
-  file_globs:
-    - "**/*.py"
+  file_globs: ["**/*.py"]
   patterns:
     - type: fact
       name: uses_torch_cuda_extension
       equals: true
   message: 项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。
-  recommendation: 请复核扩展源文件、编译器参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。
+  recommendation: 请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。
   references:
     - title: PyTorch C++/CUDA extensions
       url: https://docs.pytorch.org/docs/stable/cpp_extension.html
@@ -61,16 +56,273 @@
   title: 检测 flash-attn 依赖
   category: dependency
   severity: warning
-  file_globs:
-    - "**/requirements*.txt"
-    - "**/pyproject.toml"
-    - "**/setup.cfg"
-    - "**/setup.py"
+  file_globs: ["**/requirements*.txt", "**/pyproject.toml", "**/setup.cfg", "**/setup.py"]
   patterns:
     - type: dependency
       name: flash-attn
-  message: 项目声明了 flash-attn；其原生扩展、架构参数与版本组合需要在目标平台单独验证。
-  recommendation: 请复核 flash-attn 的版本和构建选项，先进行最小导入与算子测试，再运行项目级测试。
+  message: 项目声明了 flash-attn，其原生扩展、架构参数与版本组合需要在目标平台单独验证。
+  recommendation: 请复核 flash-attn 版本和构建选项，先验证最小导入与算子，再运行项目级测试。
+  references:
+    - title: PyTorch C++/CUDA extensions
+      url: https://docs.pytorch.org/docs/stable/cpp_extension.html
+
+- id: MXR-CMAKE-001
+  version: 1
+  title: 识别 CMake CUDA 语言
+  category: cmake
+  severity: info
+  file_globs: ["**/CMakeLists.txt", "**/*.cmake"]
+  patterns:
+    - type: fact
+      name: uses_cmake_cuda_language
+      equals: true
+  message: CMake 项目启用了 CUDA 语言，目标环境需要提供与工程探测逻辑匹配的编译器。
+  recommendation: 请复核 CMake 工具链选择和语言探测结果，并在 MXMACA/cu-bridge 环境验证配置阶段。
+  references:
+    - title: CMake FindCUDAToolkit
+      url: https://cmake.org/cmake/help/latest/module/FindCUDAToolkit.html
+
+- id: MXR-CMAKE-002
+  version: 1
+  title: 检测 CMake FindCUDAToolkit
+  category: cmake
+  severity: warning
+  file_globs: ["**/CMakeLists.txt", "**/*.cmake"]
+  patterns:
+    - type: regex
+      expression: '\bfind_package\s*\(\s*CUDAToolkit\b'
+      flags: [IGNORECASE]
+  message: 工程显式查找 NVIDIA CUDAToolkit，其搜索路径和导入目标带有工具链假设。
+  recommendation: 请复核 CUDAToolkit_ROOT、导入目标和链接库，并在 cu-bridge 环境验证 CMake 配置。
+  references:
+    - title: CMake FindCUDAToolkit
+      url: https://cmake.org/cmake/help/latest/module/FindCUDAToolkit.html
+
+- id: MXR-ARCH-001
+  version: 1
+  title: 检测 CUDA gencode 参数
+  category: architecture
+  severity: warning
+  file_globs: ["**/*.py", "**/*.sh", "**/*.cmake", "**/CMakeLists.txt", "**/*.toml", "**/*.cfg"]
+  patterns:
+    - type: regex
+      expression: '(?:-gencode|--generate-code)(?:[=\s]|$)'
+  message: 构建参数显式生成 NVIDIA compute/sm 目标，可能固化了设备架构假设。
+  recommendation: 请复核目标架构参数，依据 MXMACA 工具链要求调整，并在沐曦设备验证生成物。
+  references:
+    - title: MXMACA performance tuning guide
+      url: https://gitee.com/metax-maca/mxmaca-performance-tuning-guide
+
+- id: MXR-ARCH-002
+  version: 1
+  title: 检测硬编码 sm 或 compute 架构
+  category: architecture
+  severity: warning
+  file_globs: ["**/*.py", "**/*.sh", "**/*.cmake", "**/CMakeLists.txt", "**/*.toml", "**/*.cfg"]
+  patterns:
+    - type: regex
+      expression: '\b(?:sm|compute)_[0-9]{2,3}\b'
+      flags: [IGNORECASE]
+  message: 项目硬编码了 NVIDIA sm/compute 架构编号，需要确认目标编译器如何处理该配置。
+  recommendation: 请复核架构列表是否可配置，并在 MXMACA 工具链上验证编译参数和运行结果。
+  references:
+    - title: MXMACA performance tuning guide
+      url: https://gitee.com/metax-maca/mxmaca-performance-tuning-guide
+
+- id: MXR-TOOL-001
+  version: 1
+  title: 检测直接 nvidia-smi 调用
+  category: tool
+  severity: warning
+  file_globs: ["**/*.py", "**/*.sh"]
+  patterns:
+    - type: regex
+      expression: '(?:subprocess\.(?:run|Popen|call|check_call|check_output)|os\.system)\s*\([^\n]{0,200}\bnvidia-smi\b'
+      flags: [IGNORECASE]
+    - type: regex
+      expression: '(?m)^\s*(?:\S*/)?nvidia-smi(?:\s|$)'
+      flags: [IGNORECASE]
+  message: 项目直接调用 nvidia-smi，设备发现或诊断流程依赖 NVIDIA 专用工具。
+  recommendation: 请复核诊断逻辑并提供可替换工具入口，再在沐曦服务器验证设备信息采集。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-COMM-001
+  version: 1
+  title: 检测 NCCL 环境变量覆盖
+  category: communication
+  severity: warning
+  file_globs: ["**/*.py", "**/*.sh", "**/*.toml", "**/*.cfg"]
+  patterns:
+    - type: regex
+      expression: '(?m)^\s*os\.environ\[[^\]\n]*NCCL_[A-Z0-9_]+[^\]\n]*\]\s*='
+    - type: regex
+      expression: '(?m)^\s*(?:export\s+)?NCCL_[A-Z0-9_]+\s*='
+  message: 项目覆盖了 NVIDIA NCCL 环境变量，多卡通信配置包含平台特定假设。
+  recommendation: 请复核通信后端、环境变量和拓扑配置，并在沐曦多卡环境进行针对性验证。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-DEPENDENCY-002
+  version: 1
+  title: 检测 bitsandbytes 依赖
+  category: dependency
+  severity: warning
+  file_globs: ["**/requirements*.txt", "**/pyproject.toml", "**/setup.cfg", "**/setup.py"]
+  patterns:
+    - type: dependency
+      name: bitsandbytes
+  message: bitsandbytes 包含原生 GPU 组件和设备相关构建逻辑，需要单独确认目标平台版本。
+  recommendation: 请复核依赖版本、预编译包来源和算子覆盖，并在沐曦环境验证导入与核心功能。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-DEPENDENCY-003
+  version: 1
+  title: 检测 xformers 依赖
+  category: dependency
+  severity: warning
+  file_globs: ["**/requirements*.txt", "**/pyproject.toml", "**/setup.cfg", "**/setup.py"]
+  patterns:
+    - type: dependency
+      name: xformers
+  message: xformers 可能构建并选择设备特定的原生算子，需确认版本与工具链组合。
+  recommendation: 请复核 xformers 构建选项和算子回退路径，并在沐曦环境验证项目实际调用链。
+  references:
+    - title: PyTorch C++/CUDA extensions
+      url: https://docs.pytorch.org/docs/stable/cpp_extension.html
+
+- id: MXR-DEPENDENCY-004
+  version: 1
+  title: 检测 TensorRT 依赖或导入
+  category: dependency
+  severity: blocker
+  file_globs: ["**/requirements*.txt", "**/pyproject.toml", "**/setup.cfg", "**/setup.py", "**/*.py"]
+  patterns:
+    - type: dependency
+      name: tensorrt
+    - type: fact
+      name: imports_tensorrt
+      equals: true
+  message: 项目直接依赖或导入 TensorRT，当前执行路径包含 NVIDIA 专用运行时边界。
+  recommendation: 请复核是否存在可替换后端或隔离路径，并先验证沐曦目标栈的等价推理流程。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-HEADER-001
+  version: 1
+  title: 识别 cuda_runtime.h 头文件
+  category: header
+  severity: info
+  file_globs: ["**/*.cu", "**/*.cuh", "**/*.cc", "**/*.cpp", "**/*.c", "**/*.h", "**/*.hpp"]
+  patterns:
+    - type: regex
+      expression: '(?m)^\s*#\s*include\s*[<"]cuda_runtime\.h[>"]'
+  message: 源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。
+  recommendation: 请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-HEADER-002
+  version: 1
+  title: 识别 cuda.h 驱动头文件
+  category: header
+  severity: info
+  file_globs: ["**/*.cu", "**/*.cuh", "**/*.cc", "**/*.cpp", "**/*.c", "**/*.h", "**/*.hpp"]
+  patterns:
+    - type: regex
+      expression: '(?m)^\s*#\s*include\s*[<"]cuda\.h[>"]'
+  message: 源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。
+  recommendation: 请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-INTRINSIC-001
+  version: 1
+  title: 检测 CUDA warp 同步内建函数
+  category: intrinsic
+  severity: warning
+  file_globs: ["**/*.cu", "**/*.cuh", "**/*.cc", "**/*.cpp", "**/*.h", "**/*.hpp"]
+  patterns:
+    - type: regex
+      expression: '\b__(?:shfl(?:_(?:up|down|xor))?_sync|ballot_sync|activemask)\s*\('
+  message: 内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。
+  recommendation: 请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。
+  references:
+    - title: CUDA Programming Guide
+      url: https://docs.nvidia.com/cuda/cuda-programming-guide/
+    - title: MXMACA performance tuning guide
+      url: https://gitee.com/metax-maca/mxmaca-performance-tuning-guide
+
+- id: MXR-KERNEL-001
+  version: 1
+  title: 检测 __launch_bounds__ 调优假设
+  category: kernel
+  severity: warning
+  file_globs: ["**/*.cu", "**/*.cuh", "**/*.cc", "**/*.cpp", "**/*.h", "**/*.hpp"]
+  patterns:
+    - type: regex
+      expression: '\b__launch_bounds__\s*\('
+  message: 内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。
+  recommendation: 请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。
+  references:
+    - title: MXMACA performance tuning guide
+      url: https://gitee.com/metax-maca/mxmaca-performance-tuning-guide
+    - title: CUDA Programming Guide
+      url: https://docs.nvidia.com/cuda/cuda-programming-guide/
+
+- id: MXR-GRAPH-001
+  version: 1
+  title: 检测 CUDA Graph API
+  category: graph
+  severity: warning
+  file_globs: ["**/*.cu", "**/*.cuh", "**/*.cc", "**/*.cpp", "**/*.c", "**/*.h", "**/*.hpp"]
+  patterns:
+    - type: regex
+      expression: '\bcudaGraph[A-Za-z0-9_]*\s*\('
+  message: 项目调用 CUDA Graph API，图构建、更新和执行行为需要在目标运行时单独确认。
+  recommendation: 请复核实际使用的 Graph API 与错误处理路径，并在沐曦环境验证功能和收益。
+  references:
+    - title: CUDA Programming Guide
+      url: https://docs.nvidia.com/cuda/cuda-programming-guide/
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-BUILD-001
+  version: 1
+  title: 检测 TORCH_CUDA_ARCH_LIST 覆盖
+  category: build
+  severity: warning
+  file_globs: ["**/*.py", "**/*.sh", "**/*.toml", "**/*.cfg"]
+  patterns:
+    - type: regex
+      expression: '(?m)^\s*os\.environ\[[^\]\n]*TORCH_CUDA_ARCH_LIST[^\]\n]*\]\s*='
+    - type: regex
+      expression: '(?m)^\s*(?:export\s+)?TORCH_CUDA_ARCH_LIST\s*='
+  message: 项目显式覆盖 TORCH_CUDA_ARCH_LIST，构建产物可能绑定 NVIDIA 架构列表。
+  recommendation: 请复核 PyTorch 扩展的架构选择方式，移除不适用假设，并在 MXMACA 环境验证构建。
+  references:
+    - title: PyTorch C++/CUDA extensions
+      url: https://docs.pytorch.org/docs/stable/cpp_extension.html
+
+- id: MXR-PYTORCH-002
+  version: 1
+  title: 识别 PyTorch JIT 原生扩展
+  category: pytorch-extension
+  severity: info
+  file_globs: ["**/*.py"]
+  patterns:
+    - type: fact
+      name: uses_torch_cpp_extension_load
+      equals: true
+  message: 项目使用 torch.utils.cpp_extension.load 在运行时编译扩展，执行环境必须具备完整工具链。
+  recommendation: 请复核 JIT 源码、缓存、编译参数与依赖，并在 MXMACA 环境验证首次和重复加载。
   references:
     - title: PyTorch C++/CUDA extensions
       url: https://docs.pytorch.org/docs/stable/cpp_extension.html

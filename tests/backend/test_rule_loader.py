@@ -8,11 +8,12 @@ from mxready.models import Severity
 from mxready.scanning.rule_loader import load_rule_catalog
 
 
-def test_seed_rule_catalog_is_versioned_strict_and_unique() -> None:
+def test_rule_catalog_is_versioned_strict_and_unique() -> None:
     catalog = load_rule_catalog(Path("rules/v1"))
 
     assert catalog.version == "1"
-    assert [rule.id for rule in catalog.rules] == [
+    assert len(catalog.rules) == 20
+    assert [rule.id for rule in catalog.rules[:4]] == [
         "MXR-TOOLCHAIN-001",
         "MXR-PATH-001",
         "MXR-PYTORCH-001",
