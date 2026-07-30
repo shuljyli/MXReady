@@ -115,7 +115,7 @@ mxready-scan-public https://github.com/pytorch/extension-cpp \
   --output examples/reports
 ```
 
-GitHub 的 Git 传输超时或内部失败时，该本地证据命令可以改用提交锁定的安全归档；压缩与展开后的内容仍受 60 秒、50 MiB 和 10,000 文件限制。Web API 仍使用受限 Git 获取路径。
+GitHub 的 Git 传输超时或内部失败时，该本地证据命令可以改用提交锁定的安全归档；每个 HTTP 请求有 60 秒总时限，压缩与展开后的内容受 50 MiB 限制，归档中的目录和符号链接也计入 10,000 条目上限。Web API 仍使用受限 Git 获取路径。
 
 从 JSON 报告生成安全默认验证 ZIP：
 
@@ -155,7 +155,7 @@ npm run build
 
 - 仅允许 `github.com` 与 `gitee.com` 的公开 HTTPS 仓库；
 - Git 不读取凭据、不弹出登录提示、不下载 LFS 对象、不初始化子模块；
-- 获取超时 60 秒，仓库最多 50 MiB、10,000 个文件；
+- Git 获取超时 60 秒；归档后备路径的每个 HTTP 请求也有 60 秒总时限；仓库最多 50 MiB、10,000 个文件或归档条目；
 - 单个索引文本文件最多 1 MiB，不跟随符号链接；
 - Web 扫描不执行仓库代码；
 - 验证结果最多 1 MiB，使用严格版本化模型并绑定扫描提交；
