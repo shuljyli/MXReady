@@ -36,7 +36,7 @@ mxready-scan-public https://github.com/NVIDIA/apex --ref 6424da3b4faa6c8f062da4a
 mxready-scan-public https://github.com/Dao-AILab/flash-attention --ref c75d019dea9d910312974417bc28f190dfdda6d9 --label flash-attention --output examples/reports --work-dir data/public-scan-work
 ```
 
-命令优先使用受限浅克隆。GitHub 的 Git 传输超时或内部失败时，证据命令才使用 GitHub API 与 codeload 的提交锁定归档后备路径；压缩和展开后的内容仍受 60 秒、50 MiB、10,000 文件限制。
+命令优先使用受限浅克隆。GitHub 的 Git 传输超时或内部失败时，证据命令才使用 GitHub API 与 codeload 的提交锁定归档后备路径。API 元数据请求和归档下载各自具有 60 秒总时限；压缩下载与展开内容受 50 MiB 限制；目录、符号链接和普通文件都计入 10,000 条归档成员上限。
 
 ## blocker 人工复核
 
@@ -95,21 +95,47 @@ mxready-build-bundle examples/reports/pytorch-extension-cpp.json \
 4. 结果绑定同一提交并在上传前完成脱敏；
 5. 失败也保留可公开的最小日志和迁移清单。
 
-## 上游贡献草案
+## 上游补丁候选
 
-不在没有真机证据时提交“已兼容沐曦”的上游 PR。首选贡献目标为 `pytorch/extension-cpp`，待 smoke test 通过后准备一个只包含可复现说明的最小文档 PR。
+已针对 Apex 固定提交 `6424da3b4faa6c8f062da4a48c424fff3f02d42d` 编写 [`apex-configurable-nvcc.patch`](../examples/patches/apex-configurable-nvcc.patch)。补丁让工具链版本探测支持通过 `APEX_NVCC` 指定兼容编译器，同时保持 `$CUDA_HOME/bin/nvcc` 为默认路径。
 
-拟定标题：
+本地复核结果：
 
-> Document a community-verified MXMACA build and CUDA smoke test
+- 3 个新增单元测试通过；
+- 两个新增 Python 文件通过 Ruff，4 个改动 Python 文件通过无缓存语法编译；
+- `git diff --check` 与 `git apply --check --cached` 通过；
+- 同一源码的 MXReady 结果从 1 blocker / 78 warnings / 64 info 变为 0 blockers / 78 warnings / 64 info。
 
-拟定正文要点：
+补丁完整复现步骤见 [`examples/patches/README.md`](../examples/patches/README.md)。其状态为 **authored / locally tested / not submitted**，只处理硬编码编译器探测，不声称 Apex 已兼容沐曦 GPU。
 
-- 明确这是社区验证，不代表 PyTorch 或沐曦官方认证；
-- 写明仓库提交、GPU 型号和 MXMACA/cu-bridge/PyTorch 精确版本；
-- 只记录已实际执行的构建命令和最小 CUDA smoke test；
-- 附上成功与已知限制，不加入未经验证的性能结论；
-- 默认 CUDA/NVIDIA 路径和现有示例行为不变。
+拟议 PR 标题（未提交）：
 
-在真机成功前，补丁状态为 **not authored / not submitted**。外部 PR 创建和提交还需要单独的用户授权。
+> Allow overriding the CUDA compiler used for version detection
 
+拟议 PR 正文：
+
+```markdown
+## Summary
+
+- add an `APEX_NVCC` override for the compiler used by CUDA toolkit version detection
+- preserve `$CUDA_HOME/bin/nvcc` as the default
+- document the override and cover the default, explicit, and empty-value cases
+
+## Motivation
+
+CUDA-compatible toolchains do not always expose their compiler at
+`$CUDA_HOME/bin/nvcc`. A separate executable override lets those environments
+reuse Apex's existing version check without changing toolkit include or library
+paths.
+
+## Testing
+
+- `python -m unittest discover -s tests/L0/run_build_utils -v`
+- Ruff on the two new Python files
+- syntax compilation of all four changed Python files
+
+This change only makes compiler discovery configurable. It does not claim
+hardware compatibility with any non-CUDA platform.
+```
+
+真机 smoke test 通过后，仍可为 `pytorch/extension-cpp` 准备一个只记录可复现环境、命令和结果的最小文档 PR。任何外部 PR 的创建或提交都需要单独授权。

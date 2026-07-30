@@ -1,0 +1,128 @@
+diff --git a/README.md b/README.md
+index 0b22d19..694595b 100644
+--- a/README.md
++++ b/README.md
+@@ -50,6 +50,15 @@ To reduce the build time, parallel building can be enabled:
+ NVCC_APPEND_FLAGS="--threads 4" APEX_PARALLEL_BUILD=8 APEX_CPP_EXT=1 APEX_CUDA_EXT=1 pip install -v --no-build-isolation .
+ ```
+ 
++If the CUDA-compatible compiler used for toolkit version detection is not
++located at `$CUDA_HOME/bin/nvcc`, set `APEX_NVCC` to its executable path:
++
++```bash
++APEX_NVCC=/path/to/nvcc APEX_CPP_EXT=1 APEX_CUDA_EXT=1 pip install -v --no-build-isolation .
++```
++
++`CUDA_HOME` continues to control the toolkit include and library paths.
++
+ When CPU cores or memory are limited, the `--parallel` option is generally preferred over `--threads`. See [pull#1882](https://github.com/NVIDIA/apex/pull/1882) for more details.
+ 
+ #### Using Command-Line Flags (Legacy Method)
+diff --git a/apex_build_utils.py b/apex_build_utils.py
+new file mode 100644
+index 0000000..93fc518
+--- /dev/null
++++ b/apex_build_utils.py
+@@ -0,0 +1,7 @@
++import os
++
++
++def resolve_cuda_compiler(cuda_dir, environment=None):
++    """Return the compiler used for CUDA toolkit version detection."""
++    environment = os.environ if environment is None else environment
++    return environment.get("APEX_NVCC") or os.path.join(cuda_dir, "bin", "nvcc")
+diff --git a/setup.py b/setup.py
+index 696083f..fb4e4ec 100644
+--- a/setup.py
++++ b/setup.py
+@@ -9,6 +9,7 @@ from setuptools import setup, find_packages
+ import subprocess
+ 
+ import torch
++from apex_build_utils import resolve_cuda_compiler
+ from torch.utils.cpp_extension import (
+     BuildExtension,
+     CppExtension,
+@@ -63,7 +64,8 @@ def has_flag(flag, env_var):
+ 
+ 
+ def get_cuda_bare_metal_version(cuda_dir):
+-    raw_output = subprocess.check_output([cuda_dir + "/bin/nvcc", "-V"], universal_newlines=True)
++    compiler = resolve_cuda_compiler(cuda_dir)
++    raw_output = subprocess.check_output([compiler, "-V"], universal_newlines=True)
+     output = raw_output.split()
+     release_idx = output.index("release") + 1
+     bare_metal_version = parse(output[release_idx].split(",")[0])
+@@ -76,7 +78,7 @@ def check_cuda_torch_binary_vs_bare_metal(cuda_dir):
+     torch_binary_version = parse(torch.version.cuda)
+ 
+     print("\nCompiling cuda extensions with")
+-    print(raw_output + "from " + cuda_dir + "/bin\n")
++    print(raw_output + "from " + resolve_cuda_compiler(cuda_dir) + "\n")
+ 
+     if bare_metal_version != torch_binary_version:
+         raise RuntimeError(
+diff --git a/tests/L0/run_build_utils/test_build_utils.py b/tests/L0/run_build_utils/test_build_utils.py
+new file mode 100644
+index 0000000..245c6d3
+--- /dev/null
++++ b/tests/L0/run_build_utils/test_build_utils.py
+@@ -0,0 +1,33 @@
++import os
++import sys
++import unittest
++from pathlib import Path
++
++REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
++sys.path.insert(0, str(REPOSITORY_ROOT))
++
++from apex_build_utils import resolve_cuda_compiler
++
++
++class BuildUtilsTest(unittest.TestCase):
++    def test_uses_cuda_home_nvcc_by_default(self):
++        compiler = resolve_cuda_compiler("/opt/cuda", {})
++
++        self.assertEqual(compiler, os.path.join("/opt/cuda", "bin", "nvcc"))
++
++    def test_uses_explicit_apex_nvcc_override(self):
++        compiler = resolve_cuda_compiler(
++            "/opt/cuda",
++            {"APEX_NVCC": "/opt/maca/bin/compatible-compiler"},
++        )
++
++        self.assertEqual(compiler, "/opt/maca/bin/compatible-compiler")
++
++    def test_empty_override_keeps_default(self):
++        compiler = resolve_cuda_compiler("/opt/cuda", {"APEX_NVCC": ""})
++
++        self.assertEqual(compiler, os.path.join("/opt/cuda", "bin", "nvcc"))
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests/L0/run_test.py b/tests/L0/run_test.py
+index 7011c37..9f627e6 100644
+--- a/tests/L0/run_test.py
++++ b/tests/L0/run_test.py
+@@ -13,17 +13,19 @@ How to run this script?
+ 
+ import argparse
+ import os
+-import unittest
+ import sys
++import unittest
+ 
+ 
+ TEST_ROOT = os.path.dirname(os.path.abspath(__file__))
+ TEST_DIRS = [
++    "run_build_utils",
+     "run_optimizers",
+     "run_fused_layer_norm",
+     "run_mlp",
+ ]
+ DEFAULT_TEST_DIRS = [
++    "run_build_utils",
+     "run_optimizers",
+     "run_fused_layer_norm",
+     "run_mlp",
