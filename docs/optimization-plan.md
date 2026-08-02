@@ -272,3 +272,13 @@ docker build -t mxready .
 docker compose up -d
 # 打开 http://127.0.0.1:8000/api/health 验证
 ```
+
+## 8. 执行记录（2026-08-03）：文档与仓库维护
+
+- ✅ README 重写：新增三平台（Windows / Linux / macOS）一键启动入口表格（`dev.ps1` / `dev.sh`）、命令入口总表、`MXREADY_*` 配置对照表（修正：监听地址由 uvicorn 控制，无 `MXREADY_HOST/PORT`）、文档导航表；规则数更正为 24 条；
+- ✅ 新增 `scripts/dev.sh`：Linux / macOS 一键启动前后端，与 `dev.ps1` 参数对齐（`--skip-frontend` / `--skip-backend`）；尚未在 Linux / macOS 真机验证（Windows 本机无 bash），语法与行为待 CI / 服务器确认；
+- ✅ 文档一致性修正：`docs/application-evidence.md` 注明三份公开报告由 20 条规则生成、规则集 v1 已扩至 24 条（新增均为 info 级）；`docs/deployment.md` 环境变量表扩至 12 项并更新限流说明；本计划书完成度表格刷新为 246 后端测试 / 20 前端测试 / 24 条规则；
+- ✅ 主要贡献人：README「主要贡献人」章节与 `pyproject.toml` `authors` 均记录为 `shuli-陆家勇`；
+- ✅ GitHub 仓库设置同步：仓库描述（MXReady：静态检查 PyTorch CUDA 扩展向 MetaX MXMACA 迁移的就绪度）+ 6 个 Topics（pytorch / cuda / mxmaca / static-analysis / fastapi / python）；
+- ✅ README 新增「当前进度」章节，**明确标注尚未本地验证项**：Docker 构建与启动未在本机实跑（无 Docker，仅 CI 验证）、`dev.sh` 未在 Linux / macOS 验证、Python 3.11 venv 未重建复测（当前 3.14.2）、真机沐曦 GPU 验证 pending；
+- 回归状态：上述均为文档 / 仓库元数据改动，不影响代码；后端 246 测试、前端 20 测试、ruff 全绿结论保持有效。
