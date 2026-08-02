@@ -15,6 +15,7 @@ _ALLOWED_EXTENSIONS = {
     ".cpp",
     ".cu",
     ".cuh",
+    ".dockerfile",
     ".h",
     ".hpp",
     ".md",
@@ -25,7 +26,7 @@ _ALLOWED_EXTENSIONS = {
     ".yaml",
     ".yml",
 }
-_ALLOWED_FILENAMES = {"CMakeLists.txt"}
+_ALLOWED_FILENAMES = {"CMakeLists.txt", "Dockerfile"}
 _EXCLUDED_DIRECTORIES = {
     ".git",
     ".venv",

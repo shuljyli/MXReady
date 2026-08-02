@@ -10,3 +10,9 @@ __global__ __launch_bounds__(256) void mxready_kernel(float* values) {
 void create_graph(cudaGraph_t* graph) {
     cudaGraphCreate(graph, 0);
 }
+
+void manage_resources(float* device_values, cudaStream_t* stream) {
+    cudaMalloc(&device_values, 4096);
+    cudaStreamCreate(stream);
+    cudaSetDevice(0);
+}

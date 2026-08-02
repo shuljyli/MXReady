@@ -1,0 +1,19 @@
+services:
+  mxready:
+    build: .
+    image: mxready:latest
+    container_name: mxready
+    ports:
+      - "8000:8000"
+    environment:
+      MXREADY_DATA_DIR: /app/data
+      MXREADY_RULES_DIR: /app/rules/v1
+      MXREADY_TEMP_DIR: /app/data/tmp
+      MXREADY_FRONTEND_DIR: /app/frontend/dist
+      MXREADY_LOG_LEVEL: ${MXREADY_LOG_LEVEL:-INFO}
+    volumes:
+      - mxready-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  mxready-data:

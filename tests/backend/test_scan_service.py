@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+import pytest
 from mxready.config import Settings
 from mxready.errors import MxReadyError
 from mxready.models import ScanStatus
@@ -67,6 +68,52 @@ def test_scan_service_maps_known_failures_to_failed_job(tmp_path: Path) -> None:
     assert failed.status is ScanStatus.FAILED
     assert failed.failure_code == "CLONE_TIMEOUT"
     assert failed.failure_message == "The clone timed out."
+
+
+def test_scan_service_limits_concurrent_active_jobs(tmp_path: Path) -> None:
+    settings = Settings(
+        data_dir=tmp_path / "data",
+        rules_dir=Path("rules/v1"),
+        temp_dir=tmp_path / "tmp",
+        max_concurrent_scans=1,
+    )
+    settings.temp_dir.mkdir(parents=True)
+    store = SQLiteStore(settings.data_dir / "mxready.db")
+    store.initialize()
+    service = ScanService(
+        store,
+        FixtureGitClient(),
+        ScanAnalyzer(load_rule_catalog(settings.rules_dir)),
+        settings,
+    )
+    service.create_scan("https://github.com/example/first", None)
+
+    with pytest.raises(MxReadyError) as error:
+        service.create_scan("https://github.com/example/second", None)
+
+    assert error.value.code == "SCAN_LIMIT_REACHED"
+
+
+def test_scan_service_ignores_limit_when_disabled(tmp_path: Path) -> None:
+    settings = Settings(
+        data_dir=tmp_path / "data",
+        rules_dir=Path("rules/v1"),
+        temp_dir=tmp_path / "tmp",
+        max_concurrent_scans=0,
+    )
+    settings.temp_dir.mkdir(parents=True)
+    store = SQLiteStore(settings.data_dir / "mxready.db")
+    store.initialize()
+    service = ScanService(
+        store,
+        FixtureGitClient(),
+        ScanAnalyzer(load_rule_catalog(settings.rules_dir)),
+        settings,
+    )
+    for _ in range(3):
+        service.create_scan("https://github.com/example/project", None)
+
+    assert store.count_active_jobs() == 3
 
 
 def _build_service(tmp_path: Path, git_client):

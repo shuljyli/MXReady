@@ -12,7 +12,7 @@ def test_rule_catalog_is_versioned_strict_and_unique() -> None:
     catalog = load_rule_catalog(Path("rules/v1"))
 
     assert catalog.version == "1"
-    assert len(catalog.rules) == 20
+    assert len(catalog.rules) == 24
     assert [rule.id for rule in catalog.rules[:4]] == [
         "MXR-TOOLCHAIN-001",
         "MXR-PATH-001",
@@ -127,7 +127,126 @@ def test_duplicate_rule_ids_are_rejected(tmp_path: Path) -> None:
     assert error.value.code == "RULESET_INVALID"
 
 
+def test_rule_definition_accepts_updated_and_confidence(tmp_path: Path) -> None:
+    _write_catalog(
+        tmp_path,
+        """
+- id: MXR-TEST-001
+  version: 1
+  title: Versioned
+  category: test
+  severity: info
+  file_globs: ["**/*.py"]
+  patterns:
+    - type: dependency
+      name: torch
+  message: Versioned
+  recommendation: Review it.
+  references:
+    - title: Primary
+      url: https://example.com/docs
+  updated: "2026-08-01"
+  confidence: needs-review
+""",
+    )
+
+    catalog = load_rule_catalog(tmp_path)
+
+    assert catalog.rules[0].updated == "2026-08-01"
+    assert catalog.rules[0].confidence == "needs-review"
+
+
+def test_rule_definition_rejects_invalid_updated_date(tmp_path: Path) -> None:
+    _write_catalog(
+        tmp_path,
+        """
+- id: MXR-TEST-001
+  version: 1
+  title: Versioned
+  category: test
+  severity: info
+  file_globs: ["**/*.py"]
+  patterns:
+    - type: dependency
+      name: torch
+  message: Versioned
+  recommendation: Review it.
+  references:
+    - title: Primary
+      url: https://example.com/docs
+  updated: "2026/08/01"
+""",
+    )
+
+    with pytest.raises(MxReadyError) as error:
+        load_rule_catalog(tmp_path)
+
+    assert error.value.code == "RULESET_INVALID"
+
+
+def test_extra_directory_merges_new_rules(tmp_path: Path) -> None:
+    base = tmp_path / "base"
+    extra = tmp_path / "extra"
+    _write_catalog(
+        base,
+        _rule_document("MXR-TEST-001", "Base rule"),
+    )
+    _write_catalog(
+        extra,
+        _rule_document("MXR-TEST-002", "Extra rule"),
+    )
+
+    catalog = load_rule_catalog(base, extra_directory=extra)
+
+    assert {rule.id for rule in catalog.rules} == {"MXR-TEST-001", "MXR-TEST-002"}
+
+
+def test_extra_directory_identical_rule_is_allowed(tmp_path: Path) -> None:
+    base = tmp_path / "base"
+    extra = tmp_path / "extra"
+    document = _rule_document("MXR-TEST-001", "Shared rule")
+    _write_catalog(base, document)
+    _write_catalog(extra, document)
+
+    catalog = load_rule_catalog(base, extra_directory=extra)
+
+    assert len(catalog.rules) == 1
+    assert catalog.rules[0].id == "MXR-TEST-001"
+
+
+def test_extra_directory_conflicting_rule_is_rejected(tmp_path: Path) -> None:
+    base = tmp_path / "base"
+    extra = tmp_path / "extra"
+    _write_catalog(base, _rule_document("MXR-TEST-001", "Base title"))
+    _write_catalog(extra, _rule_document("MXR-TEST-001", "Conflicting title"))
+
+    with pytest.raises(MxReadyError) as error:
+        load_rule_catalog(base, extra_directory=extra)
+
+    assert error.value.code == "RULESET_INVALID"
+
+
+def _rule_document(rule_id: str, title: str) -> str:
+    return f"""
+- id: {rule_id}
+  version: 1
+  title: {title}
+  category: test
+  severity: info
+  file_globs: ["**/*.py"]
+  patterns:
+    - type: dependency
+      name: torch
+  message: {title}
+  recommendation: Review it.
+  references:
+    - title: Primary
+      url: https://example.com/docs
+"""
+
+
 def _write_catalog(directory: Path, rule_document: str) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
     (directory / "manifest.yml").write_text(
         "\n".join(
             [

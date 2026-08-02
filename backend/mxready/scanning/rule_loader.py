@@ -24,6 +24,7 @@ _REGEX_FLAGS = {
     "VERBOSE": re.VERBOSE,
 }
 _MAX_RULE_FILE_BYTES = 1_048_576
+_RULE_UPDATED_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 class RulePattern(StrictModel):
@@ -90,6 +91,15 @@ class RuleDefinition(StrictModel):
     message: str
     recommendation: str
     references: list[SourceReference] = Field(min_length=1)
+    updated: str | None = None
+    confidence: Literal["documented", "needs-review"] = "documented"
+
+    @field_validator("updated")
+    @classmethod
+    def updated_has_iso_date(cls, value: str | None) -> str | None:
+        if value is not None and _RULE_UPDATED_DATE.fullmatch(value) is None:
+            raise ValueError("updated must use YYYY-MM-DD")
+        return value
 
     @field_validator("id")
     @classmethod
@@ -182,29 +192,19 @@ class _RuleManifest(StrictModel):
         return value
 
 
-def load_rule_catalog(directory: Path) -> RuleCatalog:
-    """Load a complete, strictly validated, versioned YAML rule catalog."""
-    directory = Path(directory)
+def load_rule_catalog(
+    directory: Path,
+    extra_directory: Path | None = None,
+) -> RuleCatalog:
+    """Load a complete, strictly validated, versioned YAML rule catalog.
+
+    `extra_directory` 可选：合并另一目录中的规则集（自定义规则扩展）。
+    """
     try:
-        manifest_document = _load_yaml(directory / "manifest.yml")
-        manifest = _RuleManifest.model_validate(manifest_document)
-
-        rules: list[RuleDefinition] = []
-        seen_ids: set[str] = set()
-        for filename in manifest.rule_files:
-            document = _load_yaml(directory / filename)
-            if not isinstance(document, list) or not document:
-                raise _ruleset_invalid()
-            for rule_document in document:
-                rule = RuleDefinition.model_validate(rule_document)
-                if rule.id in seen_ids:
-                    raise _ruleset_invalid()
-                seen_ids.add(rule.id)
-                rules.append(rule)
-
-        if not rules:
-            raise _ruleset_invalid()
-        return RuleCatalog(version=manifest.ruleset_version, rules=rules)
+        catalog = _load_catalog(Path(directory))
+        if extra_directory is None:
+            return catalog
+        return _merge_catalogs(catalog, _load_catalog(Path(extra_directory)))
     except MxReadyError:
         raise
     except (
@@ -216,6 +216,38 @@ def load_rule_catalog(directory: Path) -> RuleCatalog:
         yaml.YAMLError,
     ) as error:
         raise _ruleset_invalid() from error
+
+
+def _load_catalog(directory: Path) -> RuleCatalog:
+    manifest_document = _load_yaml(directory / "manifest.yml")
+    manifest = _RuleManifest.model_validate(manifest_document)
+
+    rules: list[RuleDefinition] = []
+    seen_ids: set[str] = set()
+    for filename in manifest.rule_files:
+        document = _load_yaml(directory / filename)
+        if not isinstance(document, list) or not document:
+            raise _ruleset_invalid()
+        for rule_document in document:
+            rule = RuleDefinition.model_validate(rule_document)
+            if rule.id in seen_ids:
+                raise _ruleset_invalid()
+            seen_ids.add(rule.id)
+            rules.append(rule)
+
+    if not rules:
+        raise _ruleset_invalid()
+    return RuleCatalog(version=manifest.ruleset_version, rules=rules)
+
+
+def _merge_catalogs(base: RuleCatalog, extra: RuleCatalog) -> RuleCatalog:
+    merged = {rule.id: rule for rule in base.rules}
+    for rule in extra.rules:
+        existing = merged.get(rule.id)
+        if existing is not None and existing != rule:
+            raise _ruleset_invalid()
+        merged[rule.id] = rule
+    return RuleCatalog(version=base.version, rules=list(merged.values()))
 
 
 def regex_flags(flags: list[str]) -> re.RegexFlag:

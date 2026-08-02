@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -8,9 +9,15 @@ from fastapi.staticfiles import StaticFiles
 
 from mxready import __version__
 from mxready.api import rules_router, scans_router
+from mxready.api.middleware import (
+    RateLimitMiddleware,
+    RequestBodyLimitMiddleware,
+)
 from mxready.config import Settings
 from mxready.errors import MxReadyError
+from mxready.logging_setup import setup_logging
 from mxready.repository.git_client import GitClient
+from mxready.repository.identity import build_providers
 from mxready.scanning.analyzer import ScanAnalyzer
 from mxready.scanning.rule_loader import load_rule_catalog
 from mxready.services.scans import ScanService
@@ -25,11 +32,16 @@ _ERROR_STATUS_CODES = {
     "VERIFICATION_COMMIT_MISMATCH": 409,
     "UPLOAD_TOO_LARGE": 413,
     "VERIFICATION_SCHEMA_INVALID": 422,
+    "SCAN_LIMIT_REACHED": 429,
+    "RATE_LIMITED": 429,
 }
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
-    resolved = settings or Settings()
+    resolved = settings or Settings.from_env()
+    setup_logging(resolved.log_level)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -39,18 +51,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         store = SQLiteStore(resolved.data_dir / "mxready.db")
         store.initialize()
         store.mark_interrupted_jobs_failed()
+        if resolved.scan_retention_days > 0:
+            pruned = store.prune_old_scans(resolved.scan_retention_days)
+            if pruned:
+                logger.info(
+                    "pruned old scan records",
+                    extra={"count": pruned, "retention_days": resolved.scan_retention_days},
+                )
         app.state.store = store
-        catalog = load_rule_catalog(resolved.rules_dir)
+        providers = build_providers(resolved.allowed_hosts)
+        catalog = load_rule_catalog(
+            resolved.rules_dir,
+            extra_directory=resolved.extra_rules_dir,
+        )
         app.state.rule_catalog = catalog
         app.state.scan_service = ScanService(
             store,
             GitClient(),
-            ScanAnalyzer(catalog),
+            ScanAnalyzer(catalog, providers=providers),
             resolved,
+            providers=providers,
         )
         yield
 
     app = FastAPI(title="MXReady", version=__version__, lifespan=lifespan)
+    if resolved.rate_limit_enabled:
+        app.add_middleware(RateLimitMiddleware, limit=resolved.rate_limit_per_minute)
+    app.add_middleware(
+        RequestBodyLimitMiddleware,
+        max_bytes=resolved.max_request_bytes,
+    )
     app.include_router(scans_router, prefix="/api")
     app.include_router(rules_router, prefix="/api")
 

@@ -50,3 +50,22 @@ it("offers deterministic report, badge, and verification downloads", () => {
     screen.getByRole("link", { name: "下载远程验证包" }),
   ).toHaveAttribute("href", `${base}/verification-bundle`);
 });
+
+it("moves focus to the report heading when the view opens", () => {
+  render(<ReportView report={blockedReportFixture} onReset={vi.fn()} />);
+
+  expect(
+    screen.getByRole("heading", { name: "发现阻塞迁移的问题" }),
+  ).toHaveFocus();
+});
+
+it("navigates severity filters with arrow keys", async () => {
+  render(<ReportView report={blockedReportFixture} onReset={vi.fn()} />);
+
+  screen.getByRole("button", { name: "查看全部结果（2）" }).focus();
+  await userEvent.keyboard("{ArrowRight}");
+
+  expect(screen.getByRole("button", { name: "只看阻塞项（1）" })).toHaveFocus();
+  expect(screen.getByText("直接调用 nvcc")).toBeInTheDocument();
+  expect(screen.queryByText("硬编码 CUDA 路径")).not.toBeInTheDocument();
+});

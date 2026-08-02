@@ -28,6 +28,10 @@ EXPECTED_RULES = {
     "MXR-GRAPH-001": Severity.WARNING,
     "MXR-BUILD-001": Severity.WARNING,
     "MXR-PYTORCH-002": Severity.INFO,
+    "MXR-DOCKER-001": Severity.WARNING,
+    "MXR-MEMORY-001": Severity.INFO,
+    "MXR-STREAM-001": Severity.INFO,
+    "MXR-DEVICE-001": Severity.INFO,
 }
 PRIMARY_SOURCE_PREFIXES = {
     "https://gitee.com/metax-maca/cu-bridge",
@@ -145,6 +149,26 @@ RULE_CASES = {
             "module = load(name='demo', sources=['kernel.cpp'])\n"
         ),
         "from json import load\nmodule = load(open('metadata.json'))\n",
+    ),
+    "MXR-DOCKER-001": (
+        "Dockerfile",
+        "FROM nvidia/cuda:12.2.0-devel-ubuntu22.04\n",
+        "FROM ubuntu:22.04\n",
+    ),
+    "MXR-MEMORY-001": (
+        "kernel.cu",
+        "cudaMalloc(&ptr, size);\n",
+        "// cudaMalloc is documented in the porting guide\n",
+    ),
+    "MXR-STREAM-001": (
+        "kernel.cu",
+        "cudaStreamCreate(&stream);\n",
+        "stream_create_helper();\n",
+    ),
+    "MXR-DEVICE-001": (
+        "kernel.cu",
+        "cudaSetDevice(0);\n",
+        "device_selection = 0;\n",
     ),
 }
 

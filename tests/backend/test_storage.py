@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -75,3 +76,64 @@ def test_verification_round_trips_without_global_connection(tmp_path):
     reopened = SQLiteStore(tmp_path / "mxready.db")
     assert reopened.get_verification(job.id) == run
     assert reopened.get_job(uuid4()) is None
+
+
+def test_backup_creates_readable_database(tmp_path):
+    store = SQLiteStore(tmp_path / "mxready.db")
+    store.initialize()
+    job = store.create_job("https://github.com/example/project", "main")
+
+    destination = tmp_path / "backups" / "mxready.db"
+    store.backup(destination)
+
+    restored = SQLiteStore(destination)
+    restored.initialize()
+    assert restored.get_job(job.id) == job
+
+
+def test_count_active_jobs_counts_queued_and_running(tmp_path):
+    store = SQLiteStore(tmp_path / "mxready.db")
+    store.initialize()
+    first = store.create_job("https://github.com/example/project", None)
+    second = store.create_job("https://github.com/example/project", None)
+    store.update_job(
+        second.id,
+        status=ScanStatus.CLONING,
+        stage_message="Cloning repository",
+    )
+    assert store.count_active_jobs() == 2
+
+    store.update_job(
+        first.id,
+        status=ScanStatus.COMPLETED,
+        stage_message="Complete",
+        resolved_commit="a" * 40,
+    )
+    assert store.count_active_jobs() == 1
+
+
+def test_prune_old_scans_removes_stale_records(tmp_path):
+    store = SQLiteStore(tmp_path / "mxready.db")
+    store.initialize()
+    stale = store.create_job("https://github.com/example/stale", None)
+    fresh = store.create_job("https://github.com/example/fresh", None)
+    with sqlite3.connect(store.path) as connection:
+        connection.execute(
+            "UPDATE scan_jobs SET updated_at = ? WHERE id = ?",
+            ("2020-01-01T00:00:00+00:00", str(stale.id)),
+        )
+
+    removed = store.prune_old_scans(days=30)
+
+    assert removed == 1
+    assert store.get_job(stale.id) is None
+    assert store.get_job(fresh.id) is not None
+
+
+def test_prune_old_scans_with_non_positive_days_is_noop(tmp_path):
+    store = SQLiteStore(tmp_path / "mxready.db")
+    store.initialize()
+    store.create_job("https://github.com/example/project", None)
+
+    assert store.prune_old_scans(days=0) == 0
+    assert store.prune_old_scans(days=-1) == 0

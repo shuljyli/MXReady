@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -16,6 +17,13 @@ from mxready.storage import SQLiteStore
 from mxready.verification.validation import validate_verification_upload
 
 logger = logging.getLogger(__name__)
+
+_ACTIVE_STATUSES = (
+    ScanStatus.QUEUED,
+    ScanStatus.CLONING,
+    ScanStatus.INDEXING,
+    ScanStatus.ANALYZING,
+)
 
 _STAGE_MESSAGES = {
     ScanStatus.CLONING: "正在安全获取仓库",
@@ -33,18 +41,28 @@ class ScanService:
         git_client: GitClient,
         analyzer: ScanAnalyzer,
         settings: Settings,
+        providers: Mapping[str, str] | None = None,
     ) -> None:
         self.store = store
         self.git_client = git_client
         self.analyzer = analyzer
         self.settings = settings
+        self.providers = providers
 
     def create_scan(
         self,
         repo_url: str,
         requested_ref: str | None,
     ) -> ScanJob:
-        identity = parse_repository_url(repo_url)
+        if self.settings.max_concurrent_scans > 0:
+            active = self.store.count_active_jobs()
+            if active >= self.settings.max_concurrent_scans:
+                raise MxReadyError(
+                    "SCAN_LIMIT_REACHED",
+                    "并发扫描数量已达上限，请稍后再试。",
+                    {"active": active, "limit": self.settings.max_concurrent_scans},
+                )
+        identity = parse_repository_url(repo_url, self.providers)
         reference = validate_git_ref(requested_ref)
         canonical_url = identity.clone_url.removesuffix(".git")
         return self.store.create_job(canonical_url, reference)
@@ -78,13 +96,14 @@ class ScanService:
         if job.status is not ScanStatus.QUEUED:
             return
 
+        logger.info("scan started", extra={"scan_id": str(scan_id)})
         try:
             self.store.update_job(
                 scan_id,
                 status=ScanStatus.CLONING,
                 stage_message=_STAGE_MESSAGES[ScanStatus.CLONING],
             )
-            identity = parse_repository_url(job.repo_url)
+            identity = parse_repository_url(job.repo_url, self.providers)
 
             with TemporaryDirectory(
                 prefix=f"mxready-{scan_id}-",
@@ -95,6 +114,10 @@ class ScanService:
                     identity,
                     job.requested_ref,
                     repository_root,
+                )
+                logger.info(
+                    "repository cloned",
+                    extra={"scan_id": str(scan_id), "commit": commit},
                 )
 
                 def persist_stage(status: ScanStatus) -> None:
@@ -113,6 +136,10 @@ class ScanService:
                     stage_callback=persist_stage,
                 )
                 self.store.save_report(report)
+                logger.info(
+                    "scan analysis completed",
+                    extra={"scan_id": str(scan_id)},
+                )
 
             self.store.update_job(
                 scan_id,

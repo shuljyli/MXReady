@@ -1471,3 +1471,154 @@ footer {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ===== P2-3 可访问性与响应式增强 ===== */
+
+/* 键盘焦点可见性 */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+[tabindex="-1"]:focus-visible {
+  outline: 2px solid var(--acid);
+  outline-offset: 2px;
+}
+
+/* FindingCard 展开/折叠 */
+.finding-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.finding-badges {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.finding-chevron {
+  color: #71867b;
+  font-size: 11px;
+  transition: transform 160ms ease;
+}
+
+.finding-chevron-open {
+  transform: rotate(180deg);
+}
+
+.finding-card-collapsed .finding-toggle {
+  padding-bottom: 0;
+}
+
+/* 报告骨架屏 */
+.report-skeleton {
+  display: grid;
+  gap: 18px;
+  padding: 52px 0 72px;
+}
+
+.skeleton-block {
+  padding: clamp(24px, 4vw, 36px);
+  background: rgba(10, 26, 19, 0.74);
+  border: 1px solid var(--line);
+}
+
+.skeleton-line {
+  height: 12px;
+  margin-block: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(193, 226, 210, 0.08),
+    rgba(193, 226, 210, 0.2),
+    rgba(193, 226, 210, 0.08)
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-line-sm {
+  width: 30%;
+}
+
+.skeleton-line-md {
+  width: 65%;
+}
+
+.skeleton-line-lg {
+  width: 45%;
+  height: 22px;
+}
+
+.skeleton-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.skeleton-card {
+  padding: 18px;
+  background: rgba(14, 31, 25, 0.78);
+  border: 1px solid var(--line);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 移动端（<768px）布局收敛 */
+@media (max-width: 768px) {
+  .report-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .report-summary > .summary-primary {
+    grid-column: 1 / -1;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .summary-meta {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--line);
+  }
+
+  .summary-warning {
+    border-left: 1px solid var(--line);
+  }
+
+  .checklist {
+    overflow-x: auto;
+  }
+
+  .checklist li {
+    min-width: 420px;
+  }
+
+  .finding-location {
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  .section-heading,
+  .verification-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .finding-filters {
+    width: 100%;
+    overflow-x: auto;
+  }
+}

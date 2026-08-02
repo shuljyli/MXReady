@@ -18,6 +18,7 @@ const base: ScanReport = {
     blocker_count: 0,
     warning_count: 0,
     info_count: 0,
+    top_blockers: [],
   },
   findings: [],
   migration_checklist: [],
@@ -35,6 +36,7 @@ export const blockedReportFixture: ScanReport = {
     blocker_count: 1,
     warning_count: 1,
     info_count: 0,
+    top_blockers: ["setup.py"],
   },
   static_status: "blocked",
   findings: [
@@ -56,6 +58,7 @@ export const blockedReportFixture: ScanReport = {
           url: "https://gitee.com/metax-maca/cu-bridge/blob/master/README.md",
         },
       ],
+      count: 1,
     },
     {
       rule_id: "MXR-PATH-001",
@@ -70,6 +73,7 @@ export const blockedReportFixture: ScanReport = {
       message: "构建配置绑定了 CUDA 默认安装目录。",
       recommendation: "把工具链路径改为可配置参数。",
       references: [],
+      count: 2,
     },
   ],
   migration_checklist: [

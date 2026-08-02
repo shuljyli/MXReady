@@ -29,7 +29,7 @@ export type SourceReference = {
 };
 
 export type RepositorySnapshot = {
-  provider: "github" | "gitee";
+  provider: string;
   owner: string;
   name: string;
   url: string;
@@ -49,6 +49,7 @@ export type Finding = {
   message: string;
   recommendation: string;
   references: SourceReference[];
+  count: number;
 };
 
 export type ScanSummary = {
@@ -56,6 +57,7 @@ export type ScanSummary = {
   blocker_count: number;
   warning_count: number;
   info_count: number;
+  top_blockers: string[];
 };
 
 export type MigrationChecklistItem = {

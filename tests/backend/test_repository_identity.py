@@ -1,6 +1,10 @@
 import pytest
 from mxready.errors import MxReadyError
-from mxready.repository.identity import parse_repository_url, validate_git_ref
+from mxready.repository.identity import (
+    build_providers,
+    parse_repository_url,
+    validate_git_ref,
+)
 
 
 @pytest.mark.parametrize(
@@ -92,3 +96,44 @@ def test_git_ref_rejects_unsafe_or_unbounded_values(value: str) -> None:
         validate_git_ref(value)
 
     assert error.value.code == "INVALID_GIT_REF"
+
+
+def test_build_providers_keeps_default_short_names() -> None:
+    assert build_providers(["github.com", "gitee.com"]) == {
+        "github.com": "github",
+        "gitee.com": "gitee",
+    }
+
+
+def test_build_providers_maps_custom_hosts_to_themselves() -> None:
+    assert build_providers(["gitlab.example.com", "  ", ""]) == {
+        "gitlab.example.com": "gitlab.example.com",
+    }
+
+
+def test_custom_provider_host_is_accepted_and_identified() -> None:
+    providers = build_providers(["gitlab.example.com"])
+    identity = parse_repository_url(
+        "https://gitlab.example.com/acme/widgets",
+        providers,
+    )
+
+    assert identity.provider == "gitlab.example.com"
+    assert identity.owner == "acme"
+    assert identity.name == "widgets"
+    assert identity.clone_url == "https://gitlab.example.com/acme/widgets.git"
+
+
+def test_default_hosts_stay_rejected_when_whitelist_is_custom() -> None:
+    providers = build_providers(["gitlab.example.com"])
+
+    with pytest.raises(MxReadyError) as error:
+        parse_repository_url("https://github.com/owner/repo", providers)
+
+    assert error.value.code == "UNSUPPORTED_REPOSITORY_HOST"
+
+
+def test_parse_repository_url_without_providers_uses_builtin_whitelist() -> None:
+    identity = parse_repository_url("https://gitee.com/metax-maca/cu-bridge")
+
+    assert identity.provider == "gitee"

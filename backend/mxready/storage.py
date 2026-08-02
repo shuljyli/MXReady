@@ -1,7 +1,7 @@
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -12,6 +12,28 @@ from mxready.models import (
     ScanStatus,
     VerificationRun,
 )
+
+# 顺序迁移列表：索引 i 对应 user_version = i + 1。新增表结构变更时在末尾追加，
+# initialize() 会从当前版本顺序执行到最新版本。
+_MIGRATIONS: list[str] = [
+    # v1：初始表
+    """
+    CREATE TABLE IF NOT EXISTS scan_jobs (
+        id TEXT PRIMARY KEY,
+        repo_url TEXT NOT NULL,
+        requested_ref TEXT,
+        resolved_commit TEXT,
+        status TEXT NOT NULL,
+        stage_message TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        failure_code TEXT,
+        failure_message TEXT,
+        report_json TEXT,
+        verification_json TEXT
+    )
+    """,
+]
 
 
 class SQLiteStore:
@@ -33,24 +55,12 @@ class SQLiteStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as connection:
             connection.execute("PRAGMA journal_mode = WAL")
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS scan_jobs (
-                    id TEXT PRIMARY KEY,
-                    repo_url TEXT NOT NULL,
-                    requested_ref TEXT,
-                    resolved_commit TEXT,
-                    status TEXT NOT NULL,
-                    stage_message TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    failure_code TEXT,
-                    failure_message TEXT,
-                    report_json TEXT,
-                    verification_json TEXT
-                )
-                """
+            current = int(
+                connection.execute("PRAGMA user_version").fetchone()[0]
             )
+            for version in range(current, len(_MIGRATIONS)):
+                connection.execute(_MIGRATIONS[version])
+                connection.execute(f"PRAGMA user_version = {version + 1}")
 
     def create_job(self, repo_url: str, requested_ref: str | None) -> ScanJob:
         now = datetime.now(UTC)
@@ -171,6 +181,47 @@ class SQLiteStore:
                     ScanStatus.ANALYZING.value,
                 ),
             )
+
+    def count_active_jobs(self) -> int:
+        """统计排队与执行中的扫描任务数。"""
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT COUNT(*) FROM scan_jobs
+                WHERE status IN (?, ?, ?, ?)
+                """,
+                (
+                    ScanStatus.QUEUED.value,
+                    ScanStatus.CLONING.value,
+                    ScanStatus.INDEXING.value,
+                    ScanStatus.ANALYZING.value,
+                ),
+            ).fetchone()
+        return int(row[0])
+
+    def prune_old_scans(self, days: int) -> int:
+        """删除超过 `days` 天未更新的扫描记录，返回删除条数。"""
+        if days <= 0:
+            return 0
+        cutoff = (datetime.now(UTC) - timedelta(days=days)).isoformat()
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "DELETE FROM scan_jobs WHERE updated_at < ?",
+                (cutoff,),
+            )
+        return cursor.rowcount
+
+    def backup(self, destination: Path) -> None:
+        """使用 SQLite 在线备份 API 将数据库备份到 `destination`。"""
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        source = sqlite3.connect(self.path, timeout=5)
+        target = sqlite3.connect(destination)
+        try:
+            with target:
+                source.backup(target)
+        finally:
+            target.close()
+            source.close()
 
     def save_report(self, report: ScanReport) -> None:
         with self._connect() as connection:

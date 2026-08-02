@@ -326,3 +326,70 @@
   references:
     - title: PyTorch C++/CUDA extensions
       url: https://docs.pytorch.org/docs/stable/cpp_extension.html
+
+- id: MXR-DOCKER-001
+  version: 1
+  title: 检测 NVIDIA GPU 容器基础镜像与运行时配置
+  category: docker
+  severity: warning
+  file_globs: ["**/Dockerfile", "**/*.dockerfile", "**/docker-compose*.yml", "**/docker-compose*.yaml"]
+  patterns:
+    - type: regex
+      expression: '^\s*FROM\s+(?:nvidia/cuda|nvcr\.io|nvidia/cudagl|nvidia/tensorrt|nvidia/tritonserver)(?:[:/\s]|$)'
+      flags: [IGNORECASE, MULTILINE]
+    - type: regex
+      expression: '(?:nvidia-docker|nvidia-container-runtime|--gpus\s|--runtime\s*=\s*nvidia|gpus:\s*all)'
+      flags: [IGNORECASE]
+  message: 镜像或运行配置基于 NVIDIA GPU 容器体系，迁移到沐曦环境需要更换基础镜像与容器运行时参数。
+  recommendation: 请复核基础镜像来源、--gpus/--runtime 参数与 GPU 设备挂载方式，替换为沐曦环境的等价方案后验证容器内算子。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-MEMORY-001
+  version: 1
+  title: 检测 CUDA 显存管理 Runtime API
+  category: runtime
+  severity: info
+  file_globs: ["**/*.cu", "**/*.cuh", "**/*.cc", "**/*.cpp", "**/*.c", "**/*.h", "**/*.hpp"]
+  patterns:
+    - type: regex
+      expression: '\bcuda(?:Malloc|MallocAsync|MallocManaged|Free|FreeAsync)\s*\('
+      flags: [IGNORECASE]
+  message: 源码调用 CUDA 显存管理 Runtime API，需要确认 cu-bridge 对相应 API 的映射与行为差异。
+  recommendation: 请复核显存分配/释放调用点与错误处理，并结合 cu-bridge 当前版本在沐曦环境验证。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-STREAM-001
+  version: 1
+  title: 检测 CUDA 流（Stream）API
+  category: runtime
+  severity: info
+  file_globs: ["**/*.cu", "**/*.cuh", "**/*.cc", "**/*.cpp", "**/*.c", "**/*.h", "**/*.hpp"]
+  patterns:
+    - type: regex
+      expression: '\bcudaStream[A-Za-z0-9]*\s*\('
+      flags: [IGNORECASE]
+  message: 源码调用 CUDA 流（Stream）API，流创建、同步与事件语义需要结合目标运行时确认。
+  recommendation: 请复核流与事件的使用方式，并在沐曦环境验证并发与同步行为。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-DEVICE-001
+  version: 1
+  title: 检测 CUDA 设备管理 API
+  category: runtime
+  severity: info
+  file_globs: ["**/*.cu", "**/*.cuh", "**/*.cc", "**/*.cpp", "**/*.c", "**/*.h", "**/*.hpp"]
+  patterns:
+    - type: regex
+      expression: '\bcuda(?:SetDevice|GetDevice|GetDeviceCount|DeviceSynchronize|DeviceReset)\s*\('
+      flags: [IGNORECASE]
+  message: 源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。
+  recommendation: 请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge

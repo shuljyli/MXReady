@@ -53,6 +53,40 @@ Set-Location ..
 
 打开 `http://127.0.0.1:8000`。如果暂时不构建前端，服务仍会以 API-only 模式启动，API 文档位于 `/docs`。
 
+> **Windows 常见问题**：本仓库已在 `pyproject.toml` 中将 pytest 临时目录固定到项目本地 `.pytest-temp/`（已加入 `.gitignore`），因此正常测试不会写入 `%TEMP%\pytest-of-*`。
+>
+> 若你看到 `%TEMP%\pytest-of-<用户名>` 报 `PermissionError`，通常是某个提权终端运行 pytest 时创建了带异常权限的残留目录。该目录普通权限无法删除，可改用固定 basetemp 运行（无需处理僵尸目录）：
+>
+> ```powershell
+> .\.venv\Scripts\python.exe -m pytest --basetemp="$env:TEMP\mxr-pytest"
+> ```
+>
+> 若确要清理僵尸目录，请在**管理员 PowerShell** 中执行：
+>
+> ```powershell
+> takeown /f "$env:TEMP\pytest-of-*" /r /d y
+> icacls "$env:TEMP\pytest-of-*" /grant "$env:USERNAME:(OI)(CI)F" /t /c
+> Remove-Item -Recurse -Force "$env:TEMP\pytest-of-*"
+> ```
+
+## Docker 部署
+
+MXReady 自带多阶段 [Dockerfile](Dockerfile) 与 [docker-compose.yml](docker-compose.yml)，用于自身的演示/测试部署（不涉及远程 GPU 服务器的 Docker 编排）。
+
+```bash
+docker compose up -d --build
+# 打开 http://127.0.0.1:8000 ，健康检查：curl http://127.0.0.1:8000/api/health
+```
+
+- 镜像以非 root 用户 `mxready` 运行，SQLite 数据经命名卷 `mxready-data` 持久化到 `/app/data`；
+- 全部配置项通过 `MXREADY_*` 环境变量注入（见 [.env.example](.env.example)），例如：
+
+```bash
+MXREADY_LOG_LEVEL=DEBUG docker compose up -d
+```
+
+- 手动构建：`docker build -t mxready . && docker run -p 8000:8000 mxready`
+
 ## Linux / macOS
 
 ```bash
@@ -84,6 +118,13 @@ npm run dev
 ```
 
 Windows PowerShell 中将 `npm` 替换为 `npm.cmd`。
+
+### 一键开发脚本（P2-2）
+
+仓库提供跨平台开发命令入口，统一 `install` / `dev` / `test` / `lint` / `build` / `frontend` / `clean`：
+
+- Windows：`.\scripts\make.ps1 install`，然后 `.\scripts\dev.ps1` 一键启动前后端（`-SkipFrontend` / `-SkipBackend` 可跳过其一）；
+- Linux / macOS：`make install`，然后 `make dev` 启动后端、`make frontend` 启动 Vite。
 
 ## 离线 fixture 扫描
 

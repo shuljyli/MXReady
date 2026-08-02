@@ -73,7 +73,7 @@ class SourceReference(StrictModel):
 
 
 class RepositorySnapshot(StrictModel):
-    provider: Literal["github", "gitee"]
+    provider: str
     owner: str
     name: str
     url: str
@@ -93,6 +93,7 @@ class Finding(StrictModel):
     message: str
     recommendation: str
     references: list[SourceReference]
+    count: int = Field(default=1, ge=1)
 
     @model_validator(mode="after")
     def line_range_is_ordered(self) -> "Finding":
@@ -106,6 +107,7 @@ class ScanSummary(StrictModel):
     blocker_count: int = Field(ge=0)
     warning_count: int = Field(ge=0)
     info_count: int = Field(ge=0)
+    top_blockers: list[str] = Field(default_factory=list)
 
 
 class MigrationChecklistItem(StrictModel):
@@ -237,7 +239,23 @@ def summarize_findings(findings: list[Finding]) -> ScanSummary:
         blocker_count=sum(item.severity is Severity.BLOCKER for item in findings),
         warning_count=sum(item.severity is Severity.WARNING for item in findings),
         info_count=sum(item.severity is Severity.INFO for item in findings),
+        top_blockers=_top_priority_files(findings),
     )
+
+
+def _top_priority_files(findings: list[Finding], limit: int = 10) -> list[str]:
+    """按受影响文件数给出优先复核清单：优先 blocker，其次 warning。"""
+    from collections import Counter
+
+    counter: Counter[str] = Counter()
+    for item in findings:
+        if item.severity is Severity.BLOCKER:
+            counter[item.relative_path] += 1
+    if not counter:
+        for item in findings:
+            if item.severity is Severity.WARNING:
+                counter[item.relative_path] += 1
+    return [path for path, _ in counter.most_common(limit)]
 
 
 def calculate_static_status(summary: ScanSummary) -> StaticStatus:

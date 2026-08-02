@@ -44,6 +44,7 @@ def test_blocker_controls_static_and_badge_status(report_factory):
         "blocker_count": 1,
         "warning_count": 0,
         "info_count": 0,
+        "top_blockers": ["setup.py"],
     }
     assert report.static_status is StaticStatus.BLOCKED
     assert calculate_badge_status(report) is BadgeStatus.BLOCKED

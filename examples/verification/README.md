@@ -106,3 +106,18 @@ examples/verification/metax-verification-redacted.json
 
 然后在 MXReady 报告页上传该副本。不要修改提交号、状态或失败结果来制造 `verified`。
 
+## 8. 脚本化辅助（可选，只读）
+
+交接目录提供三个只读辅助脚本，与第 2/3/7 步一一对应；它们不修改驱动、不安装软件、不触碰验证结果：
+
+| 步骤 | 脚本 | 作用 |
+| --- | --- | --- |
+| 2 | `checkout-commit.sh` | 锁定提交并校验 `rev-parse HEAD` 与期望提交一致，不一致即退出 |
+| 3 | `run-inspect.sh` | 自动解压验证包、展示 `SECURITY.md`、运行 inspect 并输出检查摘要 |
+| 7 | `pre-upload-check.sh` | 扫描 `result.json` 中的 home 路径、内网地址、敏感键与主机名残留 |
+
+上传到服务器后先执行 `chmod +x checkout-commit.sh run-inspect.sh pre-upload-check.sh`，再按需运行。脚本默认值对应 `pytorch/extension-cpp` 与固定提交 `1c325b202ae5e11de3cefb9a65be28f47949edd4`，可通过 `MXREADY_REPO` / `MXREADY_COMMIT` 环境变量调整。
+
+> 跨平台注意：本仓库在 GitHub Actions 中对三个脚本执行 `bash -n` 语法检查（job `server-handover-scripts`）。Windows 本机生成的脚本若报 "bad interpreter"，请用 `dos2unix` 或 `sed -i 's/\r$//'` 去除 CRLF 后再在服务器运行。
+
+

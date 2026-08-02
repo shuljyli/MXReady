@@ -67,7 +67,7 @@ def test_rules_endpoint_exposes_public_versioned_catalog(client) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["version"] == "1"
-    assert len(body["rules"]) == 20
+    assert len(body["rules"]) == 24
 
 
 def test_upload_verification_updates_and_persists_report(

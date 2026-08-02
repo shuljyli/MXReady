@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest-temp/
 .ruff_cache/
 .coverage
 htmlcov/
@@ -9,11 +10,17 @@ htmlcov/
 venv/
 *.egg-info/
 
+# Environment
+.env
+.env.*
+!.env.example
+
 # Runtime data
 data/*.db
 data/*.db-*
 data/tmp/
 data/reports/
+data/load/
 
 # Frontend
 frontend/node_modules/

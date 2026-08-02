@@ -1,20 +1,31 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Literal
 from urllib.parse import urlsplit
 
 from mxready.errors import MxReadyError
 
-RepositoryProvider = Literal["github", "gitee"]
+RepositoryProvider = str
 
-_PROVIDERS: dict[str, RepositoryProvider] = {
+_DEFAULT_PROVIDERS: dict[str, str] = {
     "github.com": "github",
     "gitee.com": "gitee",
 }
 _PATH_SEGMENT = re.compile(r"[A-Za-z0-9_.-]+")
 _GIT_REF = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]*")
+
+
+def build_providers(allowed_hosts: Sequence[str]) -> dict[str, str]:
+    """把白名单主机名映射为 provider 标识，保持默认主机的简短名称。"""
+    providers: dict[str, str] = {}
+    for host in allowed_hosts:
+        host = host.strip()
+        if not host:
+            continue
+        providers[host] = _DEFAULT_PROVIDERS.get(host, host)
+    return providers
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,8 +36,16 @@ class RepositoryIdentity:
     clone_url: str
 
 
-def parse_repository_url(value: str) -> RepositoryIdentity:
-    """Parse a public GitHub or Gitee repository URL into a safe identity."""
+def parse_repository_url(
+    value: str,
+    providers: Mapping[str, str] | None = None,
+) -> RepositoryIdentity:
+    """Parse a public repository URL into a safe identity.
+
+    `providers` 缺省使用内置白名单（github.com / gitee.com），
+    内部部署时可传入自定义白名单（见 `build_providers`）。
+    """
+    resolved_providers = _DEFAULT_PROVIDERS if providers is None else dict(providers)
     if (
         not isinstance(value, str)
         or not value
@@ -53,7 +72,7 @@ def parse_repository_url(value: str) -> RepositoryIdentity:
         raise _invalid_repository_url()
 
     host = parsed.hostname
-    if host not in _PROVIDERS:
+    if host not in resolved_providers:
         raise MxReadyError(
             "UNSUPPORTED_REPOSITORY_HOST",
             "目前只支持 GitHub 和 Gitee 的公开仓库。",
@@ -82,7 +101,7 @@ def parse_repository_url(value: str) -> RepositoryIdentity:
         raise _invalid_repository_url()
 
     return RepositoryIdentity(
-        provider=_PROVIDERS[host],
+        provider=resolved_providers[host],
         owner=owner,
         name=name,
         clone_url=f"https://{host}/{owner}/{name}.git",

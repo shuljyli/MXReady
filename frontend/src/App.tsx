@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import { getReport, getScan, MxReadyApiError } from "./api/client";
 import type { ScanJob, ScanReport } from "./api/types";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ReportSkeleton } from "./components/ReportSkeleton";
 import { ReportView } from "./components/ReportView";
 import { ScanForm } from "./components/ScanForm";
 import { ScanProgress } from "./components/ScanProgress";
@@ -9,6 +11,7 @@ import { ScanProgress } from "./components/ScanProgress";
 type ViewState =
   | { kind: "idle" }
   | { kind: "scanning"; job: ScanJob }
+  | { kind: "report-loading"; job: ScanJob }
   | { kind: "report"; report: ScanReport }
   | { kind: "error"; code: string; message: string };
 
@@ -55,9 +58,16 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
           return;
         }
         if (nextJob.status === "completed") {
-          const report = await getReport(nextJob.id);
-          if (!cancelled) {
-            setView({ kind: "report", report });
+          setView({ kind: "report-loading", job: nextJob });
+          try {
+            const report = await getReport(nextJob.id);
+            if (!cancelled) {
+              setView({ kind: "report", report });
+            }
+          } catch (error) {
+            if (!cancelled) {
+              setView({ kind: "error", ...visibleError(error) });
+            }
           }
           return;
         }
@@ -150,14 +160,22 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
           </div>
         ) : null}
 
-        {view.kind === "scanning" ? <ScanProgress job={view.job} /> : null}
+        {view.kind === "scanning" ? (
+          <ErrorBoundary label="扫描进度">
+            <ScanProgress job={view.job} />
+          </ErrorBoundary>
+        ) : null}
+
+        {view.kind === "report-loading" ? <ReportSkeleton /> : null}
 
         {view.kind === "report" ? (
-          <ReportView
-            onReset={reset}
-            onUpdated={(report) => setView({ kind: "report", report })}
-            report={view.report}
-          />
+          <ErrorBoundary label="报告内容">
+            <ReportView
+              onReset={reset}
+              onUpdated={(report) => setView({ kind: "report", report })}
+              report={view.report}
+            />
+          </ErrorBoundary>
         ) : null}
 
         {view.kind === "error" ? (

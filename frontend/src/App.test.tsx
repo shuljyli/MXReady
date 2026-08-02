@@ -66,6 +66,7 @@ it("polls active jobs and loads the completed report", async () => {
       blocker_count: 0,
       warning_count: 0,
       info_count: 0,
+      top_blockers: [],
     },
     findings: [],
     migration_checklist: [],
@@ -101,4 +102,24 @@ it("stops on a failed job and can return to the form", async () => {
 
   await userEvent.click(screen.getByRole("button", { name: "重新开始" }));
   expect(screen.getByLabelText("公开仓库地址")).toBeInTheDocument();
+});
+
+it("shows a skeleton while the completed report is loading", async () => {
+  vi.useFakeTimers();
+  vi.mocked(getScan).mockResolvedValue({
+    ...queuedJob,
+    status: "completed",
+    stage_message: "扫描完成",
+    resolved_commit: "a".repeat(40),
+  });
+  vi.mocked(getReport).mockImplementation(
+    () => new Promise(() => undefined),
+  );
+
+  render(<App initialJob={queuedJob} />);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1_500);
+  });
+
+  expect(screen.getByLabelText("报告加载中")).toBeInTheDocument();
 });

@@ -1,4 +1,10 @@
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 
 import type { ScanReport, Severity, StaticStatus } from "../api/types";
 import { FindingCard } from "./FindingCard";
@@ -59,6 +65,7 @@ export function ReportView({
   onUpdated = () => undefined,
 }: ReportViewProps) {
   const [filter, setFilter] = useState<FindingFilter>("all");
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const visibleFindings = useMemo(
     () =>
       filter === "all"
@@ -68,6 +75,51 @@ export function ReportView({
   );
   const status = staticCopy[report.static_status];
   const downloadBase = `/api/scans/${report.scan_id}`;
+
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
+  function handleFilterKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const buttons = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>(
+        "[data-filter-button]",
+      ),
+    );
+    if (!buttons.length) {
+      return;
+    }
+    const currentIndex = buttons.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
+    let nextIndex = currentIndex;
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        nextIndex =
+          currentIndex === -1 ? 0 : (currentIndex + 1) % buttons.length;
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        nextIndex =
+          currentIndex === -1
+            ? 0
+            : (currentIndex - 1 + buttons.length) % buttons.length;
+        break;
+      case "Home":
+        nextIndex = 0;
+        break;
+      case "End":
+        nextIndex = buttons.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    buttons[nextIndex].focus();
+    setFilter(filterOptions[nextIndex].value);
+  }
+
   const filterOptions: Array<{
     value: FindingFilter;
     text: string;
@@ -108,7 +160,9 @@ export function ReportView({
       >
         <div className="report-identity">
           <p className="eyebrow">READINESS REPORT · {status.label}</p>
-          <h1 id="report-title">{status.heading}</h1>
+          <h1 id="report-title" ref={headingRef} tabIndex={-1}>
+            {status.heading}
+          </h1>
           <p>{status.description}</p>
         </div>
         <div className="repository-card">
@@ -164,13 +218,20 @@ export function ReportView({
             <p className="eyebrow">EVIDENCE-BACKED FINDINGS</p>
             <h2>源码发现</h2>
           </div>
-          <div className="finding-filters" aria-label="按严重级别筛选">
+          <div
+            aria-label="按严重级别筛选"
+            className="finding-filters"
+            onKeyDown={handleFilterKeyDown}
+            role="group"
+          >
             {filterOptions.map((option) => (
               <button
                 aria-label={option.ariaLabel}
                 aria-pressed={filter === option.value}
+                data-filter-button=""
                 key={option.value}
                 onClick={() => setFilter(option.value)}
+                tabIndex={filter === option.value ? 0 : -1}
                 type="button"
               >
                 {option.text}
