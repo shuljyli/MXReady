@@ -9,6 +9,7 @@ description = "Static readiness checks for moving PyTorch CUDA extensions to Met
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
+authors = [{name = "shuli-陆家勇"}]
 dependencies = [
   "fastapi>=0.115,<1",
   "pydantic>=2.10,<3",
