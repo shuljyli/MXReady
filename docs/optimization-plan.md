@@ -13,9 +13,9 @@ MXReady MVP 设计规格中的 16 个实施任务已全部提交，代码结构�
 
 | 模块 | 状态 |
 | --- | --- |
-| FastAPI 后端（扫描、报告、验证） | 已完成，204 个 Python 测试通过 |
-| React + Vite 前端 | 已完成，12 个前端测试通过，构建产物存在 |
-| 20 条 YAML 检查规则 | 已完成，正反例夹具齐全 |
+| FastAPI 后端（扫描、报告、验证） | 已完成，246 个 Python 测试通过 |
+| React + Vite 前端 | 已完成，20 个前端测试通过，构建产物存在 |
+| 24 条 YAML 检查规则 | 已完成，正反例夹具齐全 |
 | 独立 runner 验证包 | 已完成，支持 inspect / run 两阶段 |
 | 3 个公开项目报告 | extension-cpp（passed）、apex（blocked 1）、flash-attention（blocked 5） |
 | Apex 上游补丁 | 已编写并本地测试，未提交 PR |
@@ -267,7 +267,7 @@ cd frontend
 npm test
 npm run build
 
-# Docker（若已实现 P1-1）
+# Docker（P1-1 已实现）
 docker build -t mxready .
 docker compose up -d
 # 打开 http://127.0.0.1:8000/api/health 验证

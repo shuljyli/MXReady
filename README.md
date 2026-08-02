@@ -123,11 +123,16 @@ MXREADY_LOG_LEVEL=DEBUG docker compose up -d
 | `MXREADY_RULES_DIR` | `rules/v1` | 规则目录 |
 | `MXREADY_TEMP_DIR` | `data/tmp` | 克隆与索引临时目录 |
 | `MXREADY_FRONTEND_DIR` | `frontend/dist` | 前端静态资源目录 |
-| `MXREADY_HOST` / `MXREADY_PORT` | `0.0.0.0` / `8000` | 服务监听地址 |
 | `MXREADY_LOG_LEVEL` | `INFO` | 日志级别 |
-| `MXREADY_MAX_CONCURRENT_SCANS` | `2` | 并发扫描上限（0 表示不限制） |
-| `MXREADY_RATE_LIMIT_ENABLED` | 关闭 | 按 IP 的滑动窗口限流 |
 | `MXREADY_ALLOWED_HOSTS` | `github.com,gitee.com` | 允许的代码托管平台白名单 |
+| `MXREADY_EXTRA_RULES_DIR` | 未设置 | 追加的自定义规则目录 |
+| `MXREADY_SCAN_RETENTION_DAYS` | `0` | 扫描记录保留天数（0 = 不自动清理，保护申报证据） |
+| `MXREADY_RATE_LIMIT_ENABLED` | 关闭 | 按 IP 的滑动窗口限流开关 |
+| `MXREADY_RATE_LIMIT_PER_MINUTE` | `20` | 每 IP 每分钟请求上限 |
+| `MXREADY_MAX_CONCURRENT_SCANS` | `2` | 并发扫描上限（0 表示不限制） |
+| `MXREADY_MAX_REQUEST_BYTES` | `1048576` | 请求体大小上限 |
+
+> 监听地址与端口由 uvicorn 的 `--host` / `--port`（或 `UVICORN_HOST` / `UVICORN_PORT`）控制，不在 `MXREADY_*` 中重复配置。完整模板见 [.env.example](.env.example)。
 
 ## 离线 fixture 扫描
 

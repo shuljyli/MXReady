@@ -4,7 +4,7 @@
 
 ## 当前结论
 
-截至 2026-07-29，MXReady 已用同一版 20 条规则扫描三个公开 CUDA 扩展项目，并将报告固定到 40 位 Git 提交。`pytorch/extension-cpp` 是首个真机候选：源码小、没有静态 blocker、不下载模型权重，适合在一张远程 GPU 上完成最小构建和算子正确性验证。
+截至 2026-07-29，MXReady 已用同一版规则扫描三个公开 CUDA 扩展项目，并将报告固定到 40 位 Git 提交。下表报告生成时规则集为 20 条；规则集 v1 后续扩充至 24 条（新增 `MXR-DOCKER-001` / `MXR-MEMORY-001` / `MXR-STREAM-001` / `MXR-DEVICE-001`，均为 info 级），不改变上表的 blocker / warning 结论，仅可能增加 info 级命中。`pytorch/extension-cpp` 是首个真机候选：源码小、没有静态 blocker、不下载模型权重，适合在一张远程 GPU 上完成最小构建和算子正确性验证。
 
 真实硬件验证仍为 **pending**。仓库中没有 `metax-verification-redacted.json`，因为目前没有可证明来源的沐曦服务器结果。
 

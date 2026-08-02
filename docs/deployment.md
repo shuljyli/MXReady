@@ -17,9 +17,16 @@
 | --- | --- | --- |
 | `MXREADY_DATA_DIR` | `data` | SQLite 数据库所在目录 |
 | `MXREADY_RULES_DIR` | `rules/v1` | YAML 规则集目录 |
+| `MXREADY_EXTRA_RULES_DIR` | 未设置 | 追加的自定义规则目录（可选） |
 | `MXREADY_TEMP_DIR` | `data/tmp` | 扫描临时目录（克隆仓库用） |
 | `MXREADY_FRONTEND_DIR` | `frontend/dist` | 前端构建产物目录 |
 | `MXREADY_LOG_LEVEL` | `INFO` | 日志级别：`DEBUG`/`INFO`/`WARNING`/`ERROR` |
+| `MXREADY_ALLOWED_HOSTS` | `github.com,gitee.com` | 托管平台白名单（仅内部部署时显式扩展） |
+| `MXREADY_SCAN_RETENTION_DAYS` | `0` | 扫描记录保留天数（0 = 不自动清理，保护申报证据） |
+| `MXREADY_RATE_LIMIT_ENABLED` | 关闭 | 按 IP 滑动窗口限流开关（公网部署建议开启） |
+| `MXREADY_RATE_LIMIT_PER_MINUTE` | `20` | 每 IP 每分钟请求上限 |
+| `MXREADY_MAX_CONCURRENT_SCANS` | `2` | 并发扫描上限（0 = 不限制） |
+| `MXREADY_MAX_REQUEST_BYTES` | `1048576` | 全局请求体大小上限（1 MiB） |
 
 > 监听地址与端口由 uvicorn 的 `--host` / `--port` 或环境变量 `UVICORN_HOST` / `UVICORN_PORT` 控制（uvicorn 自身读取），不要在 `MXREADY_*` 中重复配置。
 
@@ -115,4 +122,4 @@ server {
 - 仓库白名单默认仅 `github.com` 与 `gitee.com`（URL 规范化、无凭据、无私有地址校验均生效）；
 - 克隆限制：单仓库 50 MiB、10,000 文件、60 秒超时；
 - 验证上传限制 1 MiB；
-- 如需公网部署，请先完成 API 限流（见 `docs/optimization-plan.md` P2-1）。
+- 如需公网部署，开启 `MXREADY_RATE_LIMIT_ENABLED=true` 启用按 IP 限流（P2-1 已实现），并保持 `MXREADY_MAX_REQUEST_BYTES` 默认上限。
