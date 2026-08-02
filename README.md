@@ -33,6 +33,25 @@ FastAPI ── SQLite
 
 Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。远程 runner 只在用户控制的机器运行，并要求在执行项目命令前人工确认。
 
+## 当前进度
+
+**已完成（本地验证通过）**
+
+- MVP 设计规格中的 16 个实施任务全部落地；
+- 24 条检查规则（含 Dockerfile / CUDA 显存 / Stream / Device 相关），正反例夹具齐全；
+- 后端 + runner：**246 个测试通过**，覆盖率 90%+，ruff 全绿；
+- 前端：**20 个测试通过**，`npm run build` 成功；
+- P0~P3 优化项基本完成（配置注入、结构化日志、SQLite 备份与迁移、限流与请求体防护、CI 矩阵、服务器交接脚本、locust 压测脚本等），逐项执行记录见 [docs/optimization-plan.md](docs/optimization-plan.md)。
+
+**尚未本地验证（重点）**
+
+- **Docker 部署**：本机未安装 Docker，`Dockerfile` / `docker-compose.yml` 的镜像构建与容器启动尚未在本机实跑，仅由 CI 的 docker job 做构建验证；
+- **Linux / macOS 一键启动**：`scripts/dev.sh` 尚未在 Linux / macOS 真机验证（当前开发机为 Windows，无 bash），语法与行为待 CI 或服务器环境确认；
+- **Python 版本对齐**：当前本地 venv 为 Python 3.14.2，与项目声明及 CI 的 **3.11** 存在差异，尚未在 3.11 下重建 venv 并复测；
+- **真机沐曦 GPU 验证**：仍为 `pending`，等待服务器窗口期后按 [examples/verification/README.md](examples/verification/README.md) 执行。
+
+> 三份公开项目报告与验证记录见 [docs/application-evidence.md](docs/application-evidence.md)，历史决策与执行记录见 [docs/optimization-plan.md](docs/optimization-plan.md)。
+
 ## 快速开始（三平台统一命令入口）
 
 ### 环境要求
