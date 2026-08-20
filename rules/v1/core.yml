@@ -393,3 +393,111 @@
   references:
     - title: MetaX-MACA cu-bridge
       url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-COMM-002
+  version: 1
+  title: 检测 torch.distributed NCCL 通信后端
+  category: communication
+  severity: warning
+  file_globs: ["**/*.py"]
+  patterns:
+    - type: regex
+      expression: '\b(?:init_process_group|new_group)\s*\(\s*[''"]nccl[''"]'
+    - type: regex
+      expression: '\b(?:init_process_group|new_group)\s*\([^\n]{0,200}\bbackend\s*=\s*[''"]nccl[''"]'
+  message: 项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。
+  recommendation: 请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-DEPENDENCY-005
+  version: 1
+  title: 检测 apex 依赖或导入
+  category: dependency
+  severity: warning
+  file_globs: ["**/requirements*.txt", "**/pyproject.toml", "**/setup.cfg", "**/setup.py", "**/*.py"]
+  patterns:
+    - type: dependency
+      name: apex
+    - type: dependency
+      name: nvidia-apex
+    - type: fact
+      name: imports_apex
+      equals: true
+  message: 项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。
+  recommendation: 请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-LIBRARY-001
+  version: 1
+  title: 识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件
+  category: library
+  severity: warning
+  file_globs: ["**/*.cu", "**/*.cuh", "**/*.cc", "**/*.cpp", "**/*.c", "**/*.h", "**/*.hpp"]
+  patterns:
+    - type: regex
+      expression: '(?m)^\s*#\s*include\s*[<"](?:cublas|cublasLt|cudnn|cufft|cusparse|cusolver)[A-Za-z0-9_-]*\.h[>"]'
+  message: 源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。
+  recommendation: 请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+    - title: MXMACA performance tuning guide
+      url: https://gitee.com/metax-maca/mxmaca-performance-tuning-guide
+
+- id: MXR-RUNTIME-001
+  version: 1
+  title: 检测 CUDA 数据拷贝与事件 Runtime API
+  category: runtime
+  severity: info
+  file_globs: ["**/*.cu", "**/*.cuh", "**/*.cc", "**/*.cpp", "**/*.c", "**/*.h", "**/*.hpp"]
+  patterns:
+    - type: regex
+      expression: '\bcuda(?:Memcpy|MemcpyAsync|Memcpy2D|Memcpy2DAsync|MemcpyPeer|MemcpyPeerAsync|Memset|MemsetAsync|EventCreate|EventRecord|EventSynchronize|EventQuery|EventElapsedTime|EventDestroy)\s*\('
+      flags: [IGNORECASE]
+  message: 源码调用 CUDA 数据拷贝或事件 API，其同步语义与错误处理需要结合目标运行时确认。
+  recommendation: 请复核拷贝路径、同步点与事件使用方式，并在沐曦环境验证数据一致性与性能。
+  references:
+    - title: CUDA Programming Guide
+      url: https://docs.nvidia.com/cuda/cuda-programming-guide/
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+
+- id: MXR-TEST-001
+  version: 1
+  title: 检测 CUDA 可用性静默跳过测试
+  category: test
+  severity: warning
+  file_globs: ["**/*.py"]
+  patterns:
+    - type: regex
+      expression: 'skipif\s*\([^\n]*\bnot\s+torch\.cuda\.is_available\(\)'
+    - type: regex
+      expression: 'skipUnless\s*\([^\n]*torch\.cuda\.is_available\(\)'
+  message: 测试在 torch.cuda 不可用时静默跳过，迁移到沐曦环境后可能因环境未配置而跳过，造成验证通过的假象。
+  recommendation: 请复核跳过条件，并在真机环境手动运行核心 CUDA 测试以确认实际覆盖。
+  references:
+    - title: pytest skipif documentation
+      url: https://docs.pytest.org/
+    - title: unittest skipUnless documentation
+      url: https://docs.python.org/3/library/unittest.html
+
+- id: MXR-PYTORCH-003
+  version: 1
+  title: 识别 PyTorch 自动混合精度用法
+  category: runtime
+  severity: info
+  file_globs: ["**/*.py"]
+  patterns:
+    - type: regex
+      expression: '\b(?:torch\.cuda\.amp|torch\.amp)\b|\b(?:autocast|GradScaler)\s*\('
+  message: 项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。
+  recommendation: 请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。
+  references:
+    - title: MXMACA performance tuning guide
+      url: https://gitee.com/metax-maca/mxmaca-performance-tuning-guide
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge

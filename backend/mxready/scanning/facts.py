@@ -11,6 +11,7 @@ from mxready.scanning.indexer import FileIndex, IndexedFile
 
 _DEPENDENCY_NAME = re.compile(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)")
 _KNOWN_FLAGS = {
+    "imports_apex",
     "imports_tensorrt",
     "invokes_nvcc_directly",
     "invokes_nvidia_smi",
@@ -286,6 +287,8 @@ class _PythonFactVisitor(ast.NodeVisitor):
             self.collector.add_build_system("setuptools", location)
         if full_name == "tensorrt" or full_name.startswith("tensorrt."):
             self.collector.set_flag("imports_tensorrt", location)
+        if full_name == "apex" or full_name.startswith("apex."):
+            self.collector.set_flag("imports_apex", location)
 
     def _resolve_name(self, node: ast.expr) -> str:
         dotted = _dotted_name(node)
@@ -345,14 +348,20 @@ def _strip_cmake_comments(value: str) -> str:
 def _extract_shell(indexed_file: IndexedFile, collector: _FactCollector) -> None:
     for line_number, line in enumerate(indexed_file.text.splitlines(), start=1):
         location = _location(indexed_file, line_number)
-        if re.search(r"\bnvcc\b", line, re.IGNORECASE):
+        code = _strip_shell_comment(line)
+        if re.search(r"\bnvcc\b", code, re.IGNORECASE):
             collector.set_flag("invokes_nvcc_directly", location)
-        if re.search(r"\bnvidia-smi\b", line, re.IGNORECASE):
+        if re.search(r"\bnvidia-smi\b", code, re.IGNORECASE):
             collector.set_flag("invokes_nvidia_smi", location)
-        if re.search(r"\b(?:CUDA_HOME|CUDA_PATH|CUDA_ROOT)\b", line):
+        if re.search(r"\b(?:CUDA_HOME|CUDA_PATH|CUDA_ROOT)\b", code):
             collector.set_flag("references_cuda_home", location)
-        if "/usr/local/cuda" in line:
+        if "/usr/local/cuda" in code:
             collector.set_flag("uses_hardcoded_cuda_path", location)
+
+
+def _strip_shell_comment(value: str) -> str:
+    content, marker, _comment = value.partition("#")
+    return content if marker else value
 
 
 def _parse_dependency_name(specification: str) -> str | None:

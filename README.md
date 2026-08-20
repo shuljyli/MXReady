@@ -10,7 +10,7 @@ MXReady 是一个面向 Python、PyTorch CUDA 扩展项目的**迁移准备度�
 
 - 接收 GitHub、Gitee 的公开 HTTPS 仓库，以及可选的分支、标签或 40 位提交；
 - 扫描 Python、C/C++、CUDA、CMake、Shell、TOML、YAML 等受支持文本文件；
-- 提供 **24 条首批规则**（`MXR-*`），每条结果包含文件、行号、证据、建议和权威参考；
+- 提供 **30 条首批规则**（`MXR-*`），每条结果包含文件、行号、证据、建议和权威参考；
 - 输出 JSON、Markdown、SVG 徽章与标准库远程验证包；
 - 明确区分静态状态与真机验证状态；
 - 提供只读本地目录 CLI，便于离线回归和生成申报材料；
@@ -38,9 +38,9 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 **已完成（本地验证通过）**
 
 - MVP 设计规格中的 16 个实施任务全部落地；
-- 24 条检查规则（含 Dockerfile / CUDA 显存 / Stream / Device 相关），正反例夹具齐全；
-- 后端 + runner：**246 个测试通过**，覆盖率 90%+，ruff 全绿；
-- 前端：**20 个测试通过**，`npm run build` 成功；
+- 30 条检查规则（含 Dockerfile / CUDA 显存 / Stream / Device / 通信后端 / 数学库 / 测试跳过 / 混合精度相关），正反例夹具齐全；
+- 后端 + runner：**263 个测试通过**，覆盖率 90%+，ruff 全绿；
+- 前端：**23 个测试通过**，`npm run build` 成功；
 - P0~P3 优化项基本完成（配置注入、结构化日志、SQLite 备份与迁移、限流与请求体防护、CI 矩阵、服务器交接脚本、locust 压测脚本等），逐项执行记录见 [docs/optimization-plan.md](docs/optimization-plan.md)。
 
 **尚未本地验证（重点）**
@@ -112,6 +112,30 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 > icacls "$env:TEMP\pytest-of-*" /grant "$env:USERNAME:(OI)(CI)F" /t /c
 > Remove-Item -Recurse -Force "$env:TEMP\pytest-of-*"
 > ```
+
+### Windows 安装问题排查
+
+如果他人运行 `.\scripts\make.ps1 install` 时失败，按下面顺序检查：
+
+1. **执行策略**：先运行 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`。
+2. **Python**：`py -3.11 --version` 或 `python --version` 应显示 3.11+。没有 `py` 启动器时，在 <https://www.python.org/downloads/> 安装时勾选 “Add python.exe to PATH”。
+3. **Node.js**：`node --version` 应为 20.19+ 或 22.12+，`npm --version` 可用；否则安装 Node.js 22 LTS。
+4. **Git**：扫描功能依赖 `git --version` 可用。
+5. **网络下载失败**：国内环境优先使用镜像：
+
+   ```powershell
+   $env:PIP_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
+   .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+
+   cd frontend
+   npm ci --registry=https://registry.npmmirror.com
+   cd ..
+   ```
+
+6. **不要对已有环境重复安装**：`make.ps1 install` 现在会检测到完整环境并跳过；若确需重装，先删除 `.venv` 与 `frontend\node_modules` 再执行安装。
+7. **中文乱码**：Windows PowerShell 5.1 下脚本已强制 UTF-8；若仍乱码，改用 PowerShell 7（`pwsh`）。
+
+如果以上步骤仍失败，请让使用者把 `install` 的完整报错和 `py --version`、`node --version`、`npm --version`、`git --version` 输出一起发给项目维护者。
 
 ## Docker 部署
 
@@ -192,7 +216,7 @@ mxready-build-bundle examples/reports/pytorch-extension-cpp.json \
   --output examples/verification/pytorch-extension-cpp-verification.zip
 ```
 
-生成清单默认不含项目命令。请先阅读 [申报证据](docs/application-evidence.md) 与 [真机验证交接](examples/verification/README.md)，再在自己控制的沐曦服务器上人工补充并执行命令。服务器窗口期的执行清单见 [修改优化计划书](docs/optimization-plan.md) 第 4 节。
+生成清单默认不含项目命令（ZIP 内附 `project-commands.example.json` 模板，需人工审阅并替换为实际 smoke 命令后填入清单）。请先阅读 [申报证据](docs/application-evidence.md) 与 [真机验证交接](examples/verification/README.md)，再在自己控制的沐曦服务器上人工补充并执行命令。服务器窗口期的执行清单见 [修改优化计划书](docs/optimization-plan.md) 第 4 节。
 
 ## 状态含义
 
@@ -265,7 +289,7 @@ npm run build
 
 ## 主要贡献人
 
-- **shuli-陆家勇** —— 项目发起人与主要开发者。
+- **shuli-黍黎** —— 项目发起人与主要开发者。
 
 ## 许可证
 

@@ -32,6 +32,12 @@ EXPECTED_RULES = {
     "MXR-MEMORY-001": Severity.INFO,
     "MXR-STREAM-001": Severity.INFO,
     "MXR-DEVICE-001": Severity.INFO,
+    "MXR-COMM-002": Severity.WARNING,
+    "MXR-DEPENDENCY-005": Severity.WARNING,
+    "MXR-LIBRARY-001": Severity.WARNING,
+    "MXR-RUNTIME-001": Severity.INFO,
+    "MXR-TEST-001": Severity.WARNING,
+    "MXR-PYTORCH-003": Severity.INFO,
 }
 PRIMARY_SOURCE_PREFIXES = {
     "https://gitee.com/metax-maca/cu-bridge",
@@ -39,6 +45,8 @@ PRIMARY_SOURCE_PREFIXES = {
     "https://docs.pytorch.org/docs/stable/cpp_extension.html",
     "https://cmake.org/cmake/help/latest/module/FindCUDAToolkit.html",
     "https://docs.nvidia.com/cuda/cuda-programming-guide/",
+    "https://docs.pytest.org/",
+    "https://docs.python.org/3/library/unittest.html",
 }
 RULE_CASES = {
     "MXR-TOOLCHAIN-001": (
@@ -169,6 +177,45 @@ RULE_CASES = {
         "kernel.cu",
         "cudaSetDevice(0);\n",
         "device_selection = 0;\n",
+    ),
+    "MXR-COMM-002": (
+        "setup.py",
+        (
+            "import torch.distributed as dist\n"
+            "dist.init_process_group(backend='nccl', init_method='env://')\n"
+        ),
+        (
+            "import torch.distributed as dist\n"
+            "dist.init_process_group(backend='gloo', init_method='env://')\n"
+        ),
+    ),
+    "MXR-DEPENDENCY-005": (
+        "requirements.txt",
+        "apex @ git+https://github.com/NVIDIA/apex\n",
+        "nvidia-ml-py==12.0\n",
+    ),
+    "MXR-LIBRARY-001": (
+        "kernel.cu",
+        "#include <cublas_v2.h>\n",
+        "// cublas_v2.h is mentioned in the porting guide\n",
+    ),
+    "MXR-RUNTIME-001": (
+        "kernel.cu",
+        "cudaMemcpy(&out, &in, size, cudaMemcpyDeviceToHost);\n",
+        "cudaMalloc(&ptr, size);\n",
+    ),
+    "MXR-TEST-001": (
+        "test_train.py",
+        (
+            "@pytest.mark.skipif(not torch.cuda.is_available(), "
+            "reason='requires cuda')\n"
+        ),
+        "@pytest.mark.skipif(sys.platform == 'win32', reason='windows only')\n",
+    ),
+    "MXR-PYTORCH-003": (
+        "train.py",
+        "scaler = torch.cuda.amp.GradScaler()\n",
+        'amp_docs = "autocast is documented"\n',
     ),
 }
 

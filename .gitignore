@@ -30,6 +30,7 @@ frontend/coverage/
 # Editors and operating systems
 .idea/
 .vscode/
+.zcode/
 .DS_Store
 Thumbs.db
 

@@ -4,7 +4,7 @@
 
 ## 当前结论
 
-截至 2026-07-29，MXReady 已用同一版规则扫描三个公开 CUDA 扩展项目，并将报告固定到 40 位 Git 提交。下表报告生成时规则集为 20 条；规则集 v1 后续扩充至 24 条（新增 `MXR-DOCKER-001` / `MXR-MEMORY-001` / `MXR-STREAM-001` / `MXR-DEVICE-001`，均为 info 级），不改变上表的 blocker / warning 结论，仅可能增加 info 级命中。`pytorch/extension-cpp` 是首个真机候选：源码小、没有静态 blocker、不下载模型权重，适合在一张远程 GPU 上完成最小构建和算子正确性验证。
+截至 2026-07-29，MXReady 已用同一版规则扫描三个公开 CUDA 扩展项目，并将报告固定到 40 位 Git 提交。下表报告生成时规则集为 20 条；规则集 v1 后续扩充至 30 条（新增 `MXR-DOCKER-001` / `MXR-MEMORY-001` / `MXR-STREAM-001` / `MXR-DEVICE-001` / `MXR-COMM-002` / `MXR-DEPENDENCY-005` / `MXR-LIBRARY-001` / `MXR-RUNTIME-001` / `MXR-TEST-001` / `MXR-PYTORCH-003`，其中 6 条为通信后端 / apex / 数学库 / 拷贝与事件 API / 测试静默跳过 / 混合精度检查，均为 info 或 warning 级），不改变上表的 blocker 结论；warning / info 命中数若按新规则重新扫描会增加。`pytorch/extension-cpp` 是首个真机候选：源码小、没有静态 blocker、不下载模型权重，适合在一张远程 GPU 上完成最小构建和算子正确性验证。
 
 真实硬件验证仍为 **pending**。仓库中没有 `metax-verification-redacted.json`，因为目前没有可证明来源的沐曦服务器结果。
 
@@ -62,9 +62,9 @@ mxready-scan-public https://github.com/Dao-AILab/flash-attention --ref c75d019de
 
 - 文件：[`examples/verification/pytorch-extension-cpp-verification.zip`](../examples/verification/pytorch-extension-cpp-verification.zip)
 - 固定提交：`1c325b202ae5e11de3cefb9a65be28f47949edd4`
-- 大小：9,671 字节
-- SHA-256：`078df24e33bf41bc9f8ff396ea32e2dc6af4376ccbb0d20e4c481b5214c51bd1`
-- 默认 `project_commands`：空；必须人工审阅后添加
+- 大小：10,095 字节
+- SHA-256：`255747681b0ed300b4b5c545e5be573731982d1c1db616ea3378f6810188b130`
+- 包内附带 `project-commands.example.json`（mymuladd smoke 命令模板，供人工审阅后改造）；默认 `project_commands` 仍为空，必须人工审阅后添加
 
 生成命令：
 
@@ -84,6 +84,9 @@ mxready-build-bundle examples/reports/pytorch-extension-cpp.json \
 - Python 3.11+、Git、C/C++ 构建工具和允许编译 PyTorch 扩展的环境；
 - 至少 10 GiB 临时磁盘；
 - 告知 GPU 型号、驱动/MXMACA/cu-bridge/PyTorch 版本；
+- 确认 `mx-smi` 命令存在且 `--version` 可用；
+- 确认服务器 Python 版本为 3.11+（以沐曦官方 PyTorch wheel 支持的版本为准）；
+- 确认 cu-bridge 工具链位置（官方环境通常在 `/opt/maca/tools/cu-bridge/bin/cucc` 与 `cmake_maca`）；
 - 若服务器禁止公网，提前上传固定提交源码包和验证 ZIP；
 - 允许带走经过人工脱敏的 `result.json`，不带走主机名、用户名、令牌或内部地址。
 

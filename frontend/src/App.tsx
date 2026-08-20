@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { getReport, getScan, MxReadyApiError } from "./api/client";
+import { getReport, getRules, getScan, MxReadyApiError } from "./api/client";
 import type { ScanJob, ScanReport } from "./api/types";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ReportSkeleton } from "./components/ReportSkeleton";
@@ -27,9 +27,20 @@ const activeStatuses = new Set([
   "analyzing",
 ]);
 
-function visibleError(error: unknown): { code: string; message: string } {
+type ErrorStage = "polling" | "report";
+
+function visibleError(
+  error: unknown,
+  stage: ErrorStage,
+): { code: string; message: string } {
   if (error instanceof MxReadyApiError) {
     return { code: error.code, message: error.message };
+  }
+  if (stage === "report") {
+    return {
+      code: "REPORT_LOAD_FAILED",
+      message: "读取报告失败，请稍后重新开始。",
+    };
   }
   return {
     code: "POLLING_FAILED",
@@ -37,10 +48,34 @@ function visibleError(error: unknown): { code: string; message: string } {
   };
 }
 
+function initialView(initialJob: ScanJob | undefined): ViewState {
+  if (initialJob === undefined) {
+    return { kind: "idle" };
+  }
+  if (initialJob.status === "completed") {
+    return { kind: "report-loading", job: initialJob };
+  }
+  if (initialJob.status === "failed") {
+    return {
+      kind: "error",
+      code: initialJob.failure_code ?? "SCAN_FAILED",
+      message: initialJob.failure_message ?? "扫描未能完成。",
+    };
+  }
+  return { kind: "scanning", job: initialJob };
+}
+
 export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
-  const [view, setView] = useState<ViewState>(
-    initialJob ? { kind: "scanning", job: initialJob } : { kind: "idle" },
-  );
+  const [view, setView] = useState<ViewState>(() => initialView(initialJob));
+  const [ruleCount, setRuleCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    getRules()
+      .then((catalog) => setRuleCount(catalog.rules.length))
+      .catch(() => {
+        // The header stays usable without the rule count.
+      });
+  }, []);
 
   useEffect(() => {
     if (
@@ -59,16 +94,6 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
         }
         if (nextJob.status === "completed") {
           setView({ kind: "report-loading", job: nextJob });
-          try {
-            const report = await getReport(nextJob.id);
-            if (!cancelled) {
-              setView({ kind: "report", report });
-            }
-          } catch (error) {
-            if (!cancelled) {
-              setView({ kind: "error", ...visibleError(error) });
-            }
-          }
           return;
         }
         if (nextJob.status === "failed") {
@@ -82,7 +107,7 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
         setView({ kind: "scanning", job: nextJob });
       } catch (error) {
         if (!cancelled) {
-          setView({ kind: "error", ...visibleError(error) });
+          setView({ kind: "error", ...visibleError(error, "polling") });
         }
       }
     }, pollIntervalMs);
@@ -92,6 +117,29 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
       window.clearTimeout(timer);
     };
   }, [pollIntervalMs, view]);
+
+  useEffect(() => {
+    if (view.kind !== "report-loading") {
+      return;
+    }
+
+    let cancelled = false;
+    getReport(view.job.id)
+      .then((report) => {
+        if (!cancelled) {
+          setView({ kind: "report", report });
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setView({ kind: "error", ...visibleError(error, "report") });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [view]);
 
   function reset() {
     setView({ kind: "idle" });
@@ -111,7 +159,9 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
         </a>
         <div className="header-meta">
           <span className="live-dot" aria-hidden="true" />
-          规则集 v1 · 20 项
+          <span>
+            {`规则集 v1${ruleCount === null ? "" : ` · ${ruleCount} 项`}`}
+          </span>
         </div>
       </header>
 
@@ -131,7 +181,7 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
               </p>
               <div className="scope-strip">
                 <span>
-                  <strong>20</strong>
+                  <strong>{ruleCount ?? "…"}</strong>
                   首批规则
                 </span>
                 <span>

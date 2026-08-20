@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from mxready.models import ScanStatus
+from mxready_runner.inspect import DEFAULT_CHECKS
 
 
 def test_create_scan_returns_202_and_job(client) -> None:
@@ -66,8 +67,8 @@ def test_rules_endpoint_exposes_public_versioned_catalog(client) -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["version"] == "1"
-    assert len(body["rules"]) == 24
+    assert body["version"] == "2"
+    assert len(body["rules"]) == 30
 
 
 def test_upload_verification_updates_and_persists_report(
@@ -152,15 +153,15 @@ def _make_payload(
             "environment_fingerprint": f"sha256:{'f' * 64}",
             "checks": [
                 {
-                    "id": identifier,
-                    "command": [identifier],
+                    "id": spec.id,
+                    "command": spec.command,
                     "status": "passed",
                     "return_code": 0,
                     "stdout": "ok",
                     "stderr": "",
                     "duration_ms": 1,
                 }
-                for identifier in ("mx-smi", "pytorch-device")
+                for spec in DEFAULT_CHECKS
             ],
             "commands": [],
             "started_at": (finished_at - timedelta(minutes=1)).isoformat(),

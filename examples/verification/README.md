@@ -9,6 +9,9 @@
 - GPU 型号；
 - 驱动、MXMACA、cu-bridge 与 PyTorch 的精确版本；
 - 当前 PyTorch 是否按该 MXMACA 版本提供；
+- `mx-smi` 命令存在且 `--version` 可用（若服务器提供的工具名或参数不同，先联系提供方确认等价命令，不要自行猜测）；
+- 服务器 Python 版本（MXReady runner 要求 Python 3.11+，以沐曦官方 PyTorch wheel 支持的版本为准）；
+- cu-bridge 工具链位置（官方环境通常在 `/opt/maca/tools/cu-bridge/bin/cucc` 与 `cmake_maca`），构建前确认存在；
 - 是否允许在临时目录编译一个小型 PyTorch C++/CUDA 扩展。
 
 不要在未知来源的生产主机上运行验证包。
@@ -46,6 +49,8 @@ python -m mxready_runner inspect --manifest mxready.yml --output inspect.json
 
 打开 `inspect.json`，确认 `mx-smi` 和 `pytorch-device` 均为 `passed`。任意检查失败或不可用时先停止，保存脱敏后的错误信息，不要硬改结果。
 
+同时人工交叉核对：`pytorch-device` 输出的首设备名称应与 `mx-smi` 输出的 GPU 型号一致，即 `torch.cuda` 指向的正是 `mx-smi` 报告的沐曦设备。若设备名指向非沐曦型号（例如混卡环境中出现 NVIDIA 型号，或 `MACA Version` 显示 `unknown`），说明环境未按 MXMACA 正确配置，立即停止并检查是否误装了官方 NVIDIA 版 PyTorch。
+
 ## 4. 手工构建项目
 
 runner 故意禁止包管理器，因此构建必须在 runner 外由操作者明确执行：
@@ -58,7 +63,7 @@ python -m pip install --no-build-isolation -e ./extension_cpp
 
 ## 5. 审阅并加入单卡 smoke command
 
-打开 `mxready.yml`，把空的 `project_commands` 替换为：
+从验证包内附的 `project-commands.example.json` 复制命令模板（示例为 `extension-cpp` 风格的 CUDA smoke），把其中的占位包名替换为实际项目后，填入 `mxready.yml` 的 `project_commands`：
 
 ```json
 "project_commands": [

@@ -89,6 +89,12 @@ export type ScanReport = {
   verification_status: VerificationStatus;
 };
 
+// Minimal shape of GET /api/rules; the frontend only uses the rule count.
+export type RuleCatalog = {
+  version: string;
+  rules: { id: string }[];
+};
+
 export type ApiErrorBody = {
   error: {
     code: string;

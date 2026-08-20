@@ -2,3 +2,4 @@ flash-attn==2.7.4
 bitsandbytes==0.46.0
 xformers==0.0.30
 tensorrt==10.13.0
+apex @ git+https://github.com/NVIDIA/apex

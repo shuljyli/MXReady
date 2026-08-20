@@ -1,5 +1,6 @@
 #include <cuda_runtime.h>
 #include <cuda.h>
+#include <cublas_v2.h>
 
 __global__ __launch_bounds__(256) void mxready_kernel(float* values) {
     float value = values[threadIdx.x];
@@ -15,4 +16,8 @@ void manage_resources(float* device_values, cudaStream_t* stream) {
     cudaMalloc(&device_values, 4096);
     cudaStreamCreate(stream);
     cudaSetDevice(0);
+}
+
+void copy_data(float* out, float* in) {
+    cudaMemcpy(out, in, 4096, cudaMemcpyDeviceToDevice);
 }

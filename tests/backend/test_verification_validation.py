@@ -8,6 +8,7 @@ import pytest
 from mxready.errors import MxReadyError
 from mxready.models import VerificationStatus
 from mxready.verification.validation import validate_verification_upload
+from mxready_runner.inspect import DEFAULT_CHECKS
 
 
 def test_rejects_result_for_a_different_commit(report_factory) -> None:
@@ -31,6 +32,7 @@ def test_marks_result_older_than_30_days_stale(report_factory) -> None:
         scan_id=report.scan_id,
         repository_commit=report.repository.commit,
         finished_at=now - timedelta(days=31),
+        checks=passed_environment_checks(),
     )
 
     validated = validate_verification_upload(report, payload, now=now)
@@ -45,7 +47,7 @@ def test_fresh_success_is_verified(report_factory) -> None:
         scan_id=report.scan_id,
         repository_commit=report.repository.commit,
         finished_at=now,
-        checks=passed_gpu_checks(),
+        checks=passed_environment_checks(),
     )
 
     validated = validate_verification_upload(report, payload, now=now)
@@ -53,23 +55,45 @@ def test_fresh_success_is_verified(report_factory) -> None:
     assert validated.status is VerificationStatus.VERIFIED
 
 
-def test_claimed_success_without_required_gpu_checks_is_failed(
+def test_claimed_success_with_partial_environment_checks_is_rejected(
     report_factory,
 ) -> None:
     now = datetime.now(UTC)
     report = report_factory()
 
-    validated = validate_verification_upload(
-        report,
-        make_payload(
-            scan_id=report.scan_id,
-            repository_commit=report.repository.commit,
-            finished_at=now,
-        ),
-        now=now,
-    )
+    with pytest.raises(MxReadyError) as error:
+        validate_verification_upload(
+            report,
+            make_payload(
+                scan_id=report.scan_id,
+                repository_commit=report.repository.commit,
+                finished_at=now,
+                checks=passed_environment_checks()[1:],
+            ),
+            now=now,
+        )
 
-    assert validated.status is VerificationStatus.FAILED
+    assert error.value.code == "VERIFICATION_SCHEMA_INVALID"
+
+
+def test_claimed_success_without_required_gpu_checks_is_rejected(
+    report_factory,
+) -> None:
+    now = datetime.now(UTC)
+    report = report_factory()
+
+    with pytest.raises(MxReadyError) as error:
+        validate_verification_upload(
+            report,
+            make_payload(
+                scan_id=report.scan_id,
+                repository_commit=report.repository.commit,
+                finished_at=now,
+            ),
+            now=now,
+        )
+
+    assert error.value.code == "VERIFICATION_SCHEMA_INVALID"
 
 
 @pytest.mark.parametrize("overall_status", ["failed", "cancelled"])
@@ -87,6 +111,7 @@ def test_fresh_non_success_is_failed(
             repository_commit=report.repository.commit,
             finished_at=now,
             overall_status=overall_status,
+            checks=passed_environment_checks(),
         ),
         now=now,
     )
@@ -187,19 +212,16 @@ def test_rejects_passed_result_with_failed_environment_check(
         scan_id=report.scan_id,
         repository_commit=report.repository.commit,
         finished_at=now,
-        checks=[
-            *passed_gpu_checks(),
-            {
-                "id": "uname",
-                "command": ["uname", "-a"],
-                "status": "failed",
-                "return_code": 1,
-                "stdout": "",
-                "stderr": "failed",
-                "duration_ms": 1,
-            },
-        ],
+        checks=passed_environment_checks(),
     )
+    body["checks"] = [
+        (
+            {**check, "status": "failed", "return_code": 1, "stderr": "failed"}
+            if check["id"] == "uname"
+            else check
+        )
+        for check in body["checks"]
+    ]
 
     with pytest.raises(MxReadyError) as error:
         validate_verification_upload(
@@ -253,16 +275,16 @@ def make_payload_dict(
     }
 
 
-def passed_gpu_checks() -> list[dict]:
+def passed_environment_checks() -> list[dict]:
     return [
         {
-            "id": identifier,
-            "command": [identifier],
+            "id": spec.id,
+            "command": spec.command,
             "status": "passed",
             "return_code": 0,
             "stdout": "ok",
             "stderr": "",
             "duration_ms": 1,
         }
-        for identifier in ("mx-smi", "pytorch-device")
+        for spec in DEFAULT_CHECKS
     ]

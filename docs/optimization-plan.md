@@ -13,9 +13,9 @@ MXReady MVP 设计规格中的 16 个实施任务已全部提交，代码结构�
 
 | 模块 | 状态 |
 | --- | --- |
-| FastAPI 后端（扫描、报告、验证） | 已完成，246 个 Python 测试通过 |
-| React + Vite 前端 | 已完成，20 个前端测试通过，构建产物存在 |
-| 24 条 YAML 检查规则 | 已完成，正反例夹具齐全 |
+| FastAPI 后端（扫描、报告、验证） | 已完成，263 个 Python 测试通过 |
+| React + Vite 前端 | 已完成，23 个前端测试通过，构建产物存在 |
+| 30 条 YAML 检查规则 | 已完成，正反例夹具齐全 |
 | 独立 runner 验证包 | 已完成，支持 inspect / run 两阶段 |
 | 3 个公开项目报告 | extension-cpp（passed）、apex（blocked 1）、flash-attention（blocked 5） |
 | Apex 上游补丁 | 已编写并本地测试，未提交 PR |
@@ -282,3 +282,16 @@ docker compose up -d
 - ✅ GitHub 仓库设置同步：仓库描述（MXReady：静态检查 PyTorch CUDA 扩展向 MetaX MXMACA 迁移的就绪度）+ 6 个 Topics（pytorch / cuda / mxmaca / static-analysis / fastapi / python）；
 - ✅ README 新增「当前进度」章节，**明确标注尚未本地验证项**：Docker 构建与启动未在本机实跑（无 Docker，仅 CI 验证）、`dev.sh` 未在 Linux / macOS 验证、Python 3.11 venv 未重建复测（当前 3.14.2）、真机沐曦 GPU 验证 pending；
 - 回归状态：上述均为文档 / 仓库元数据改动，不影响代码；后端 246 测试、前端 20 测试、ruff 全绿结论保持有效。
+
+## 9. 执行记录（2026-08-13）：竞态修复与规则版本治理
+
+- ✅ 修复前端报告加载竞态（P0）：`frontend/src/App.tsx` 轮询 effect 的清理函数与取报告共用 `cancelled` 标志，扫描完成后切换视图会立即置位该标志，导致真实网络下取回的报告被丢弃、页面永久停在骨架屏。修复方式：取报告拆为独立 effect（依赖 `view.kind === "report-loading"`），与轮询 effect 各自维护取消标志；顺带修复 `initialJob` 为 completed / failed 时永远卡在进度页的缺口，并把 `visibleError` 区分轮询（`POLLING_FAILED`）与取报告（`REPORT_LOAD_FAILED`）两个阶段。新增回归测试（报告在视图切换后才 resolve 时仍须渲染），已验证旧代码下该测试必挂、新代码通过；
+- ✅ 规则集版本治理：`rules/v1/manifest.yml` 的 `ruleset_version` 由 `"1"` 升为 `"2"`（24→30 条规则的语义变更，写入每份报告保证可复现）；同步更新 `test_rule_loader.py` / `test_scan_api.py` 中的版本断言与 `docs/rules.md` 清单示例；
+- ✅ 前端规则数动态化：`App.tsx` 不再硬编码规则数量（此前 20/24/30 反复失配的根因），改为挂载时通过 `GET /api/rules` 拉取（`api/client.ts` 新增 `getRules()`），请求失败时头部优雅降级；新增前端断言测试；
+- ✅ 事实层修补：`docs/rules.md` 事实清单补上缺失的 `imports_apex`；`test_facts.py` 新增 `imports_apex` 正反例直接测试与 shell 注释剥离测试（此前删除该 flag 无测试会红）；`facts.py` 的 `_extract_shell` 先剥离 `#` 注释再匹配，消除注释中 nvcc / nvidia-smi / CUDA_HOME / `/usr/local/cuda` 的误报，与 `_extract_cmake` 对齐；
+- ✅ 验证包再生成：`examples/verification/pytorch-extension-cpp-verification.zip` 按当前代码重新生成（新增 `project-commands.example.json` 模板），两次构建 SHA-256 一致验证确定性；`docs/application-evidence.md` 的大小与 SHA-256 已同步（10,095 字节 / `255747681b…`）；
+- ✅ 仓库卫生：`.gitignore` 增加 `.zcode/`；`.gitattributes` 增加 `*.sh text eol=lf`（防止 Windows 检出后 CRLF 导致服务器 bad interpreter）；
+- ✅ 维护者笔名统一：README「主要贡献人」与 `pyproject.toml` `authors` 由 `shuli-陆家勇` 更新为笔名 `shuli-黍黎`（`shuli` 即笔名拼音）；2026-08-03 的历史执行记录保留当时原文，不改写；
+- 回归状态：后端 + runner **263 个测试通过**（覆盖率 90.86%，80 门槛通过）、ruff 全绿、前端 **23 个测试通过**、`tsc -b` 与 `npm run build` 通过。
+
+> 说明：评估曾建议把 MXR-PATH-001 / TOOL-001 / TOOLCHAIN-001 三条 regex 规则改为 fact 模式，经核实不可行——fact 提取面远窄于 regex（不含 `.py` 的 subprocess 调用、不含 `.cmake/.toml/.cfg` 覆盖），转换会降低召回，故保留 regex 规则，仅修复事实层自身的误报与文档缺失。

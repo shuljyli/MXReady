@@ -6,7 +6,7 @@
 
 ```yaml
 schema_version: "1.0"
-ruleset_version: "1"
+ruleset_version: "2"
 rule_files:
   - core.yml
 ```
@@ -97,6 +97,7 @@ rule_files:
 
 当前布尔事实包括：
 
+- `imports_apex`
 - `imports_tensorrt`
 - `invokes_nvcc_directly`
 - `invokes_nvidia_smi`

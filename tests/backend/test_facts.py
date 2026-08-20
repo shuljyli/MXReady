@@ -77,6 +77,90 @@ def test_python_facts_resolve_fully_qualified_and_aliased_torch_calls(
     assert facts.flags["uses_torch_cpp_extension"] is True
 
 
+def test_apex_imports_set_the_imports_apex_fact(tmp_path: Path) -> None:
+    (tmp_path / "train.py").write_text(
+        "\n".join(
+            [
+                "import apex",
+                "from apex import amp",
+                "import apex.parallel",
+                "import torch",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    assert facts.flags["imports_apex"] is True
+    assert all(
+        location.relative_path == "train.py"
+        for location in facts.locations["fact:imports_apex"]
+    )
+
+
+def test_similar_module_names_do_not_set_the_imports_apex_fact(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "train.py").write_text(
+        "\n".join(
+            [
+                "import apex_docs",
+                "from apex_utils import helpers",
+                "import torch",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    assert facts.flags["imports_apex"] is False
+    assert "fact:imports_apex" not in facts.locations
+
+
+def test_shell_facts_ignore_comments_and_match_code_lines(tmp_path: Path) -> None:
+    (tmp_path / "build.sh").write_text(
+        "\n".join(
+            [
+                "# nvcc and nvidia-smi live under /usr/local/cuda",
+                "nvcc -c kernel.cu",
+                "nvidia-smi --query-gpu=name",
+                'export CUDA_HOME="/usr/local/cuda"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    assert facts.flags["invokes_nvcc_directly"] is True
+    assert facts.flags["invokes_nvidia_smi"] is True
+    assert facts.flags["references_cuda_home"] is True
+    assert facts.flags["uses_hardcoded_cuda_path"] is True
+    assert [location.line for location in facts.locations["fact:invokes_nvcc_directly"]] == [2]
+
+
+def test_shell_comment_lines_do_not_set_shell_facts(tmp_path: Path) -> None:
+    (tmp_path / "build.sh").write_text(
+        "\n".join(
+            [
+                "# nvcc would build this kernel",
+                "# nvidia-smi reports device info",
+                "# export CUDA_HOME=/usr/local/cuda",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    assert facts.flags["invokes_nvcc_directly"] is False
+    assert facts.flags["invokes_nvidia_smi"] is False
+    assert facts.flags["references_cuda_home"] is False
+    assert facts.flags["uses_hardcoded_cuda_path"] is False
+
+
 def test_requirement_parser_normalizes_names_and_ignores_include_options(
     tmp_path: Path,
 ) -> None:

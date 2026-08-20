@@ -24,6 +24,8 @@ DEFAULT_CHECKS = (
                 "import torch; available=torch.cuda.is_available(); "
                 "count=torch.cuda.device_count(); print(torch.__version__); "
                 "print(available); print(count); "
+                "name=torch.cuda.get_device_name(0) if available and count else ''; "
+                "print(name); "
                 "raise SystemExit(0 if available and count > 0 else 1)"
             ),
         ],

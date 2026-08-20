@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from mxready_runner.inspect import DEFAULT_CHECKS
 from pydantic import ValidationError
 
 from mxready.errors import MxReadyError
@@ -12,6 +13,7 @@ MAX_VERIFICATION_UPLOAD_BYTES = 1_048_576
 MAX_FUTURE_SKEW = timedelta(minutes=10)
 VERIFICATION_MAX_AGE = timedelta(days=30)
 _REQUIRED_HARDWARE_CHECKS = frozenset({"mx-smi", "pytorch-device"})
+_REQUIRED_ENV_CHECK_IDS = frozenset(spec.id for spec in DEFAULT_CHECKS)
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +57,9 @@ def validate_verification_upload(
     if finished_at > now_utc + MAX_FUTURE_SKEW:
         raise _invalid_schema()
 
+    if not _env_checks_complete(run):
+        raise _invalid_schema()
+
     if now_utc - finished_at > VERIFICATION_MAX_AGE:
         status = VerificationStatus.STALE
     elif run.overall_status == "passed" and _hardware_checks_passed(run):
@@ -67,6 +72,12 @@ def validate_verification_upload(
 def _hardware_checks_passed(run: VerificationRun) -> bool:
     passed = {check.id for check in run.checks if check.status == "passed"}
     return passed >= _REQUIRED_HARDWARE_CHECKS
+
+
+def _env_checks_complete(run: VerificationRun) -> bool:
+    """Reject selectively-reported results that omit runner environment checks."""
+    submitted = {check.id for check in run.checks}
+    return submitted >= _REQUIRED_ENV_CHECK_IDS
 
 
 def _require_aware(value: datetime, label: str) -> datetime:

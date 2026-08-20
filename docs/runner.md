@@ -7,11 +7,12 @@ MXReady Web 服务不接触 GPU，也不执行被扫描项目。它生成一个�
 ```text
 mxready.yml
 SECURITY.md
+project-commands.example.json
 mxready_runner/
 schemas/verification-result-v1.json
 ```
 
-`mxready.yml` 使用 JSON 语法，因此既是合法 YAML，也能由 Python 标准库 `json` 读取。它固定包含扫描 ID、仓库 URL、40 位提交、runner 版本、环境检查和可选项目命令。
+`mxready.yml` 使用 JSON 语法，因此既是合法 YAML，也能由 Python 标准库 `json` 读取。它固定包含扫描 ID、仓库 URL、40 位提交、runner 版本、环境检查和可选项目命令。`project-commands.example.json` 是项目命令的参考模板，默认清单不含项目命令；需要项目验证时，把模板中的占位内容替换为实际 smoke 命令后填入 `mxready.yml` 的 `project_commands`（见 [examples/verification/README.md](../examples/verification/README.md) 第 5 步）。
 
 runner 只要求 Python 3.11+，不依赖 PyYAML、Pydantic 或其他第三方包。
 
@@ -31,9 +32,9 @@ python -m mxready_runner inspect \
 - `python --version`
 - `mx-smi --version`
 - `mx-smi`
-- PyTorch 版本、`torch.cuda.is_available()` 与设备数量
+- PyTorch 版本、`torch.cuda.is_available()`、设备数量与首设备名称
 
-所有配置的环境检查都会运行并写入结果；任意一项 `failed` 或 `unavailable` 都会使最终状态为 `failed`。PyTorch 检查只有在 `torch.cuda.is_available()` 为真且至少发现一个设备时才通过。
+所有配置的环境检查都会运行并写入结果；任意一项 `failed` 或 `unavailable` 都会使最终状态为 `failed`。PyTorch 检查只有在 `torch.cuda.is_available()` 为真且至少发现一个设备时才通过。`pytorch-device` 会额外输出首设备名称，用于与 `mx-smi` 输出的 GPU 型号人工交叉核对：确认 `torch.cuda` 指向的是同一块沐曦设备，而不是混卡环境中的其他设备或误装的 NVIDIA 版 PyTorch。
 
 如清单经过人工补充并包含项目命令，可使用：
 

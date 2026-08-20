@@ -10,6 +10,17 @@ param(
   [switch]$SkipBackend
 )
 
+# Force UTF-8 console/output encoding so Chinese text displays correctly.
+try {
+  [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+  [Console]::InputEncoding = [System.Text.Encoding]::UTF8
+  $OutputEncoding = [System.Text.Encoding]::UTF8
+  & "$env:SystemRoot\System32\chcp.com" 65001 > $null
+} catch {
+}
+
+Set-Location (Split-Path -Parent $PSScriptRoot)
+
 $ErrorActionPreference = "Stop"
 $Python = ".\.venv\Scripts\python.exe"
 

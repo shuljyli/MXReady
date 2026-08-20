@@ -36,6 +36,8 @@ def test_bundle_contains_pinned_identity_runner_schema_and_safety_note(
             for check in DEFAULT_CHECKS
         ]
         assert "SECURITY.md" in names
+        assert "project-commands.example.json" in names
+        assert json.loads(archive.read("project-commands.example.json"))
         assert "schemas/verification-result-v1.json" in names
         assert "mxready_runner/__main__.py" in names
         assert all(not name.startswith(("/", "../")) for name in names)

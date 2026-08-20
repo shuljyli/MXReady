@@ -32,6 +32,29 @@ This archive runs only on a host controlled by you.
 - Output is redacted and truncated, but review `result.json` before sharing it.
 """
 
+_PROJECT_COMMANDS_EXAMPLE = json.dumps(
+    [
+        {
+            "id": "example-cuda-smoke",
+            "command": [
+                "python",
+                "-c",
+                (
+                    "import torch, your_extension; "
+                    "a=torch.randn(1024, device='cuda'); "
+                    "b=torch.randn(1024, device='cuda'); "
+                    "actual=your_extension.ops.mymuladd(a, b, 1.0); "
+                    "torch.testing.assert_close(actual, a * b + 1.0); "
+                    "print('MXReady example CUDA smoke passed')"
+                ),
+            ],
+            "timeout_seconds": 120,
+        }
+    ],
+    ensure_ascii=False,
+    indent=2,
+) + "\n"
+
 
 def build_verification_bundle(report: ScanReport) -> bytes:
     """Build a deterministic, self-contained verification ZIP."""
@@ -50,6 +73,10 @@ def build_verification_bundle(report: ScanReport) -> bytes:
             ).encode("utf-8"),
         ),
         ("SECURITY.md", _SECURITY_NOTE.encode("utf-8")),
+        (
+            "project-commands.example.json",
+            _PROJECT_COMMANDS_EXAMPLE.encode("utf-8"),
+        ),
     ]
 
     for filename in _RUNNER_FILES:

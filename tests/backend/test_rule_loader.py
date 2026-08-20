@@ -11,8 +11,8 @@ from mxready.scanning.rule_loader import load_rule_catalog
 def test_rule_catalog_is_versioned_strict_and_unique() -> None:
     catalog = load_rule_catalog(Path("rules/v1"))
 
-    assert catalog.version == "1"
-    assert len(catalog.rules) == 24
+    assert catalog.version == "2"
+    assert len(catalog.rules) == 30
     assert [rule.id for rule in catalog.rules[:4]] == [
         "MXR-TOOLCHAIN-001",
         "MXR-PATH-001",

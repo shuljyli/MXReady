@@ -1,4 +1,4 @@
-import type { ApiErrorBody, ScanJob, ScanReport } from "./types";
+import type { ApiErrorBody, RuleCatalog, ScanJob, ScanReport } from "./types";
 
 export class MxReadyApiError extends Error {
   readonly code: string;
@@ -68,6 +68,10 @@ export function createScan(input: {
 
 export function getScan(id: string): Promise<ScanJob> {
   return request<ScanJob>(`/api/scans/${encodeURIComponent(id)}`);
+}
+
+export function getRules(): Promise<RuleCatalog> {
+  return request<RuleCatalog>("/api/rules");
 }
 
 export function getReport(id: string): Promise<ScanReport> {
