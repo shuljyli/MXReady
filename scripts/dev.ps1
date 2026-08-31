@@ -1,36 +1,30 @@
-# MXReady 一键开发启动（Windows PowerShell）
-# 启动前端 Vite dev（新窗口）与后端 uvicorn --reload（当前窗口）。
-#
-# 用法:
-#   .\scripts\dev.ps1
-#   .\scripts\dev.ps1 -SkipFrontend
-#   .\scripts\dev.ps1 -SkipBackend
+# MXReady combined development launcher for Windows PowerShell 5.1+.
+# Starts Vite in a separate window and uvicorn in the current window.
 param(
   [switch]$SkipFrontend,
   [switch]$SkipBackend
 )
 
-# Force UTF-8 console/output encoding so Chinese text displays correctly.
-try {
-  [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-  [Console]::InputEncoding = [System.Text.Encoding]::UTF8
-  $OutputEncoding = [System.Text.Encoding]::UTF8
-  & "$env:SystemRoot\System32\chcp.com" 65001 > $null
-} catch {
-}
-
+$ErrorActionPreference = "Stop"
 Set-Location (Split-Path -Parent $PSScriptRoot)
 
-$ErrorActionPreference = "Stop"
 $Python = ".\.venv\Scripts\python.exe"
+if (-not (Test-Path -LiteralPath $Python)) {
+  throw "Missing $Python. Run '.\scripts\make.ps1 install' first."
+}
 
-if (-not (Test-Path $Python)) {
-  Write-Host "!! 未找到 $Python，请先执行:  .\scripts\make.ps1 install" -ForegroundColor Red
-  exit 1
+if ($SkipFrontend -and $SkipBackend) {
+  throw "Both frontend and backend were skipped; there is nothing to start."
 }
 
 if (-not $SkipFrontend) {
-  Write-Host "==> 启动前端开发服务器 http://localhost:5173"
+  if (-not (Get-Command "npm.cmd" -ErrorAction SilentlyContinue)) {
+    throw "Required command 'npm.cmd' was not found on PATH."
+  }
+  if (-not (Test-Path -LiteralPath "frontend\node_modules\vite\package.json")) {
+    throw "Missing frontend dependencies. Run '.\scripts\make.ps1 install' first."
+  }
+  Write-Host "Starting the frontend at http://localhost:5173"
   Start-Process `
     -FilePath "cmd.exe" `
     -ArgumentList "/c", "npm.cmd run dev" `
@@ -38,8 +32,9 @@ if (-not $SkipFrontend) {
 }
 
 if (-not $SkipBackend) {
-  Write-Host "==> 启动后端 http://127.0.0.1:8000 （Ctrl+C 停止）"
+  Write-Host "Starting the backend at http://127.0.0.1:8000 (Ctrl+C to stop)"
   & $Python -m uvicorn mxready.app:create_app --factory --reload --port 8000
-} else {
-  Write-Host "==> 后端已跳过（-SkipBackend）"
+  if ($LASTEXITCODE -ne 0) {
+    throw "Backend server exited with code $LASTEXITCODE."
+  }
 }

@@ -3,9 +3,9 @@
 # 启动前端 Vite dev（后台）与后端 uvicorn --reload（前台，Ctrl+C 停止）。
 #
 # 用法:
-#   ./scripts/dev.sh
-#   ./scripts/dev.sh --skip-frontend
-#   ./scripts/dev.sh --skip-backend
+#   bash ./scripts/dev.sh
+#   bash ./scripts/dev.sh --skip-frontend
+#   bash ./scripts/dev.sh --skip-backend
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -22,6 +22,11 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+if [ "$SKIP_FRONTEND" -eq 1 ] && [ "$SKIP_BACKEND" -eq 1 ]; then
+  echo "前端和后端均被跳过，没有可启动的服务。" >&2
+  exit 1
+fi
 
 PYTHON=".venv/bin/python"
 if [ ! -x "$PYTHON" ]; then

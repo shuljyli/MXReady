@@ -13,7 +13,7 @@ MXReady MVP 设计规格中的 16 个实施任务已全部提交，代码结构�
 
 | 模块 | 状态 |
 | --- | --- |
-| FastAPI 后端（扫描、报告、验证） | 已完成，263 个 Python 测试通过 |
+| FastAPI 后端（扫描、报告、验证） | 已完成，265 个 Python 测试通过 |
 | React + Vite 前端 | 已完成，23 个前端测试通过，构建产物存在 |
 | 30 条 YAML 检查规则 | 已完成，正反例夹具齐全 |
 | 独立 runner 验证包 | 已完成，支持 inspect / run 两阶段 |
@@ -295,3 +295,13 @@ docker compose up -d
 - 回归状态：后端 + runner **263 个测试通过**（覆盖率 90.86%，80 门槛通过）、ruff 全绿、前端 **23 个测试通过**、`tsc -b` 与 `npm run build` 通过。
 
 > 说明：评估曾建议把 MXR-PATH-001 / TOOL-001 / TOOLCHAIN-001 三条 regex 规则改为 fact 模式，经核实不可行——fact 提取面远窄于 regex（不含 `.py` 的 subprocess 调用、不含 `.cmake/.toml/.cfg` 覆盖），转换会降低召回，故保留 regex 规则，仅修复事实层自身的误报与文档缺失。
+
+## 10. 执行记录（2026-08-31）：跨平台入口与资源边界修复
+
+- ✅ Windows PowerShell：`make.ps1` / `dev.ps1` 改为 ASCII 源码，消除 Windows PowerShell 5.1 对无 BOM UTF-8 中文源码的解析失败与乱码；安装、测试、检查、构建命令均检查原生进程退出码；
+- ✅ Linux / macOS：`Makefile` 使用可覆盖的 `PYTHON` 变量创建虚拟环境，README 使用无需 Git 可执行位的 `bash ./scripts/dev.sh`，CI 将该脚本纳入 `bash -n`；
+- ✅ API 防护：请求体中间件同时检查声明长度与实际 ASGI 数据流；并发扫描的统计和任务创建合并到 SQLite `BEGIN IMMEDIATE` 事务，新增无 `Content-Length` 分块请求与多线程并发回归测试；
+- ✅ Windows Git：子进程输出固定使用 UTF-8 容错解码并设置 UTF-8 locale，避免本地代码页导致后台读取线程异常；
+- ✅ 供应链：CI 安装项目运行依赖后再执行 `pip-audit`；前端 `nanoid` 升级到已修复版本，`npm audit` 为 0；
+- ✅ 文档：开发地址明确为 Vite 的 5173；Docker、Python 和本机环境描述改为可复验状态，不再保留易过时的机器快照；明确 Git 的 50 MiB 限制是克隆后的扫描准入限制；
+- 回归状态：后端 + runner **265 个测试通过**，覆盖率 **90.86%**，ruff 全绿；另以 Python **3.11.15** 隔离环境完成 20 个关键防护与存储测试；前端 **23 个测试通过**，`tsc -b` 与 `npm run build` 通过；PowerShell 5.1 入口解析和 `docker compose config` 通过。

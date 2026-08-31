@@ -13,6 +13,7 @@ from starlette.routing import Route
 
 def _echo_app(middleware):
     async def ok(request):
+        await request.body()
         return JSONResponse({"ok": True})
 
     app = Starlette(
@@ -63,6 +64,24 @@ def test_request_body_limit_rejects_oversized_bodies() -> None:
     assert small.status_code == 200
     assert large.status_code == 413
     assert large.json()["error"]["code"] == "REQUEST_TOO_LARGE"
+
+
+def test_request_body_limit_counts_stream_without_content_length() -> None:
+    app = _echo_app(lambda target: RequestBodyLimitMiddleware(target, max_bytes=100))
+
+    def chunks():
+        yield b"x" * 60
+        yield b"y" * 60
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/scans",
+            content=chunks(),
+            headers={"Content-Type": "application/json"},
+        )
+
+    assert response.status_code == 413
+    assert response.json()["error"]["code"] == "REQUEST_TOO_LARGE"
 
 
 def test_request_body_limit_skips_verification_uploads() -> None:

@@ -62,7 +62,13 @@ class SQLiteStore:
                 connection.execute(_MIGRATIONS[version])
                 connection.execute(f"PRAGMA user_version = {version + 1}")
 
-    def create_job(self, repo_url: str, requested_ref: str | None) -> ScanJob:
+    def create_job(
+        self,
+        repo_url: str,
+        requested_ref: str | None,
+        *,
+        max_active: int = 0,
+    ) -> ScanJob:
         now = datetime.now(UTC)
         job = ScanJob(
             id=uuid4(),
@@ -74,6 +80,15 @@ class SQLiteStore:
             updated_at=now,
         )
         with self._connect() as connection:
+            if max_active > 0:
+                connection.execute("BEGIN IMMEDIATE")
+                active = self._count_active_jobs(connection)
+                if active >= max_active:
+                    raise MxReadyError(
+                        "SCAN_LIMIT_REACHED",
+                        "并发扫描数量已达上限，请稍后再试。",
+                        {"active": active, "limit": max_active},
+                    )
             connection.execute(
                 """
                 INSERT INTO scan_jobs (
@@ -185,18 +200,22 @@ class SQLiteStore:
     def count_active_jobs(self) -> int:
         """统计排队与执行中的扫描任务数。"""
         with self._connect() as connection:
-            row = connection.execute(
-                """
-                SELECT COUNT(*) FROM scan_jobs
-                WHERE status IN (?, ?, ?, ?)
-                """,
-                (
-                    ScanStatus.QUEUED.value,
-                    ScanStatus.CLONING.value,
-                    ScanStatus.INDEXING.value,
-                    ScanStatus.ANALYZING.value,
-                ),
-            ).fetchone()
+            return self._count_active_jobs(connection)
+
+    @staticmethod
+    def _count_active_jobs(connection: sqlite3.Connection) -> int:
+        row = connection.execute(
+            """
+            SELECT COUNT(*) FROM scan_jobs
+            WHERE status IN (?, ?, ?, ?)
+            """,
+            (
+                ScanStatus.QUEUED.value,
+                ScanStatus.CLONING.value,
+                ScanStatus.INDEXING.value,
+                ScanStatus.ANALYZING.value,
+            ),
+        ).fetchone()
         return int(row[0])
 
     def prune_old_scans(self, days: int) -> int:

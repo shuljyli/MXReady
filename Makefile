@@ -9,7 +9,7 @@ RUFF := $(VENV)/bin/ruff
 .PHONY: install dev test lint build frontend clean
 
 install:
-	python3 -m venv $(VENV)
+	$(PYTHON) -m venv $(VENV)
 	$(PIP) install -e ".[dev]"
 	cd frontend && npm ci
 
@@ -17,7 +17,7 @@ dev:
 	$(VENV)/bin/uvicorn mxready.app:create_app --factory --reload --port 8000
 
 test:
-	$(PYTEST)
+	$(PYTEST) --cov=mxready --cov=mxready_runner --cov-report=term-missing --cov-fail-under=80
 
 lint:
 	$(RUFF) check backend runner scripts tests

@@ -51,6 +51,8 @@ def run_command(
         timeout=timeout,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         check=False,
     )
 
@@ -233,6 +235,8 @@ class GitClient:
                 "GIT_CONFIG_COUNT": "1",
                 "GIT_CONFIG_KEY_0": "credential.helper",
                 "GIT_CONFIG_VALUE_0": "",
+                "LANG": "C.UTF-8",
+                "LC_ALL": "C.UTF-8",
             }
         )
         return environment

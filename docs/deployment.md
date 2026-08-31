@@ -25,8 +25,8 @@
 | `MXREADY_SCAN_RETENTION_DAYS` | `0` | 扫描记录保留天数（0 = 不自动清理，保护申报证据） |
 | `MXREADY_RATE_LIMIT_ENABLED` | 关闭 | 按 IP 滑动窗口限流开关（公网部署建议开启） |
 | `MXREADY_RATE_LIMIT_PER_MINUTE` | `20` | 每 IP 每分钟请求上限 |
-| `MXREADY_MAX_CONCURRENT_SCANS` | `2` | 并发扫描上限（0 = 不限制） |
-| `MXREADY_MAX_REQUEST_BYTES` | `1048576` | 全局请求体大小上限（1 MiB） |
+| `MXREADY_MAX_CONCURRENT_SCANS` | `2` | SQLite 事务内原子执行的并发扫描上限（0 = 不限制） |
+| `MXREADY_MAX_REQUEST_BYTES` | `1048576` | 按实际接收字节数执行的全局请求体上限（1 MiB） |
 
 > 监听地址与端口由 uvicorn 的 `--host` / `--port` 或环境变量 `UVICORN_HOST` / `UVICORN_PORT` 控制（uvicorn 自身读取），不要在 `MXREADY_*` 中重复配置。
 
@@ -120,6 +120,6 @@ server {
 ## 9. 安全边界（部署时保持）
 
 - 仓库白名单默认仅 `github.com` 与 `gitee.com`（URL 规范化、无凭据、无私有地址校验均生效）；
-- 克隆限制：单仓库 50 MiB、10,000 文件、60 秒超时；
+- 克隆限制：60 秒操作超时；克隆完成后的工作树限制为 50 MiB、10,000 文件。该大小检查不等同于传输层字节配额，部署时仍应为临时目录配置磁盘配额和监控；
 - 验证上传限制 1 MiB；
 - 如需公网部署，开启 `MXREADY_RATE_LIMIT_ENABLED=true` 启用按 IP 限流（P2-1 已实现），并保持 `MXREADY_MAX_REQUEST_BYTES` 默认上限。

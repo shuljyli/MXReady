@@ -54,18 +54,14 @@ class ScanService:
         repo_url: str,
         requested_ref: str | None,
     ) -> ScanJob:
-        if self.settings.max_concurrent_scans > 0:
-            active = self.store.count_active_jobs()
-            if active >= self.settings.max_concurrent_scans:
-                raise MxReadyError(
-                    "SCAN_LIMIT_REACHED",
-                    "并发扫描数量已达上限，请稍后再试。",
-                    {"active": active, "limit": self.settings.max_concurrent_scans},
-                )
         identity = parse_repository_url(repo_url, self.providers)
         reference = validate_git_ref(requested_ref)
         canonical_url = identity.clone_url.removesuffix(".git")
-        return self.store.create_job(canonical_url, reference)
+        return self.store.create_job(
+            canonical_url,
+            reference,
+            max_active=self.settings.max_concurrent_scans,
+        )
 
     def get_scan(self, scan_id: UUID) -> ScanJob:
         job = self.store.get_job(scan_id)

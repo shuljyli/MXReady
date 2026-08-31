@@ -39,15 +39,16 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 
 - MVP 设计规格中的 16 个实施任务全部落地；
 - 30 条检查规则（含 Dockerfile / CUDA 显存 / Stream / Device / 通信后端 / 数学库 / 测试跳过 / 混合精度相关），正反例夹具齐全；
-- 后端 + runner：**263 个测试通过**，覆盖率 90%+，ruff 全绿；
+- 后端 + runner：**265 个测试通过**，覆盖率 90%+，ruff 全绿；
 - 前端：**23 个测试通过**，`npm run build` 成功；
-- P0~P3 优化项基本完成（配置注入、结构化日志、SQLite 备份与迁移、限流与请求体防护、CI 矩阵、服务器交接脚本、locust 压测脚本等），逐项执行记录见 [docs/optimization-plan.md](docs/optimization-plan.md)。
+- Windows PowerShell 5.1+ 与 Linux/macOS 使用统一命令入口；PowerShell 入口已在 5.1 实跑，Shell 入口由 CI 执行语法检查；
+- Python 3.11.15 隔离环境已完成关键防护与存储回归，CI 持续覆盖 Python 3.11/3.12 × Windows/Linux；
+- P0~P3 优化项基本完成（配置注入、结构化日志、SQLite 备份与迁移、流式请求体防护、原子并发限额、CI 矩阵、服务器交接脚本、locust 压测脚本等），逐项执行记录见 [docs/optimization-plan.md](docs/optimization-plan.md)。
 
-**尚未本地验证（重点）**
+**仍需外部环境验证（重点）**
 
-- **Docker 部署**：本机未安装 Docker，`Dockerfile` / `docker-compose.yml` 的镜像构建与容器启动尚未在本机实跑，仅由 CI 的 docker job 做构建验证；
-- **Linux / macOS 一键启动**：`scripts/dev.sh` 尚未在 Linux / macOS 真机验证（当前开发机为 Windows，无 bash），语法与行为待 CI 或服务器环境确认；
-- **Python 版本对齐**：当前本地 venv 为 Python 3.14.2，与项目声明及 CI 的 **3.11** 存在差异，尚未在 3.11 下重建 venv 并复测；
+- **Docker 容器启动**：`docker compose config` 与 CI 镜像构建已覆盖；本机 Docker daemon 未运行，因此本轮没有启动本地容器；
+- **Linux / macOS 交互式启动**：CI 会检查 `scripts/dev.sh` 的 Bash 语法，完整交互流程仍应在目标系统发布前做一次冒烟测试；
 - **真机沐曦 GPU 验证**：仍为 `pending`，等待服务器窗口期后按 [examples/verification/README.md](examples/verification/README.md) 执行。
 
 > 三份公开项目报告与验证记录见 [docs/application-evidence.md](docs/application-evidence.md)，历史决策与执行记录见 [docs/optimization-plan.md](docs/optimization-plan.md)。
@@ -74,14 +75,14 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 | 平台 | 命令 | 可选参数 |
 | --- | --- | --- |
 | Windows (PowerShell) | `.\scripts\dev.ps1` | `-SkipFrontend` / `-SkipBackend` |
-| Linux / macOS | `./scripts/dev.sh` | `--skip-frontend` / `--skip-backend` |
+| Linux / macOS | `bash ./scripts/dev.sh` | `--skip-frontend` / `--skip-backend` |
 
 `dev.ps1` / `dev.sh` 会同时启动：
 
 - 前端 Vite 开发服务器：<http://localhost:5173>（开发代理把 `/api` 转发到后端）；
 - 后端 FastAPI：<http://127.0.0.1:8000>（`--reload` 热重载）。
 
-打开 <http://127.0.0.1:8000> 即可使用完整界面。如果暂时不构建前端，服务仍会以 API-only 模式启动，API 文档位于 `/docs`，中文接口手册见 [docs/api.md](docs/api.md)。
+开发模式请打开 <http://localhost:5173>。后端的 <http://127.0.0.1:8000> 在已有 `frontend/dist` 时提供构建后的完整界面，否则以 API-only 模式启动；API 文档位于 `/docs`，中文接口手册见 [docs/api.md](docs/api.md)。
 
 ### 命令入口总表
 
@@ -132,8 +133,8 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
    cd ..
    ```
 
-6. **不要对已有环境重复安装**：`make.ps1 install` 现在会检测到完整环境并跳过；若确需重装，先删除 `.venv` 与 `frontend\node_modules` 再执行安装。
-7. **中文乱码**：Windows PowerShell 5.1 下脚本已强制 UTF-8；若仍乱码，改用 PowerShell 7（`pwsh`）。
+6. **重复安装**：`make.ps1 install` 可以安全重跑，会刷新 Python 可编辑安装并按锁文件重新执行 `npm ci`。
+7. **PowerShell 兼容性**：入口脚本保持 ASCII 源码，可由 Windows PowerShell 5.1 和 PowerShell 7 直接解析；项目运行日志仍使用 UTF-8。
 
 如果以上步骤仍失败，请让使用者把 `install` 的完整报错和 `py --version`、`node --version`、`npm --version`、`git --version` 输出一起发给项目维护者。
 
@@ -172,8 +173,8 @@ MXREADY_LOG_LEVEL=DEBUG docker compose up -d
 | `MXREADY_SCAN_RETENTION_DAYS` | `0` | 扫描记录保留天数（0 = 不自动清理，保护申报证据） |
 | `MXREADY_RATE_LIMIT_ENABLED` | 关闭 | 按 IP 的滑动窗口限流开关 |
 | `MXREADY_RATE_LIMIT_PER_MINUTE` | `20` | 每 IP 每分钟请求上限 |
-| `MXREADY_MAX_CONCURRENT_SCANS` | `2` | 并发扫描上限（0 表示不限制） |
-| `MXREADY_MAX_REQUEST_BYTES` | `1048576` | 请求体大小上限 |
+| `MXREADY_MAX_CONCURRENT_SCANS` | `2` | 原子并发扫描上限（0 表示不限制） |
+| `MXREADY_MAX_REQUEST_BYTES` | `1048576` | 按实际接收字节数执行的请求体上限 |
 
 > 监听地址与端口由 uvicorn 的 `--host` / `--port`（或 `UVICORN_HOST` / `UVICORN_PORT`）控制，不在 `MXREADY_*` 中重复配置。完整模板见 [.env.example](.env.example)。
 
@@ -262,7 +263,7 @@ npm run build
 
 - 仅允许 `github.com` 与 `gitee.com` 的公开 HTTPS 仓库（`MXREADY_ALLOWED_HOSTS` 可扩展，但维持 URL 规范化、无凭据、无私有地址校验）；
 - Git 不读取凭据、不弹出登录提示、不下载 LFS 对象、不初始化子模块；
-- Git 获取超时 60 秒；归档后备路径的每个 HTTP 请求也有 60 秒总时限；仓库最多 50 MiB、10,000 个文件或归档条目；
+- Git 获取超时 60 秒；克隆完成后的工作树最多 50 MiB、10,000 个文件；归档后备路径在下载及展开阶段分别执行 50 MiB、10,000 条目上限；
 - 单个索引文本文件最多 1 MiB，不跟随符号链接；
 - Web 扫描不执行仓库代码；
 - 验证结果最多 1 MiB，使用严格版本化模型并绑定扫描提交；

@@ -5,6 +5,7 @@ from collections import defaultdict, deque
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class _SlidingWindowLimiter:
@@ -52,34 +53,66 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-class RequestBodyLimitMiddleware(BaseHTTPMiddleware):
-    """按 Content-Length 拒绝超大请求体。"""
+class RequestBodyLimitMiddleware:
+    """同时校验 Content-Length 和实际接收字节数。"""
 
-    def __init__(self, app, *, max_bytes: int) -> None:
-        super().__init__(app)
+    def __init__(self, app: ASGIApp, *, max_bytes: int) -> None:
+        self.app = app
         self._max_bytes = max_bytes
 
-    async def dispatch(self, request, call_next):
-        path = request.url.path.rstrip("/")
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get("path", "").rstrip("/")
         # 验证结果上传走端点自身的流式分块校验（UPLOAD_TOO_LARGE 语义），
         # 全局请求体上限在这里放行，避免错误码契约被静默替换。
-        if request.method == "POST" and path.endswith("/verification-runs"):
-            return await call_next(request)
+        if scope.get("method") == "POST" and path.endswith("/verification-runs"):
+            await self.app(scope, receive, send)
+            return
 
-        declared = request.headers.get("content-length")
+        headers = {key.lower(): value for key, value in scope.get("headers", [])}
+        declared = headers.get(b"content-length")
         if declared is not None:
             try:
-                if int(declared) > self._max_bytes:
-                    return JSONResponse(
-                        status_code=413,
-                        content={
-                            "error": {
-                                "code": "REQUEST_TOO_LARGE",
-                                "message": f"请求体不能超过 {self._max_bytes} 字节。",
-                                "details": {},
-                            }
-                        },
-                    )
-            except ValueError:
+                if int(declared.decode("ascii")) > self._max_bytes:
+                    await self._reject(scope, receive, send)
+                    return
+            except (UnicodeDecodeError, ValueError):
                 pass
-        return await call_next(request)
+
+        received = 0
+        buffered: deque[Message] = deque()
+        while True:
+            message = await receive()
+            if message["type"] != "http.request":
+                buffered.append(message)
+                break
+            received += len(message.get("body", b""))
+            if received > self._max_bytes:
+                await self._reject(scope, receive, send)
+                return
+            buffered.append(message)
+            if not message.get("more_body", False):
+                break
+
+        async def replay_receive() -> Message:
+            if buffered:
+                return buffered.popleft()
+            return await receive()
+
+        await self.app(scope, replay_receive, send)
+
+    async def _reject(self, scope: Scope, receive: Receive, send: Send) -> None:
+        response = JSONResponse(
+            status_code=413,
+            content={
+                "error": {
+                    "code": "REQUEST_TOO_LARGE",
+                    "message": f"请求体不能超过 {self._max_bytes} 字节。",
+                    "details": {},
+                }
+            },
+        )
+        await response(scope, receive, send)

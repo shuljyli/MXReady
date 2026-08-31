@@ -1,7 +1,9 @@
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+from mxready.errors import MxReadyError
 from mxready.models import (
     ScanStatus,
     VerificationRun,
@@ -109,6 +111,29 @@ def test_count_active_jobs_counts_queued_and_running(tmp_path):
         stage_message="Complete",
         resolved_commit="a" * 40,
     )
+    assert store.count_active_jobs() == 1
+
+
+def test_create_job_enforces_active_limit_atomically(tmp_path):
+    store = SQLiteStore(tmp_path / "mxready.db")
+    store.initialize()
+
+    def create(index: int) -> bool:
+        try:
+            store.create_job(
+                f"https://github.com/example/project-{index}",
+                None,
+                max_active=1,
+            )
+            return True
+        except MxReadyError as error:
+            assert error.code == "SCAN_LIMIT_REACHED"
+            return False
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        created = list(executor.map(create, range(4)))
+
+    assert created.count(True) == 1
     assert store.count_active_jobs() == 1
 
 
