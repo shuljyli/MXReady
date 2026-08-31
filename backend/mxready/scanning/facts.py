@@ -197,6 +197,7 @@ def _extract_python(indexed_file: IndexedFile, collector: _FactCollector) -> Non
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", SyntaxWarning)
+            warnings.simplefilter("ignore", DeprecationWarning)
             tree = ast.parse(indexed_file.text, filename=indexed_file.relative_path)
     except (SyntaxError, ValueError):
         return

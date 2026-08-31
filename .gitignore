@@ -10,10 +10,17 @@ htmlcov/
 venv/
 *.egg-info/
 
+# Python packaging
+/build/
+/dist/
+
 # Environment
 .env
 .env.*
 !.env.example
+
+# Local agent guidance
+/AGENTS.md
 
 # Runtime data
 data/*.db
@@ -21,6 +28,7 @@ data/*.db-*
 data/tmp/
 data/reports/
 data/load/
+data/public-scan-work/
 
 # Frontend
 frontend/node_modules/
