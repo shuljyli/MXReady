@@ -11,6 +11,7 @@ MXReady statically assesses PyTorch CUDA extensions for migration to MetaX MXMAC
 - `tests/backend/`, `tests/runner/`, and `tests/fixtures/`: Python tests and minimal repository fixtures; `tests/load/` contains Locust scenarios.
 - `src/mxready/persistence/`: SQLite storage, migrations, and task leases.
 - `scripts/`: development/operations entry points and contract generation; production CLI modules live in `src/mxready/cli/`.
+- `packaging/`: shared release installer and Windows/Unix launcher templates; generated wheel/sdist and platform ZIPs belong in ignored `dist/`.
 - `tests/integration/`: sdist/wheel and installation-independent smoke tests.
 - `frontend/src/hooks/`: scan lifecycle, URL restoration, cancellation, and bounded polling retries.
 - `docs/` and `examples/`: architecture/reference documentation and pinned evidence.
@@ -22,12 +23,13 @@ Use Python 3.11+, Node.js 22+, and Git. Run from the repository root:
 - `make install`: create `.venv`, install Python development dependencies, and run `npm ci`.
 - `bash scripts/dev.sh`: launch FastAPI on port 8000 and Vite on 5173.
 - `make dev` / `make frontend`: launch either service separately.
-- `make lint`: run Ruff; `make typecheck`: run mypy for the host and Windows; PowerShell also checks the Linux target.
+- `make lint`: run Ruff over src/scripts/tests/packaging; `make typecheck`: run mypy for the host and Windows; PowerShell also checks the Linux target.
 - `make contracts`: regenerate TypeScript response types and verification JSON Schema; CI runs `python scripts/generate_contracts.py --check`.
 - `make test`: run pytest with coverage reporting and an 80% minimum.
 - `cd frontend && npm test`: run Vitest.
 - `cd frontend && npm run typecheck`: check TypeScript.
 - `make build`: type-check and build the frontend.
+- `make release`: build the UI-enabled wheel/sdist and all three installer ZIPs; `scripts/smoke_release.py` installs and checks the current-platform ZIP outside the checkout.
 
 Windows equivalents use `.\scripts\make.ps1 <target>` and `.\scripts\dev.ps1`.
 
@@ -48,3 +50,5 @@ Use short conventional subjects: `feat:`, `fix:`, `docs:`, `test:`, or `chore:`;
 Never execute scanned repository code in the Web service. Preserve runner confirmation, command allowlists, `shell=False`, timeouts, redaction, and output limits. Keep static findings separate from hardware verification; never introduce percentage compatibility scores. See `CONTRIBUTING.md` and `docs/security.md`. Synchronize `AGENTS.md` and `CLAUDE.md` when both exist.
 
 See `docs/architecture.md` for dependency directions and migration paths. Keep default rules and schemas inside package resources and verify installed artifacts outside the checkout. Task writes must preserve execution-token and lease checks; never mark all active jobs failed during application startup. Derive verification freshness when reading reports. Keep generated contracts synchronized with model changes and retain the dependency-free runner.
+
+Release builds stage frontend resources in a temporary source tree; do not commit built UI into `src/` or put user data, virtual environments or dependency caches in release archives. Keep `mxready-serve` user data separate from the installation directory. Document runtime prerequisites and distinguish ZIP/wheel installers from self-contained native executables and from hardware verification.

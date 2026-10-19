@@ -5,10 +5,10 @@
 """
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
-from mxready.resources import default_rules_directory
+from mxready.resources import default_frontend_directory, default_rules_directory
 
 _ENV_PREFIX = "MXREADY_"
 
@@ -52,7 +52,7 @@ class Settings:
     rules_dir: Path = default_rules_directory()
     extra_rules_dir: Path | None = None
     temp_dir: Path = Path("data/tmp")
-    frontend_dist: Path = Path("frontend/dist")
+    frontend_dist: Path = field(default_factory=default_frontend_directory)
     # 日志
     log_level: str = "INFO"
     # 托管平台白名单（保持安全默认值）
@@ -81,7 +81,7 @@ class Settings:
             rules_dir=_path_env("RULES_DIR", str(default_rules_directory())),
             extra_rules_dir=_optional_path_env("EXTRA_RULES_DIR"),
             temp_dir=_path_env("TEMP_DIR", "data/tmp"),
-            frontend_dist=_path_env("FRONTEND_DIR", "frontend/dist"),
+            frontend_dist=_path_env("FRONTEND_DIR", str(default_frontend_directory())),
             log_level=os.getenv(_ENV_PREFIX + "LOG_LEVEL", "INFO"),
             allowed_hosts=_hosts_env("ALLOWED_HOSTS", ("github.com", "gitee.com")),
             scan_retention_days=_int_env("SCAN_RETENTION_DAYS", 0),

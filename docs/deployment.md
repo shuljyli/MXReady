@@ -2,6 +2,10 @@
 
 本文档覆盖 MXReady Web 服务的两种部署方式（裸机、Docker），以及数据持久化、日志、反向代理等生产注意事项。
 
+Windows、Linux、macOS 普通安装、通用 wheel 与升级方法见 [安装与发布方案](installation.md)。
+发布 wheel 自带网页，服务器可以安装 wheel 后直接使用 `mxready-serve` 或 uvicorn，
+无需在服务器构建前端；下文源码部署命令仍需要 Node.js。
+
 ## 1. 前置条件
 
 - Python 3.11+（建议与 CI 一致使用 3.11）；
@@ -19,7 +23,7 @@
 | `MXREADY_RULES_DIR` | 安装包内规则目录 | 可选覆盖默认 YAML 规则目录 |
 | `MXREADY_EXTRA_RULES_DIR` | 未设置 | 追加的自定义规则目录（可选） |
 | `MXREADY_TEMP_DIR` | `data/tmp` | 扫描临时目录（克隆仓库用） |
-| `MXREADY_FRONTEND_DIR` | `frontend/dist` | 前端构建产物目录 |
+| `MXREADY_FRONTEND_DIR` | 发布包内网页；源码为 `frontend/dist` | 可覆盖前端构建产物目录 |
 | `MXREADY_LOG_LEVEL` | `INFO` | 日志级别：`DEBUG`/`INFO`/`WARNING`/`ERROR` |
 | `MXREADY_ALLOWED_HOSTS` | `github.com,gitee.com` | 托管平台白名单（仅内部部署时显式扩展） |
 | `MXREADY_SCAN_RETENTION_DAYS` | `0` | 扫描记录保留天数（0 = 不自动清理，保护申报证据） |

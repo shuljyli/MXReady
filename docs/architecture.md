@@ -6,7 +6,7 @@ MXReady 使用模块化单体，扫描服务只做静态分析；标准库 runne
 src/
   mxready/
     api/             HTTP 契约、路由和请求防护
-    cli/             三个扫描、报告与验证包命令入口
+    cli/             扫描、报告、验证包与 Web 启动命令入口
     services/        扫描编排、心跳和 SQLite 队列消费者
     persistence/     SQLite 适配器、顺序迁移和租约原子操作
     repository/      URL/ref 校验、受限 Git 与归档获取
@@ -28,6 +28,8 @@ frontend/src/
   hooks/             扫描状态、恢复与轮询生命周期
   components/        展示与表单组件
 scripts/             开发运维入口、契约生成工具
+packaging/           共享安装器与 Windows/Unix 模板
+dist/                wheel/sdist 与三平台安装 ZIP（生成物，不提交）
 tests/
   backend/           后端单元与接口回归
   runner/            标准库 runner 与进程边界回归
@@ -77,4 +79,10 @@ FastAPI 或 PyYAML。后端读取 runner 的 `contracts.py` 和包资源来构�
 JSON Schema 描述结构约束，状态一致性、提交绑定、必需硬件检查和有效期仍由后端语义校验负责。
 
 默认规则与 schema 通过包资源读取，工作目录不影响默认规则选择。显式设置 `MXREADY_RULES_DIR`
-仍可覆盖默认目录。前端静态文件通过 `MXREADY_FRONTEND_DIR` 部署，未提供时为 API-only 模式。
+仍可覆盖默认目录。发布脚本在临时源码树中将网页合入 `mxready.resources/frontend/`，
+发布 wheel 默认读取包内网页；源码开发默认使用 `frontend/dist/`，缺失时为 API-only 模式。
+`MXREADY_FRONTEND_DIR` 可覆盖两种默认路径。构建流程不把网页复制进受版本管理的 `src/`。
+
+`mxready-serve` 负责安装后的启动参数和各系统的用户数据目录，复用现有 `create_app`；
+开发和服务器直接使用 uvicorn 时保留原有工作目录相对路径约定。安装模板不包含业务逻辑，
+构建编排保留在 `scripts/`。安装与发布约定见 [安装方案](installation.md)。

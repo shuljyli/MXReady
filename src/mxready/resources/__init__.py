@@ -11,3 +11,9 @@ def default_rules_directory() -> Path:
 
 def verification_schema_bytes() -> bytes:
     return files(__package__).joinpath("schemas", "verification-result-v1.json").read_bytes()
+
+
+def default_frontend_directory() -> Path:
+    """Release wheels include the UI; source checkouts use Vite's build directory."""
+    packaged = Path(str(files(__package__).joinpath("frontend")))
+    return packaged if (packaged / "index.html").is_file() else Path("frontend/dist")

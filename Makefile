@@ -1,5 +1,5 @@
 # MXReady 开发命令入口（Linux / macOS）
-# 用法: make install | dev | test | lint | build | frontend | clean
+# 用法: make install | dev | test | lint | build | release | frontend | clean
 PYTHON ?= python3
 VENV := .venv
 PIP := $(VENV)/bin/pip
@@ -7,7 +7,7 @@ PYTEST := $(VENV)/bin/pytest
 RUFF := $(VENV)/bin/ruff
 MYPY := $(VENV)/bin/mypy
 
-.PHONY: install dev test lint typecheck contracts build frontend clean
+.PHONY: install dev test lint typecheck contracts build release frontend clean
 
 install:
 	$(PYTHON) -m venv $(VENV)
@@ -21,7 +21,7 @@ test:
 	$(PYTEST) --cov=mxready --cov=mxready_runner --cov-report=term-missing --cov-fail-under=80
 
 lint:
-	$(RUFF) check src scripts tests
+	$(RUFF) check src scripts tests packaging
 
 typecheck:
 	$(MYPY)
@@ -32,6 +32,9 @@ contracts:
 
 build:
 	cd frontend && npm run build
+
+release:
+	$(VENV)/bin/python scripts/build_release.py
 
 frontend:
 	cd frontend && npm run dev

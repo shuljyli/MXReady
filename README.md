@@ -50,16 +50,64 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 - Windows PowerShell 5.1+ 与 Linux/macOS 使用统一命令入口；PowerShell 入口已在 5.1 实跑，Shell 入口由 CI 执行语法检查；
 - Python 3.11.15 隔离环境已完成关键防护与存储回归，CI 持续覆盖 Python 3.11/3.12 × Windows/Linux；
 - 已完成配置注入、结构化日志、SQLite 备份与迁移、流式请求体防护、原子并发限额、CI 矩阵、服务器交接脚本、locust 压测脚本等工程化优化。
+- 已生成三平台 ZIP 与含网页的 wheel/sdist；macOS Apple Silicon + Python 3.11 的全新安装、
+  网页/API、离线扫描及标准库 runner 冒烟通过（安装路径包含中文与空格）。
 
 **仍需外部环境验证（重点）**
 
 - **Docker 容器启动**：`docker compose config` 与 CI 镜像构建已覆盖；本机 Docker daemon 未运行，因此本轮没有启动本地容器；
-- **Linux / macOS 交互式启动**：CI 会检查 `scripts/dev.sh` 的 Bash 语法，完整交互流程仍应在目标系统发布前做一次冒烟测试；
+- **Windows / Linux 安装包实机测试**：发布工作流已配置三平台安装与启动检查，Windows/Linux 的目标系统结果仍须实际运行 CI 后确认；
+- **源码开发交互式启动**：CI 会检查 `scripts/dev.sh` 的 Bash 语法，前后端交互式开发流程仍应在目标系统验证；
 - **真机沐曦 GPU 验证**：仍为 `pending`，等待服务器窗口期后按 [examples/verification/README.md](examples/verification/README.md) 执行。
 
 > 公开项目示例报告见 [examples/reports](examples/reports)（以 `pytorch-extension-cpp` 为例），远程验证流程见 [examples/verification/README.md](examples/verification/README.md)。
 
-## 快速开始（三平台统一命令入口）
+## 安装包（Windows / Linux / macOS）
+
+普通使用者可直接安装包含网页的发布包，无需 Node.js，也无需安装 PyTorch 或 GPU 驱动。
+三平台均需预装 **Python 3.11+（含 pip/venv）和 Git**；首次安装默认联网下载 Python 依赖。
+
+| 平台 | 安装包 | 完整解压后，在包目录中执行 |
+| --- | --- | --- |
+| Windows 10/11 | `mxready-0.1.0-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
+| Linux | `mxready-0.1.0-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
+| macOS（Apple Silicon / Intel） | `mxready-0.1.0-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
+| 已有 Python 环境 | `mxready-0.1.0-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
+
+启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。
+安装器在解压目录创建 `.venv/`，数据库保存在系统用户数据目录，升级替换程序时可保留历史报告。
+ZIP 为 Python 应用安装包，不附带 Python/Git，也不是原生 EXE、DMG 或系统包管理器安装程序。
+
+本地构建后从 `dist/` 获取安装包；已公开发布的附件见
+[GitHub Releases](https://github.com/shuljyli/MXReady/releases)。若对应版本没有附件，按下文自行构建，
+或在 GitHub Actions 中手动运行 `Release packages` 下载构建附件。
+离线依赖准备、摘要校验、三平台详细步骤、数据迁移和卸载见
+[安装与发布方案](docs/installation.md)。服务器部署见 [部署文档](docs/deployment.md)。
+
+### 维护者生成安装包
+
+先安装开发依赖，再执行：
+
+| 平台 | 命令 |
+| --- | --- |
+| Windows (PowerShell) | `.\scripts\make.ps1 release` |
+| Linux / macOS | `make release` |
+
+构建器会安装并构建前端，将网页合入临时 Python 包，生成三个平台 ZIP、通用 wheel、源码包和
+`SHA256SUMS.txt`，统一放在 Git 忽略的 `dist/`。
+发布工作流配置了 Python 3.11/3.12 × Windows/Linux/macOS 的实际安装与启动冒烟；
+本地验证结果与目标系统 CI 结果应分别确认。
+
+```text
+packaging/                安装模板（共享安装器、Windows / Unix 入口）
+scripts/build_release.py  发布构建编排
+scripts/smoke_release.py  离开源码目录后的安装与 HTTP 冒烟
+src/mxready/cli/          安装后的命令行入口，含 mxready-serve
+docs/installation.md      安装、升级、离线与发布方案
+dist/                    生成产物，不提交到仓库
+```
+
+## 源码开发（三平台统一命令入口）
 
 ### 环境要求
 
@@ -67,7 +115,7 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 - Git；
 - Node.js 22 或更高版本（只在开发或构建前端时需要）。
 
-### 一键安装
+### 安装开发依赖
 
 | 平台 | 命令 |
 | --- | --- |
@@ -92,7 +140,7 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 
 ### 命令入口总表
 
-统一 `install` / `dev` / `test` / `lint` / `typecheck` / `build` / `frontend` / `clean`：
+统一 `install` / `dev` / `test` / `lint` / `typecheck` / `build` / `release` / `frontend` / `clean`：
 
 | 目标 | Windows (PowerShell) | Linux / macOS | 作用 |
 | --- | --- | --- | --- |
@@ -100,9 +148,10 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | 启动后端 | `.\scripts\make.ps1 dev` | `make dev` | uvicorn `--reload`，端口 8000 |
 | 启动前端 | `.\scripts\make.ps1 frontend` | `make frontend` | Vite dev，端口 5173 |
 | 运行测试 | `.\scripts\make.ps1 test` | `make test` | 后端 pytest（含覆盖率门槛） |
-| 代码检查 | `.\scripts\make.ps1 lint` | `make lint` | ruff 检查 src / scripts / tests |
+| 代码检查 | `.\scripts\make.ps1 lint` | `make lint` | ruff 检查 src / scripts / tests / packaging |
 | 类型检查 | `.\scripts\make.ps1 typecheck` | `make typecheck` | mypy 检查 src / scripts |
 | 构建前端 | `.\scripts\make.ps1 build` | `make build` | `npm run build` 产出 `frontend/dist` |
+| 生成安装包 | `.\scripts\make.ps1 release` | `make release` | 网页 + wheel/sdist + 三平台 ZIP，产出 `dist/` |
 | 清理 | `.\scripts\make.ps1 clean` | `make clean` | 删除 `.pytest-temp` |
 
 > **Windows 常见问题**：本仓库已在 [pyproject.toml](pyproject.toml) 中将 pytest 临时目录固定到项目本地 `.pytest-temp/`（已加入 `.gitignore`），因此正常测试不会写入 `%TEMP%\pytest-of-*`。
@@ -173,7 +222,7 @@ MXREADY_LOG_LEVEL=DEBUG docker compose up -d
 | `MXREADY_DATA_DIR` | `data` | SQLite 数据目录 |
 | `MXREADY_RULES_DIR` | 安装包内规则 | 可选覆盖规则目录 |
 | `MXREADY_TEMP_DIR` | `data/tmp` | 克隆与索引临时目录 |
-| `MXREADY_FRONTEND_DIR` | `frontend/dist` | 前端静态资源目录 |
+| `MXREADY_FRONTEND_DIR` | 发布包内网页；源码为 `frontend/dist` | 可覆盖前端静态资源目录 |
 | `MXREADY_LOG_LEVEL` | `INFO` | 日志级别 |
 | `MXREADY_ALLOWED_HOSTS` | `github.com,gitee.com` | 允许的代码托管平台白名单 |
 | `MXREADY_EXTRA_RULES_DIR` | 未设置 | 追加的自定义规则目录 |
@@ -186,6 +235,9 @@ MXREADY_LOG_LEVEL=DEBUG docker compose up -d
 | `MXREADY_TASK_LEASE_SECONDS` | `120` | 任务执行租约秒数，至少 3 |
 
 > 监听地址与端口由 uvicorn 的 `--host` / `--port`（或 `UVICORN_HOST` / `UVICORN_PORT`）控制，不在 `MXREADY_*` 中重复配置。完整模板见 [.env.example](.env.example)。
+
+`mxready-serve` 使用自身的 `--host` / `--port` 参数，数据默认保存在系统用户目录；
+上表的 `data` 与 `data/tmp` 是直接使用 uvicorn 的默认值，详见 [安装方案](docs/installation.md)。
 
 ## 离线 fixture 扫描
 
@@ -245,7 +297,7 @@ mxready-build-bundle examples/reports/pytorch-extension-cpp.json \
 ## 测试
 
 ```bash
-python -m ruff check src scripts tests
+python -m ruff check src scripts tests packaging
 python -m mypy
 python scripts/generate_contracts.py --check
 python -m pytest --cov=mxready --cov=mxready_runner --cov-fail-under=80
@@ -264,6 +316,7 @@ npm run build
 | [docs/architecture.md](docs/architecture.md) | 目录层级、依赖方向、任务生命周期与包资源约定 |
 | [docs/deployment.md](docs/deployment.md) | 生产部署：裸机 / systemd / Docker / nginx / 备份 / 日志 |
 | [docs/api.md](docs/api.md) | 中文 API 手册（含 curl 示例） |
+| [docs/installation.md](docs/installation.md) | 三平台安装包、离线准备、升级与发布构建 |
 | [docs/security.md](docs/security.md) | 安全模型 |
 | [docs/rules.md](docs/rules.md) | 规则开发指南 |
 | [docs/runner.md](docs/runner.md) | 远程验证 runner 指南 |

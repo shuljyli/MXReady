@@ -4,6 +4,70 @@ import subprocess
 import sys
 import zipfile
 from pathlib import Path
+from runpy import run_path
+
+
+def test_release_archives_contain_ui_and_platform_installers(tmp_path):
+    root = Path(__file__).resolve().parents[2]
+    build = run_path(str(root / "scripts" / "build_release.py"))
+    source = tmp_path / "checkout"
+    shutil.copytree(root / "src", source / "src", ignore=shutil.ignore_patterns("__pycache__"))
+    for filename in ("pyproject.toml", "README.md", "LICENSE"):
+        shutil.copy2(root / filename, source / filename)
+    for folder in ("packaging", "docs"):
+        shutil.copytree(root / folder, source / folder)
+    frontend = source / "frontend" / "dist"
+    (frontend / "assets").mkdir(parents=True)
+    (frontend / "index.html").write_text('<script src="/assets/test.js"></script>')
+    (frontend / "assets" / "test.js").write_text('console.log("release-ui");')
+    staging = tmp_path / "staged"
+    build["stage_source"](source, staging)
+    output = tmp_path / "release"
+    result = subprocess.run(
+        [sys.executable, "-m", "build", "--no-isolation", "--outdir", str(output), str(staging)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    wheel_path = next(output.glob("*.whl"))
+    archives = build["build_archives"](source, wheel_path, output, "0.1.0")
+    assert len(archives) == 3
+    for archive in archives:
+        prefix = archive.stem + "/"
+        with zipfile.ZipFile(archive) as bundle:
+            names = {name.removeprefix(prefix) for name in bundle.namelist()}
+            assert {"install.py", "INSTALL.md", "LICENSE", "WHEEL.sha256"} <= names
+            extension = "ps1" if "windows" in archive.stem else "sh"
+            assert {f"install.{extension}", f"start.{extension}"} <= names
+            assert not any(".venv" in name or "mxready.db" in name for name in names)
+    installed = tmp_path / "installed-release"
+    with zipfile.ZipFile(wheel_path) as wheel:
+        wheel.extractall(installed)
+    smoke = """
+import sys
+sys.path.insert(0, sys.argv[1])
+from mxready.config import Settings
+from mxready.app import create_app
+from fastapi.testclient import TestClient
+settings = Settings.from_env()
+assert settings.frontend_dist.is_absolute()
+with TestClient(create_app(settings, start_worker=False)) as client:
+    assert '/assets/test.js' in client.get('/').text
+    assert client.get('/assets/test.js').text == 'console.log("release-ui");'
+    assert client.get('/api/missing').status_code == 404
+"""
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", smoke, str(installed)],
+        cwd=tmp_path,
+        env={k: v for k, v in os.environ.items() if not k.startswith("MXREADY_")},
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_wheel_runs_outside_checkout_with_rules_schema_and_runner(tmp_path, report_factory):

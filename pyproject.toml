@@ -50,6 +50,7 @@ Issues = "https://github.com/shuljyli/MXReady/issues"
 Changelog = "https://github.com/shuljyli/MXReady/blob/main/CHANGELOG.md"
 
 [project.scripts]
+mxready-serve = "mxready.cli.serve:main"
 mxready-build-bundle = "mxready.cli.build_verification_bundle:main"
 mxready-scan = "mxready.cli.scan_repository:main"
 mxready-scan-public = "mxready.cli.generate_public_report:main"
@@ -60,7 +61,7 @@ where = ["src"]
 include = ["mxready*"]
 
 [tool.setuptools.package-data]
-"mxready.resources" = ["rules/v1/*.yml", "schemas/*.json"]
+"mxready.resources" = ["rules/v1/*.yml", "schemas/*.json", "frontend/*", "frontend/assets/*"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --basetemp=.pytest-temp"

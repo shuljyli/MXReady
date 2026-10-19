@@ -5,6 +5,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Windows、Linux、macOS 安装 ZIP 与包含网页的通用 wheel/sdist 构建入口；安装模板位于
+  `packaging/`，构建产物统一位于 Git 忽略的 `dist/`，提供 SHA-256 清单和离线依赖安装选项。
+- `mxready-serve` 安装后启动入口，默认监听本机地址并使用各系统的用户数据目录；
+  发布包可直接提供完整界面，保留 `MXREADY_FRONTEND_DIR` 覆盖方式。
+- 三平台 Python 3.11/3.12 发布包安装、HTTP、扫描与标准库 runner 冒烟工作流，
+  以及安装、升级、卸载和构建文档。
+
 ### Changed
 
 - Python 代码统一为 `src/` 布局：Web 与 CLI 位于 `src/mxready/`，独立标准库 runner
