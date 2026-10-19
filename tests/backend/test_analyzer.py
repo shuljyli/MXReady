@@ -17,7 +17,7 @@ from mxready.scanning.rule_loader import load_rule_catalog
 
 def test_analyzer_builds_report_and_migration_checklist() -> None:
     stages: list[ScanStatus] = []
-    report = ScanAnalyzer(load_rule_catalog(Path("rules/v1"))).analyze(
+    report = ScanAnalyzer(load_rule_catalog(Path("src/mxready/resources/rules/v1"))).analyze(
         Path("tests/fixtures/repositories/cuda_extension"),
         repository_url="https://github.com/example/cuda-extension",
         commit="b" * 40,
@@ -47,7 +47,7 @@ def test_analyzer_keeps_index_warnings_separate_from_findings(tmp_path: Path) ->
         encoding="utf-8",
     )
 
-    report = ScanAnalyzer(load_rule_catalog(Path("rules/v1"))).analyze(
+    report = ScanAnalyzer(load_rule_catalog(Path("src/mxready/resources/rules/v1"))).analyze(
         tmp_path,
         repository_url="https://gitee.com/example/large-project.git",
         commit="c" * 40,
@@ -61,7 +61,7 @@ def test_analyzer_keeps_index_warnings_separate_from_findings(tmp_path: Path) ->
 
 
 def test_checklist_groups_affected_files_by_unique_rule() -> None:
-    report = ScanAnalyzer(load_rule_catalog(Path("rules/v1"))).analyze(
+    report = ScanAnalyzer(load_rule_catalog(Path("src/mxready/resources/rules/v1"))).analyze(
         Path("tests/fixtures/repositories/cuda_extension"),
         repository_url="https://github.com/example/cuda-extension",
         commit="d" * 40,
@@ -107,13 +107,13 @@ def test_aggregate_findings_keeps_distinct_rules_and_files_apart() -> None:
 
 def test_analyzer_aggregates_repeated_hits_in_one_file(tmp_path: Path) -> None:
     (tmp_path / "setup.py").write_text(
-        'import subprocess\n'
+        "import subprocess\n"
         'subprocess.run(["nvcc", "a.cu"], check=True)\n'
         'subprocess.run(["nvcc", "b.cu"], check=True)\n',
         encoding="utf-8",
     )
 
-    report = ScanAnalyzer(load_rule_catalog(Path("rules/v1"))).analyze(
+    report = ScanAnalyzer(load_rule_catalog(Path("src/mxready/resources/rules/v1"))).analyze(
         tmp_path,
         repository_url="https://github.com/example/project",
         commit="e" * 40,

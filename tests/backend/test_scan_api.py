@@ -21,7 +21,7 @@ def test_create_scan_returns_202_and_job(client) -> None:
     body = response.json()
     assert body["status"] == "queued"
     assert client.get(f"/api/scans/{body['id']}").status_code == 200
-    client.app.state.scan_service.run_scan.assert_called_once()
+    client.app.state.scan_service.run_scan.assert_not_called()
 
 
 def test_invalid_repository_input_returns_safe_400_error(client) -> None:

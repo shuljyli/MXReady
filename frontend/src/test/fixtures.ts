@@ -11,6 +11,9 @@ const base: ScanReport = {
     commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   },
   tool_version: "0.1.0",
+  ruleset_digest: null,
+  extra_ruleset_version: null,
+  analysis_config: {},
   ruleset_version: "1",
   scanned_at: "2026-07-29T00:00:00Z",
   summary: {

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 import pytest
+
 from mxready_runner.schema import ManifestError, load_manifest
 
 

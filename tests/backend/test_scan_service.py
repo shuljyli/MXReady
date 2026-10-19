@@ -4,13 +4,14 @@ import shutil
 from pathlib import Path
 
 import pytest
+
 from mxready.config import Settings
 from mxready.errors import MxReadyError
 from mxready.models import ScanStatus
+from mxready.persistence.sqlite import SQLiteStore
 from mxready.scanning.analyzer import ScanAnalyzer
 from mxready.scanning.rule_loader import load_rule_catalog
 from mxready.services.scans import ScanService
-from mxready.storage import SQLiteStore
 
 FIXTURE = Path("tests/fixtures/repositories/cuda_extension")
 
@@ -73,7 +74,7 @@ def test_scan_service_maps_known_failures_to_failed_job(tmp_path: Path) -> None:
 def test_scan_service_limits_concurrent_active_jobs(tmp_path: Path) -> None:
     settings = Settings(
         data_dir=tmp_path / "data",
-        rules_dir=Path("rules/v1"),
+        rules_dir=Path("src/mxready/resources/rules/v1"),
         temp_dir=tmp_path / "tmp",
         max_concurrent_scans=1,
     )
@@ -97,7 +98,7 @@ def test_scan_service_limits_concurrent_active_jobs(tmp_path: Path) -> None:
 def test_scan_service_ignores_limit_when_disabled(tmp_path: Path) -> None:
     settings = Settings(
         data_dir=tmp_path / "data",
-        rules_dir=Path("rules/v1"),
+        rules_dir=Path("src/mxready/resources/rules/v1"),
         temp_dir=tmp_path / "tmp",
         max_concurrent_scans=0,
     )
@@ -119,7 +120,7 @@ def test_scan_service_ignores_limit_when_disabled(tmp_path: Path) -> None:
 def _build_service(tmp_path: Path, git_client):
     settings = Settings(
         data_dir=tmp_path / "data",
-        rules_dir=Path("rules/v1"),
+        rules_dir=Path("src/mxready/resources/rules/v1"),
         temp_dir=tmp_path / "tmp",
     )
     settings.temp_dir.mkdir(parents=True)

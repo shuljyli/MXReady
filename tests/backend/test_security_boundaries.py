@@ -16,7 +16,7 @@ def test_repository_source_is_never_executed(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    ScanAnalyzer(load_rule_catalog(Path("rules/v1"))).analyze(
+    ScanAnalyzer(load_rule_catalog(Path("src/mxready/resources/rules/v1"))).analyze(
         root,
         repository_url="https://github.com/example/hostile",
         commit="d" * 40,

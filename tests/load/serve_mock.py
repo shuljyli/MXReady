@@ -15,11 +15,7 @@ import shutil
 from pathlib import Path
 
 _FIXTURE_REPOSITORY = (
-    Path(__file__).resolve().parents[2]
-    / "tests"
-    / "fixtures"
-    / "repositories"
-    / "cuda_extension"
+    Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "repositories" / "cuda_extension"
 )
 _FAKE_COMMIT = "a" * 40
 
@@ -40,8 +36,9 @@ class MockGitClient:
 
 
 def main() -> None:
-    import mxready.app as app_module
     import uvicorn
+
+    import mxready.app as app_module
     from mxready.config import Settings
 
     # 运行时替换 app 模块的全局名，create_app() 内部的 GitClient() 会解析到 MockGitClient

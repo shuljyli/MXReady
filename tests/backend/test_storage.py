@@ -8,7 +8,7 @@ from mxready.models import (
     ScanStatus,
     VerificationRun,
 )
-from mxready.storage import SQLiteStore
+from mxready.persistence.sqlite import SQLiteStore
 
 
 def test_scan_job_survives_store_reopen(tmp_path):
@@ -31,12 +31,13 @@ def test_scan_job_survives_store_reopen(tmp_path):
     assert loaded.repo_url == "https://github.com/pytorch/extension-cpp"
 
 
-def test_initialize_marks_interrupted_jobs_failed(tmp_path):
+def test_recovery_marks_only_abandoned_executions_failed(tmp_path):
     store = SQLiteStore(tmp_path / "mxready.db")
     store.initialize()
     job = store.create_job("https://gitee.com/example/project", None)
 
-    store.mark_interrupted_jobs_failed()
+    store.update_job(job.id, status=ScanStatus.CLONING, stage_message="Cloning")
+    store.recover_expired_jobs()
 
     loaded = store.get_job(job.id)
     assert loaded is not None
@@ -142,6 +143,7 @@ def test_prune_old_scans_removes_stale_records(tmp_path):
     store.initialize()
     stale = store.create_job("https://github.com/example/stale", None)
     fresh = store.create_job("https://github.com/example/fresh", None)
+    store.update_job(stale.id, status=ScanStatus.COMPLETED, stage_message="Done")
     with sqlite3.connect(store.path) as connection:
         connection.execute(
             "UPDATE scan_jobs SET updated_at = ? WHERE id = ?",
@@ -162,3 +164,16 @@ def test_prune_old_scans_with_non_positive_days_is_noop(tmp_path):
 
     assert store.prune_old_scans(days=0) == 0
     assert store.prune_old_scans(days=-1) == 0
+
+
+def test_retention_never_deletes_old_queued_or_running_work(tmp_path):
+    store = SQLiteStore(tmp_path / "mxready.db")
+    store.initialize()
+    queued = store.create_job("https://github.com/example/queued", None)
+    running = store.create_job("https://github.com/example/running", None)
+    store.claim_job(running.id, "owner", lease_seconds=120)
+    with sqlite3.connect(store.path) as connection:
+        connection.execute("UPDATE scan_jobs SET updated_at = ?", ("2020-01-01T00:00:00+00:00",))
+    assert store.prune_old_scans(30) == 0
+    assert store.get_job(queued.id) is not None
+    assert store.get_job(running.id) is not None

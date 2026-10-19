@@ -48,6 +48,19 @@ function stubFetch(
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
+
+it("bounds stalled API requests with a timeout", async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("fetch", vi.fn((_url: string, init: RequestInit) =>
+    new Promise((_resolve, reject) => {
+      init.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+    }),
+  ));
+  const pending = expect(getScan(sleepJob.id)).rejects.toMatchObject({ code: "REQUEST_TIMEOUT" });
+  await vi.advanceTimersByTimeAsync(15_000);
+  await pending;
 });
 
 it("posts a scan request as JSON to /api/scans", async () => {

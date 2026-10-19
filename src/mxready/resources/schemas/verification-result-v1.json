@@ -1,0 +1,220 @@
+{
+  "$defs": {
+    "VerificationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Command",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "return_code": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Return Code"
+        },
+        "stdout": {
+          "default": "",
+          "maxLength": 16384,
+          "title": "Stdout",
+          "type": "string"
+        },
+        "stderr": {
+          "default": "",
+          "maxLength": 16384,
+          "title": "Stderr",
+          "type": "string"
+        },
+        "duration_ms": {
+          "minimum": 0,
+          "title": "Duration Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "command",
+        "status",
+        "duration_ms"
+      ],
+      "title": "VerificationCheck",
+      "type": "object"
+    },
+    "VerificationCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Command",
+          "type": "array"
+        },
+        "timeout_seconds": {
+          "maximum": 600,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "timeout",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "return_code": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Return Code"
+        },
+        "stdout": {
+          "default": "",
+          "maxLength": 16384,
+          "title": "Stdout",
+          "type": "string"
+        },
+        "stderr": {
+          "default": "",
+          "maxLength": 16384,
+          "title": "Stderr",
+          "type": "string"
+        },
+        "duration_ms": {
+          "minimum": 0,
+          "title": "Duration Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "command",
+        "timeout_seconds",
+        "status",
+        "duration_ms"
+      ],
+      "title": "VerificationCommand",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scan_id": {
+      "format": "uuid",
+      "title": "Scan Id",
+      "type": "string"
+    },
+    "repository_commit": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Repository Commit",
+      "type": "string"
+    },
+    "runner_version": {
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Runner Version",
+      "type": "string"
+    },
+    "environment_fingerprint": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Environment Fingerprint",
+      "type": "string"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/VerificationCheck"
+      },
+      "maxItems": 64,
+      "title": "Checks",
+      "type": "array"
+    },
+    "commands": {
+      "items": {
+        "$ref": "#/$defs/VerificationCommand"
+      },
+      "maxItems": 64,
+      "title": "Commands",
+      "type": "array"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "finished_at": {
+      "format": "date-time",
+      "title": "Finished At",
+      "type": "string"
+    },
+    "overall_status": {
+      "enum": [
+        "passed",
+        "failed",
+        "cancelled"
+      ],
+      "title": "Overall Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "scan_id",
+    "repository_commit",
+    "runner_version",
+    "environment_fingerprint",
+    "checks",
+    "commands",
+    "started_at",
+    "finished_at",
+    "overall_status"
+  ],
+  "title": "VerificationRun",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

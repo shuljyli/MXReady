@@ -7,7 +7,7 @@ PYTEST := $(VENV)/bin/pytest
 RUFF := $(VENV)/bin/ruff
 MYPY := $(VENV)/bin/mypy
 
-.PHONY: install dev test lint typecheck build frontend clean
+.PHONY: install dev test lint typecheck contracts build frontend clean
 
 install:
 	$(PYTHON) -m venv $(VENV)
@@ -21,10 +21,13 @@ test:
 	$(PYTEST) --cov=mxready --cov=mxready_runner --cov-report=term-missing --cov-fail-under=80
 
 lint:
-	$(RUFF) check backend runner scripts tests
+	$(RUFF) check src scripts tests
 
 typecheck:
 	$(MYPY)
+
+contracts:
+	$(VENV)/bin/python scripts/generate_contracts.py
 
 build:
 	cd frontend && npm run build

@@ -1,4 +1,6 @@
 import pytest
+from pydantic import ValidationError
+
 from mxready.errors import MxReadyError
 from mxready.models import (
     BadgeStatus,
@@ -10,7 +12,6 @@ from mxready.models import (
     calculate_static_status,
     summarize_findings,
 )
-from pydantic import ValidationError
 
 
 def make_finding(severity: Severity) -> Finding:
@@ -69,9 +70,7 @@ def test_static_blocker_takes_precedence_over_stale_verification(report_factory)
 
 
 def test_warning_and_info_counts_produce_warning_status():
-    summary = summarize_findings(
-        [make_finding(Severity.WARNING), make_finding(Severity.INFO)]
-    )
+    summary = summarize_findings([make_finding(Severity.WARNING), make_finding(Severity.INFO)])
 
     assert summary.total_count == 2
     assert summary.warning_count == 1

@@ -27,14 +27,17 @@ MVP 不包含私有仓库、自动修改源码、远程 GPU 服务器的 Docker 
 React/Vite UI
       │ /api
       ▼
-FastAPI ── SQLite
+FastAPI ── SQLite 持久任务队列与报告
    │
-   ├─ 受限 Git 获取 ── 只读文件索引 ── YAML 规则引擎
+   ├─ 原子领取 / 租约心跳 ── 受限 Git 获取 ── 只读文件索引 ── YAML 规则引擎
    ├─ JSON / Markdown / SVG 报告
    └─ 验证 ZIP ◀── 在用户控制的沐曦主机运行 ── result.json
 ```
 
 Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。远程 runner 只在用户控制的机器运行，并要求在执行项目命令前人工确认。
+
+Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发布。目录约定、任务队列和升级说明见
+[架构说明](docs/architecture.md)。修改模型后使用 `make contracts` 同步生成接口契约。
 
 ## 当前进度
 
@@ -42,8 +45,8 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 
 - MVP 设计规格中的 16 个实施任务全部落地；
 - 30 条检查规则（含 Dockerfile / CUDA 显存 / Stream / Device / 通信后端 / 数学库 / 测试跳过 / 混合精度相关），正反例夹具齐全；
-- 后端 + runner：**265 个测试通过**，覆盖率 90%+，ruff 与 mypy 全绿；
-- 前端：**35 个测试通过**，`npm run build` 成功；
+- 后端 + runner：覆盖离线扫描、安全边界、并发领取、租约失效、验证过期与安装包回归，覆盖率门槛 80%；
+- 前端：覆盖报告、表单、扫描刷新恢复、请求取消与有限重试，使用 Vitest 和 TypeScript 验证；
 - Windows PowerShell 5.1+ 与 Linux/macOS 使用统一命令入口；PowerShell 入口已在 5.1 实跑，Shell 入口由 CI 执行语法检查；
 - Python 3.11.15 隔离环境已完成关键防护与存储回归，CI 持续覆盖 Python 3.11/3.12 × Windows/Linux；
 - 已完成配置注入、结构化日志、SQLite 备份与迁移、流式请求体防护、原子并发限额、CI 矩阵、服务器交接脚本、locust 压测脚本等工程化优化。
@@ -97,8 +100,8 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 | 启动后端 | `.\scripts\make.ps1 dev` | `make dev` | uvicorn `--reload`，端口 8000 |
 | 启动前端 | `.\scripts\make.ps1 frontend` | `make frontend` | Vite dev，端口 5173 |
 | 运行测试 | `.\scripts\make.ps1 test` | `make test` | 后端 pytest（含覆盖率门槛） |
-| 代码检查 | `.\scripts\make.ps1 lint` | `make lint` | ruff 检查 backend / runner / scripts / tests |
-| 类型检查 | `.\scripts\make.ps1 typecheck` | `make typecheck` | mypy 检查 backend / runner / scripts |
+| 代码检查 | `.\scripts\make.ps1 lint` | `make lint` | ruff 检查 src / scripts / tests |
+| 类型检查 | `.\scripts\make.ps1 typecheck` | `make typecheck` | mypy 检查 src / scripts |
 | 构建前端 | `.\scripts\make.ps1 build` | `make build` | `npm run build` 产出 `frontend/dist` |
 | 清理 | `.\scripts\make.ps1 clean` | `make clean` | 删除 `.pytest-temp` |
 
@@ -163,12 +166,12 @@ MXREADY_LOG_LEVEL=DEBUG docker compose up -d
 
 ## 配置
 
-后端配置支持 12-factor 风格的环境变量注入（见 [backend/mxready/config.py](backend/mxready/config.py)），常用项：
+后端配置支持 12-factor 风格的环境变量注入（见 [src/mxready/config.py](src/mxready/config.py)），常用项：
 
 | 环境变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `MXREADY_DATA_DIR` | `data` | SQLite 数据目录 |
-| `MXREADY_RULES_DIR` | `rules/v1` | 规则目录 |
+| `MXREADY_RULES_DIR` | 安装包内规则 | 可选覆盖规则目录 |
 | `MXREADY_TEMP_DIR` | `data/tmp` | 克隆与索引临时目录 |
 | `MXREADY_FRONTEND_DIR` | `frontend/dist` | 前端静态资源目录 |
 | `MXREADY_LOG_LEVEL` | `INFO` | 日志级别 |
@@ -179,6 +182,8 @@ MXREADY_LOG_LEVEL=DEBUG docker compose up -d
 | `MXREADY_RATE_LIMIT_PER_MINUTE` | `20` | 每 IP 每分钟请求上限 |
 | `MXREADY_MAX_CONCURRENT_SCANS` | `2` | 原子并发扫描上限（0 表示不限制） |
 | `MXREADY_MAX_REQUEST_BYTES` | `1048576` | 按实际接收字节数执行的请求体上限 |
+| `MXREADY_SCAN_WORKER_THREADS` | `2` | 每进程消费者线程数 |
+| `MXREADY_TASK_LEASE_SECONDS` | `120` | 任务执行租约秒数，至少 3 |
 
 > 监听地址与端口由 uvicorn 的 `--host` / `--port`（或 `UVICORN_HOST` / `UVICORN_PORT`）控制，不在 `MXREADY_*` 中重复配置。完整模板见 [.env.example](.env.example)。
 
@@ -240,8 +245,9 @@ mxready-build-bundle examples/reports/pytorch-extension-cpp.json \
 ## 测试
 
 ```bash
-python -m ruff check backend runner scripts tests
+python -m ruff check src scripts tests
 python -m mypy
+python scripts/generate_contracts.py --check
 python -m pytest --cov=mxready --cov=mxready_runner --cov-fail-under=80
 
 cd frontend
@@ -255,6 +261,7 @@ npm run build
 
 | 文档 | 内容 |
 | --- | --- |
+| [docs/architecture.md](docs/architecture.md) | 目录层级、依赖方向、任务生命周期与包资源约定 |
 | [docs/deployment.md](docs/deployment.md) | 生产部署：裸机 / systemd / Docker / nginx / 备份 / 日志 |
 | [docs/api.md](docs/api.md) | 中文 API 手册（含 curl 示例） |
 | [docs/security.md](docs/security.md) | 安全模型 |

@@ -1,72 +1,21 @@
 import { useEffect, useState } from "react";
 
-import { getReport, getRules, getScan, MxReadyApiError } from "./api/client";
-import type { ScanJob, ScanReport } from "./api/types";
+import { getRules } from "./api/client";
+import type { ScanJob } from "./api/types";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ReportSkeleton } from "./components/ReportSkeleton";
 import { ReportView } from "./components/ReportView";
 import { ScanForm } from "./components/ScanForm";
 import { ScanProgress } from "./components/ScanProgress";
-
-type ViewState =
-  | { kind: "idle" }
-  | { kind: "scanning"; job: ScanJob }
-  | { kind: "report-loading"; job: ScanJob }
-  | { kind: "report"; report: ScanReport }
-  | { kind: "error"; code: string; message: string };
+import { useScan } from "./hooks/useScan";
 
 type AppProps = {
   initialJob?: ScanJob;
   pollIntervalMs?: number;
 };
 
-const activeStatuses = new Set([
-  "queued",
-  "cloning",
-  "indexing",
-  "analyzing",
-]);
-
-type ErrorStage = "polling" | "report";
-
-function visibleError(
-  error: unknown,
-  stage: ErrorStage,
-): { code: string; message: string } {
-  if (error instanceof MxReadyApiError) {
-    return { code: error.code, message: error.message };
-  }
-  if (stage === "report") {
-    return {
-      code: "REPORT_LOAD_FAILED",
-      message: "读取报告失败，请稍后重新开始。",
-    };
-  }
-  return {
-    code: "POLLING_FAILED",
-    message: "读取扫描进度失败，请稍后重新开始。",
-  };
-}
-
-function initialView(initialJob: ScanJob | undefined): ViewState {
-  if (initialJob === undefined) {
-    return { kind: "idle" };
-  }
-  if (initialJob.status === "completed") {
-    return { kind: "report-loading", job: initialJob };
-  }
-  if (initialJob.status === "failed") {
-    return {
-      kind: "error",
-      code: initialJob.failure_code ?? "SCAN_FAILED",
-      message: initialJob.failure_message ?? "扫描未能完成。",
-    };
-  }
-  return { kind: "scanning", job: initialJob };
-}
-
 export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
-  const [view, setView] = useState<ViewState>(() => initialView(initialJob));
+  const { view, reset, onCreated, onUpdated, retry } = useScan(initialJob, pollIntervalMs);
   const [ruleCount, setRuleCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -76,74 +25,6 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
         // The header stays usable without the rule count.
       });
   }, []);
-
-  useEffect(() => {
-    if (
-      view.kind !== "scanning" ||
-      !activeStatuses.has(view.job.status)
-    ) {
-      return;
-    }
-
-    let cancelled = false;
-    const timer = window.setTimeout(async () => {
-      try {
-        const nextJob = await getScan(view.job.id);
-        if (cancelled) {
-          return;
-        }
-        if (nextJob.status === "completed") {
-          setView({ kind: "report-loading", job: nextJob });
-          return;
-        }
-        if (nextJob.status === "failed") {
-          setView({
-            kind: "error",
-            code: nextJob.failure_code ?? "SCAN_FAILED",
-            message: nextJob.failure_message ?? "扫描未能完成。",
-          });
-          return;
-        }
-        setView({ kind: "scanning", job: nextJob });
-      } catch (error) {
-        if (!cancelled) {
-          setView({ kind: "error", ...visibleError(error, "polling") });
-        }
-      }
-    }, pollIntervalMs);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [pollIntervalMs, view]);
-
-  useEffect(() => {
-    if (view.kind !== "report-loading") {
-      return;
-    }
-
-    let cancelled = false;
-    getReport(view.job.id)
-      .then((report) => {
-        if (!cancelled) {
-          setView({ kind: "report", report });
-        }
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setView({ kind: "error", ...visibleError(error, "report") });
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [view]);
-
-  function reset() {
-    setView({ kind: "idle" });
-  }
 
   return (
     <div className="app-shell">
@@ -205,7 +86,7 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
               </aside>
             </section>
             <ScanForm
-              onCreated={(job) => setView({ kind: "scanning", job })}
+              onCreated={onCreated}
             />
           </div>
         ) : null}
@@ -216,13 +97,13 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
           </ErrorBoundary>
         ) : null}
 
-        {view.kind === "report-loading" ? <ReportSkeleton /> : null}
+        {view.kind === "report-loading" || view.kind === "restoring" ? <ReportSkeleton /> : null}
 
         {view.kind === "report" ? (
           <ErrorBoundary label="报告内容">
             <ReportView
               onReset={reset}
-              onUpdated={(report) => setView({ kind: "report", report })}
+              onUpdated={onUpdated}
               report={view.report}
             />
           </ErrorBoundary>
@@ -234,6 +115,9 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
             <span className="error-code">{view.code}</span>
             <h1>这次体检没有完成</h1>
             <p>{view.message}</p>
+            {view.scanId ? (
+              <button className="secondary-button" onClick={retry} type="button">继续查看扫描</button>
+            ) : null}
             <button className="secondary-button" onClick={reset} type="button">
               重新开始
             </button>

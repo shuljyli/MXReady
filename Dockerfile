@@ -21,11 +21,8 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY pyproject.toml ./
-COPY backend/ backend/
-COPY runner/ runner/
-COPY scripts/ scripts/
-COPY rules/ rules/
-COPY schemas/ schemas/
+COPY README.md LICENSE ./
+COPY src/ src/
 RUN pip install --no-cache-dir .
 
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
@@ -37,7 +34,6 @@ RUN useradd --create-home mxready \
 USER mxready
 
 ENV MXREADY_DATA_DIR=/app/data \
-    MXREADY_RULES_DIR=/app/rules/v1 \
     MXREADY_TEMP_DIR=/app/data/tmp \
     MXREADY_FRONTEND_DIR=/app/frontend/dist \
     MXREADY_LOG_LEVEL=INFO

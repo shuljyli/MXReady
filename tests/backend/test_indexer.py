@@ -5,6 +5,7 @@ from contextlib import suppress
 from pathlib import Path
 
 import pytest
+
 from mxready.errors import MxReadyError
 from mxready.scanning.indexer import build_file_index
 
