@@ -1,8 +1,11 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
-MXReady 是一个面向 Python、PyTorch CUDA 扩展项目的**迁移准备度体检工具**。在申请稀缺的沐曦 GPU 算力之前，它用可解释的静态规则定位 CUDA 工具链、架构参数、原生依赖和构建配置中值得复核的迁移风险，并生成固定到具体 Git 提交的报告与远程验证包。
+MXReady 是一个面向 Python、PyTorch CUDA 扩展项目的**迁移准备度体检工具**。在把项目迁移到沐曦 MXMACA 之前，它用可解释的静态规则定位 CUDA 工具链、架构参数、原生依赖和构建配置中值得复核的迁移风险，并生成固定到具体 Git 提交的报告与远程验证包。
 
 > MXReady 是社区原型，不是沐曦官方兼容性认证。静态检查通过不等于项目已经兼容 MXMACA；最终结论仍需要在相同提交和受控的沐曦 GPU 环境中验证。
 
@@ -13,7 +16,7 @@ MXReady 是一个面向 Python、PyTorch CUDA 扩展项目的**迁移准备度�
 - 提供 **30 条首批规则**（`MXR-*`），每条结果包含文件、行号、证据、建议和权威参考；
 - 输出 JSON、Markdown、SVG 徽章与标准库远程验证包；
 - 明确区分静态状态与真机验证状态；
-- 提供只读本地目录 CLI，便于离线回归和生成申报材料；
+- 提供只读本地目录 CLI，便于离线回归和生成示例报告；
 - React 单页界面与 FastAPI 服务可打包为同一个部署单元。
 
 MVP 不包含私有仓库、自动修改源码、远程 GPU 服务器的 Docker 编排、云 GPU 调度、用户系统或百分比"兼容分数"。
@@ -43,7 +46,7 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 - 前端：**23 个测试通过**，`npm run build` 成功；
 - Windows PowerShell 5.1+ 与 Linux/macOS 使用统一命令入口；PowerShell 入口已在 5.1 实跑，Shell 入口由 CI 执行语法检查；
 - Python 3.11.15 隔离环境已完成关键防护与存储回归，CI 持续覆盖 Python 3.11/3.12 × Windows/Linux；
-- P0~P3 优化项基本完成（配置注入、结构化日志、SQLite 备份与迁移、流式请求体防护、原子并发限额、CI 矩阵、服务器交接脚本、locust 压测脚本等），逐项执行记录见 [docs/optimization-plan.md](docs/optimization-plan.md)。
+- 已完成配置注入、结构化日志、SQLite 备份与迁移、流式请求体防护、原子并发限额、CI 矩阵、服务器交接脚本、locust 压测脚本等工程化优化。
 
 **仍需外部环境验证（重点）**
 
@@ -51,7 +54,7 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 - **Linux / macOS 交互式启动**：CI 会检查 `scripts/dev.sh` 的 Bash 语法，完整交互流程仍应在目标系统发布前做一次冒烟测试；
 - **真机沐曦 GPU 验证**：仍为 `pending`，等待服务器窗口期后按 [examples/verification/README.md](examples/verification/README.md) 执行。
 
-> 三份公开项目报告与验证记录见 [docs/application-evidence.md](docs/application-evidence.md)，历史决策与执行记录见 [docs/optimization-plan.md](docs/optimization-plan.md)。
+> 三份公开项目示例报告见 [examples/reports](examples/reports)，远程验证流程见 [examples/verification/README.md](examples/verification/README.md)。
 
 ## 快速开始（三平台统一命令入口）
 
@@ -170,7 +173,7 @@ MXREADY_LOG_LEVEL=DEBUG docker compose up -d
 | `MXREADY_LOG_LEVEL` | `INFO` | 日志级别 |
 | `MXREADY_ALLOWED_HOSTS` | `github.com,gitee.com` | 允许的代码托管平台白名单 |
 | `MXREADY_EXTRA_RULES_DIR` | 未设置 | 追加的自定义规则目录 |
-| `MXREADY_SCAN_RETENTION_DAYS` | `0` | 扫描记录保留天数（0 = 不自动清理，保护申报证据） |
+| `MXREADY_SCAN_RETENTION_DAYS` | `0` | 扫描记录保留天数（0 = 不自动清理，保留历史记录） |
 | `MXREADY_RATE_LIMIT_ENABLED` | 关闭 | 按 IP 的滑动窗口限流开关 |
 | `MXREADY_RATE_LIMIT_PER_MINUTE` | `20` | 每 IP 每分钟请求上限 |
 | `MXREADY_MAX_CONCURRENT_SCANS` | `2` | 原子并发扫描上限（0 表示不限制） |
@@ -199,7 +202,7 @@ mxready-scan tests/fixtures/repositories/cuda_extension --repo-url https://githu
 
 ## 公开仓库证据与验证包
 
-需要生成固定文件名的申报证据时，可使用同一套主机白名单、Git 限制和只读分析器：
+需要生成固定文件名的公开报告时，可使用同一套主机白名单、Git 限制和只读分析器：
 
 ```bash
 mxready-scan-public https://github.com/pytorch/extension-cpp \
@@ -217,7 +220,7 @@ mxready-build-bundle examples/reports/pytorch-extension-cpp.json \
   --output examples/verification/pytorch-extension-cpp-verification.zip
 ```
 
-生成清单默认不含项目命令（ZIP 内附 `project-commands.example.json` 模板，需人工审阅并替换为实际 smoke 命令后填入清单）。请先阅读 [申报证据](docs/application-evidence.md) 与 [真机验证交接](examples/verification/README.md)，再在自己控制的沐曦服务器上人工补充并执行命令。服务器窗口期的执行清单见 [修改优化计划书](docs/optimization-plan.md) 第 4 节。
+生成清单默认不含项目命令（ZIP 内附 `project-commands.example.json` 模板，需人工审阅并替换为实际 smoke 命令后填入清单）。请先阅读 [真机验证交接](examples/verification/README.md)，再在自己控制的沐曦服务器上人工补充并执行命令。
 
 ## 状态含义
 
@@ -255,9 +258,10 @@ npm run build
 | [docs/security.md](docs/security.md) | 安全模型 |
 | [docs/rules.md](docs/rules.md) | 规则开发指南 |
 | [docs/runner.md](docs/runner.md) | 远程验证 runner 指南 |
-| [docs/application-evidence.md](docs/application-evidence.md) | 申报证据与可复现验证 |
-| [docs/optimization-plan.md](docs/optimization-plan.md) | 修改优化计划书（P0~P3 执行记录） |
 | [examples/verification/README.md](examples/verification/README.md) | 真机验证交接 SOP |
+| [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | 贡献流程与质量门 |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | 社区行为准则 |
 
 ## 安全边界
 
@@ -294,4 +298,4 @@ npm run build
 
 ## 许可证
 
-本项目采用 [Apache License 2.0](LICENSE)。
+本项目采用 [Apache License 2.0](LICENSE) 许可证。欢迎在遵守许可证条款的前提下使用、修改和分发。

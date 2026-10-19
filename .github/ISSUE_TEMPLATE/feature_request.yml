@@ -1,0 +1,43 @@
+name: 功能建议
+description: 提出新功能、规则或改进建议
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢建议。请描述要解决的问题，而不只是实现方案，便于评估取舍。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 当前哪里不方便或缺失？
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 你希望项目如何改进？如有替代方案也请一并说明。
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及模块
+      options:
+        - 检查规则（rules/）
+        - 后端 API
+        - 前端界面
+        - 远程验证 runner
+        - 文档与部署
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 参考资料
+      description: 新增或修改规则时，请提供一手技术资料链接。
+    validations:
+      required: false

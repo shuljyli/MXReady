@@ -8,8 +8,19 @@ version = "0.1.0"
 description = "Static readiness checks for moving PyTorch CUDA extensions to MetaX MXMACA"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{name = "shuli-黍黎"}]
+keywords = ["cuda", "pytorch", "metax", "mxmaca", "migration", "static-analysis"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = [
   "fastapi>=0.115,<1",
   "pydantic>=2.10,<3",
@@ -27,6 +38,12 @@ dev = [
 load = [
   "locust>=2.32,<3",
 ]
+
+[project.urls]
+Homepage = "https://github.com/shuljyli/MXReady"
+Repository = "https://github.com/shuljyli/MXReady"
+Issues = "https://github.com/shuljyli/MXReady/issues"
+Changelog = "https://github.com/shuljyli/MXReady/blob/main/CHANGELOG.md"
 
 [project.scripts]
 mxready-build-bundle = "scripts.build_verification_bundle:main"

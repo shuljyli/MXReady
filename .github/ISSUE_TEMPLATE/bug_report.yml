@@ -1,0 +1,53 @@
+name: Bug 报告
+description: 报告可复现的功能缺陷或异常行为
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。提交前请先搜索已有 Issue，避免重复。
+        安全漏洞请勿在此公开细节，按 [docs/security.md](https://github.com/shuljyli/MXReady/blob/main/docs/security.md) 的流程披露。
+  - type: textarea
+    id: summary
+    attributes:
+      label: 问题描述
+      description: 清楚说明发生了什么，以及你期望的行为。
+      placeholder: 执行 xxx 时得到 xxx，期望 xxx。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 提供最小、可重复的操作步骤。
+      placeholder: |
+        1. 运行 ...
+        2. 打开 ...
+        3. 观察到 ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: MXReady 版本
+      description: 可通过 `GET /api/health` 或 `pip show mxready` 获取。
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 运行环境
+      description: 操作系统、Python / Node.js 版本、部署方式（裸机 / Docker）。
+      placeholder: Windows 11, Python 3.11.15, Docker
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相关日志或截图
+      description: 请先脱敏，移除密钥、主机名、内网地址与私有仓库信息。
+      render: shell
+    validations:
+      required: false

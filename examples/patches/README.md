@@ -28,5 +28,4 @@ python -m unittest discover -s tests/L0/run_build_utils -v
 
 最后一项只证明补丁消除了“硬编码调用 `$CUDA_HOME/bin/nvcc -V`”这一静态阻断项，不证明 Apex 已在沐曦 GPU 上构建或运行成功。
 
-拟议但未提交的上游 PR 标题和正文记录在
-[`docs/application-evidence.md`](../../docs/application-evidence.md#上游补丁候选)。
+拟议但未提交的上游 PR 标题与正文可直接参照本目录中的补丁文件。
