@@ -204,12 +204,8 @@ class VerificationRun(StrictModel):
 
     @model_validator(mode="after")
     def result_is_semantically_consistent(self) -> "VerificationRun":
-        identifiers = [
-            item.id
-            for item in [
-                *self.checks,
-                *self.commands,
-            ]
+        identifiers = [item.id for item in self.checks] + [
+            item.id for item in self.commands
         ]
         if len(identifiers) != len(set(identifiers)):
             raise ValueError("verification result ids must be unique")

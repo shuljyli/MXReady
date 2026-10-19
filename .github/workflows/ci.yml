@@ -20,6 +20,7 @@ jobs:
           cache: pip
       - run: python -m pip install -e ".[dev]"
       - run: python -m ruff check backend runner scripts tests
+      - run: python -m mypy
       - run: >-
           python -m pytest
           --cov=mxready

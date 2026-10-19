@@ -8,6 +8,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from subprocess import TimeoutExpired
+from typing import Literal
 
 from mxready_runner import __version__
 from mxready_runner.inspect import (
@@ -54,7 +55,9 @@ def run_manifest(
                 command.command,
                 timeout=command.timeout_seconds,
             )
-            command_status = "passed" if process.returncode == 0 else "failed"
+            command_status: Literal["passed", "failed"] = (
+                "passed" if process.returncode == 0 else "failed"
+            )
             result = CommandResult(
                 id=command.id,
                 command=_sanitize_command(command.command),
@@ -89,7 +92,7 @@ def run_manifest(
             )
         results.append(result)
 
-    overall_status = (
+    overall_status: Literal["passed", "failed"] = (
         "passed"
         if environment_checks_passed(checks)
         and all(item.status == "passed" for item in results)

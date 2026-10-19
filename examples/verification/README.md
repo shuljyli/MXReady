@@ -1,6 +1,6 @@
 # MetaX 真机验证交接
 
-本目录目前只有为 `pytorch/extension-cpp` 生成的安全默认验证 ZIP。真实结果文件尚不存在；只有在授权的沐曦服务器上运行、人工脱敏并核对提交后，才应新增 `metax-verification-redacted.json`。
+本目录提供 `pytorch/extension-cpp` 的远程验证交接脚本与只读辅助工具。验证 ZIP 不随仓库提交，需按项目 README 的 `mxready-build-bundle` 命令在本地生成。真实结果文件（`metax-verification-redacted.json`）尚不存在；只有在授权的沐曦服务器上运行、人工脱敏并核对提交后，才应新增（该文件已被 `.gitignore` 忽略，避免误提交残留内网信息）。
 
 ## 1. 核对环境
 
@@ -39,7 +39,7 @@ git rev-parse HEAD
 
 ## 3. 解压并先做只读检查
 
-把 `pytorch-extension-cpp-verification.zip` 上传到源码目录的上一级，然后在仓库根目录解压：
+先在本地按项目 README 生成 `pytorch-extension-cpp-verification.zip`，再把它上传到源码目录的上一级，然后在仓库根目录解压：
 
 ```bash
 python -m zipfile -e ../pytorch-extension-cpp-verification.zip .

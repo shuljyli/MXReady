@@ -5,8 +5,9 @@ VENV := .venv
 PIP := $(VENV)/bin/pip
 PYTEST := $(VENV)/bin/pytest
 RUFF := $(VENV)/bin/ruff
+MYPY := $(VENV)/bin/mypy
 
-.PHONY: install dev test lint build frontend clean
+.PHONY: install dev test lint typecheck build frontend clean
 
 install:
 	$(PYTHON) -m venv $(VENV)
@@ -21,6 +22,9 @@ test:
 
 lint:
 	$(RUFF) check backend runner scripts tests
+
+typecheck:
+	$(MYPY)
 
 build:
 	cd frontend && npm run build

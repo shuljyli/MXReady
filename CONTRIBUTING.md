@@ -12,6 +12,7 @@
 
 ```bash
 python -m ruff check backend runner scripts tests
+python -m mypy
 python -m pytest --cov=mxready --cov=mxready_runner --cov-fail-under=80
 cd frontend
 npm test

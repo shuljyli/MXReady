@@ -42,8 +42,8 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 
 - MVP 设计规格中的 16 个实施任务全部落地；
 - 30 条检查规则（含 Dockerfile / CUDA 显存 / Stream / Device / 通信后端 / 数学库 / 测试跳过 / 混合精度相关），正反例夹具齐全；
-- 后端 + runner：**265 个测试通过**，覆盖率 90%+，ruff 全绿；
-- 前端：**23 个测试通过**，`npm run build` 成功；
+- 后端 + runner：**265 个测试通过**，覆盖率 90%+，ruff 与 mypy 全绿；
+- 前端：**35 个测试通过**，`npm run build` 成功；
 - Windows PowerShell 5.1+ 与 Linux/macOS 使用统一命令入口；PowerShell 入口已在 5.1 实跑，Shell 入口由 CI 执行语法检查；
 - Python 3.11.15 隔离环境已完成关键防护与存储回归，CI 持续覆盖 Python 3.11/3.12 × Windows/Linux；
 - 已完成配置注入、结构化日志、SQLite 备份与迁移、流式请求体防护、原子并发限额、CI 矩阵、服务器交接脚本、locust 压测脚本等工程化优化。
@@ -54,7 +54,7 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 - **Linux / macOS 交互式启动**：CI 会检查 `scripts/dev.sh` 的 Bash 语法，完整交互流程仍应在目标系统发布前做一次冒烟测试；
 - **真机沐曦 GPU 验证**：仍为 `pending`，等待服务器窗口期后按 [examples/verification/README.md](examples/verification/README.md) 执行。
 
-> 三份公开项目示例报告见 [examples/reports](examples/reports)，远程验证流程见 [examples/verification/README.md](examples/verification/README.md)。
+> 公开项目示例报告见 [examples/reports](examples/reports)（以 `pytorch-extension-cpp` 为例），远程验证流程见 [examples/verification/README.md](examples/verification/README.md)。
 
 ## 快速开始（三平台统一命令入口）
 
@@ -89,7 +89,7 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 
 ### 命令入口总表
 
-统一 `install` / `dev` / `test` / `lint` / `build` / `frontend` / `clean`：
+统一 `install` / `dev` / `test` / `lint` / `typecheck` / `build` / `frontend` / `clean`：
 
 | 目标 | Windows (PowerShell) | Linux / macOS | 作用 |
 | --- | --- | --- | --- |
@@ -98,6 +98,7 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 | 启动前端 | `.\scripts\make.ps1 frontend` | `make frontend` | Vite dev，端口 5173 |
 | 运行测试 | `.\scripts\make.ps1 test` | `make test` | 后端 pytest（含覆盖率门槛） |
 | 代码检查 | `.\scripts\make.ps1 lint` | `make lint` | ruff 检查 backend / runner / scripts / tests |
+| 类型检查 | `.\scripts\make.ps1 typecheck` | `make typecheck` | mypy 检查 backend / runner / scripts |
 | 构建前端 | `.\scripts\make.ps1 build` | `make build` | `npm run build` 产出 `frontend/dist` |
 | 清理 | `.\scripts\make.ps1 clean` | `make clean` | 删除 `.pytest-temp` |
 
@@ -240,6 +241,7 @@ mxready-build-bundle examples/reports/pytorch-extension-cpp.json \
 
 ```bash
 python -m ruff check backend runner scripts tests
+python -m mypy
 python -m pytest --cov=mxready --cov=mxready_runner --cov-fail-under=80
 
 cd frontend

@@ -18,7 +18,7 @@
 - 只读本地目录 CLI（`mxready-scan`）与公开仓库报告命令（`mxready-scan-public`）。
 - 仅依赖 Python 标准库的远程验证 runner，生成自包含验证 ZIP（`mxready-build-bundle`）。
 - Docker 与裸机两种部署方式，配置通过 `MXREADY_*` 环境变量注入。
-- GitHub Actions CI：Python 3.11/3.12 × Windows/Linux 测试、ruff、覆盖率门槛、
+- GitHub Actions CI：Python 3.11/3.12 × Windows/Linux 测试、ruff 与 mypy 静态检查、覆盖率门槛、
   前端测试与构建、依赖漏洞扫描、镜像构建。
 
 ### Security

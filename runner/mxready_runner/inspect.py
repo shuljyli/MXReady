@@ -4,6 +4,7 @@ import subprocess
 import time
 from collections.abc import Callable, Iterable, Sequence
 from subprocess import CompletedProcess, TimeoutExpired
+from typing import Literal
 
 from mxready_runner.redact import sanitize_output
 from mxready_runner.schema import CheckResult, CommandSpec
@@ -62,7 +63,9 @@ def collect_environment(
                 check.command,
                 timeout=check.timeout_seconds,
             )
-            status = "passed" if process.returncode == 0 else "failed"
+            status: Literal["passed", "failed"] = (
+                "passed" if process.returncode == 0 else "failed"
+            )
             result = CheckResult(
                 id=check.id,
                 command=_sanitize_command(check.command),

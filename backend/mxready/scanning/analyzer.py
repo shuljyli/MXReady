@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from mxready import __version__
@@ -100,7 +101,7 @@ def _aggregate_findings(findings: list[Finding]) -> list[Finding]:
 
 
 def _build_migration_checklist(findings) -> list[MigrationChecklistItem]:
-    grouped = {}
+    grouped: dict[str, dict[str, Any]] = {}
     for finding in findings:
         if finding.severity not in {Severity.BLOCKER, Severity.WARNING}:
             continue

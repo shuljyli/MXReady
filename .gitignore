@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 .pytest-temp/
 .ruff_cache/
+.mypy_cache/
 .coverage
 htmlcov/
 .venv/
@@ -34,6 +35,10 @@ data/public-scan-work/
 frontend/node_modules/
 frontend/dist/
 frontend/coverage/
+
+# Generated verification bundles and handover results (regenerate on demand)
+examples/verification/*.zip
+examples/verification/*redacted*.json
 
 # Editors and operating systems
 .idea/

@@ -87,7 +87,7 @@ class SQLiteStore:
                     raise MxReadyError(
                         "SCAN_LIMIT_REACHED",
                         "并发扫描数量已达上限，请稍后再试。",
-                        {"active": active, "limit": max_active},
+                        {"active": str(active), "limit": str(max_active)},
                     )
             connection.execute(
                 """

@@ -265,14 +265,16 @@ def read_bounded_url(
     clock: Clock = time.monotonic,
 ) -> bytes:
     parsed = urlsplit(url)
+    host = parsed.hostname
     if (
         parsed.scheme != "https"
-        or parsed.hostname not in _ALLOWED_HTTP_HOSTS
+        or not isinstance(host, str)
+        or host not in _ALLOWED_HTTP_HOSTS
         or parsed.username is not None
         or parsed.password is not None
         or parsed.port is not None
         or parsed.fragment
-        or parsed.netloc != parsed.hostname
+        or parsed.netloc != host
     ):
         raise MxReadyError(
             "ARCHIVE_FETCH_FAILED",
@@ -300,7 +302,7 @@ def read_bounded_url(
     def perform_request() -> None:
         try:
             outcome: bytes | Exception = _read_bounded_connection(
-                parsed.hostname,
+                host,
                 target,
                 deadline=deadline,
                 max_bytes=max_bytes,
