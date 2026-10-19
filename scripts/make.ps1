@@ -99,6 +99,8 @@ elseif ($Target -eq "typecheck") {
   Assert-PythonEnv
   & $Python -m mypy
   Assert-LastExitCode "Python type check failed"
+  & $Python -m mypy --platform linux
+  Assert-LastExitCode "Linux-target Python type check failed"
 }
 elseif ($Target -eq "contracts") {
   Assert-PythonEnv

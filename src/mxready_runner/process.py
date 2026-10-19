@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import signal
 import subprocess
+import sys
 from collections.abc import Sequence
 from contextlib import suppress
 from subprocess import CompletedProcess, TimeoutExpired
@@ -40,7 +41,7 @@ class _Capture:
 
 
 def _terminate_tree(process: subprocess.Popen[bytes]) -> None:
-    if os.name == "posix":
+    if sys.platform != "win32":
         with suppress(ProcessLookupError):
             os.killpg(process.pid, signal.SIGKILL)
     else:

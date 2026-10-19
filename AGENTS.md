@@ -22,7 +22,7 @@ Use Python 3.11+, Node.js 22+, and Git. Run from the repository root:
 - `make install`: create `.venv`, install Python development dependencies, and run `npm ci`.
 - `bash scripts/dev.sh`: launch FastAPI on port 8000 and Vite on 5173.
 - `make dev` / `make frontend`: launch either service separately.
-- `make lint`: run Ruff; `make typecheck`: run mypy.
+- `make lint`: run Ruff; `make typecheck`: run mypy for the host and Windows; PowerShell also checks the Linux target.
 - `make contracts`: regenerate TypeScript response types and verification JSON Schema; CI runs `python scripts/generate_contracts.py --check`.
 - `make test`: run pytest with coverage reporting and an 80% minimum.
 - `cd frontend && npm test`: run Vitest.

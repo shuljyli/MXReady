@@ -25,6 +25,7 @@ lint:
 
 typecheck:
 	$(MYPY)
+	$(MYPY) --platform win32
 
 contracts:
 	$(VENV)/bin/python scripts/generate_contracts.py

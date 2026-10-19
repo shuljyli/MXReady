@@ -51,7 +51,8 @@ jobs:
       - name: Start image and check API and frontend
         run: |
           docker run -d --name mxready-ci -p 127.0.0.1:8000:8000 mxready:ci
-          curl --fail --retry 15 --retry-connrefused --retry-delay 1 http://127.0.0.1:8000/api/health
+          curl --fail --retry 15 --retry-all-errors --retry-connrefused --retry-delay 1 \
+            --retry-max-time 30 --connect-timeout 1 --max-time 3 http://127.0.0.1:8000/api/health
           curl --fail http://127.0.0.1:8000/ --output /tmp/mxready-index.html
           test -s /tmp/mxready-index.html
       - name: Container logs and cleanup
