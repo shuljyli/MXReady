@@ -6,6 +6,8 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
 .venv/
 venv/
@@ -20,21 +22,14 @@ venv/
 .env.*
 !.env.example
 
-# Local agent guidance
-/AGENTS.md
-
 # Runtime data
-data/*.db
-data/*.db-*
-data/tmp/
-data/reports/
-data/load/
-data/public-scan-work/
+/data/
 
 # Frontend
 frontend/node_modules/
 frontend/dist/
 frontend/coverage/
+*.tsbuildinfo
 
 # Generated verification bundles and handover results (regenerate on demand)
 examples/verification/*.zip

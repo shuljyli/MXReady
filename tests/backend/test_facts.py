@@ -94,8 +94,7 @@ def test_apex_imports_set_the_imports_apex_fact(tmp_path: Path) -> None:
 
     assert facts.flags["imports_apex"] is True
     assert all(
-        location.relative_path == "train.py"
-        for location in facts.locations["fact:imports_apex"]
+        location.relative_path == "train.py" for location in facts.locations["fact:imports_apex"]
     )
 
 

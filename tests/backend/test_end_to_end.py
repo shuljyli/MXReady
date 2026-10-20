@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+
 from mxready.app import create_app
 from mxready.config import Settings
 from mxready.models import ScanStatus
@@ -12,15 +13,16 @@ def test_fixture_scan_to_report_badge_and_verification_bundle(tmp_path: Path) ->
     app = create_app(
         Settings(
             data_dir=tmp_path / "data",
-            rules_dir=Path("rules/v1"),
+            rules_dir=Path("src/mxready/resources/rules/v1"),
             temp_dir=tmp_path / "tmp",
             frontend_dist=tmp_path / "missing-frontend",
-        )
+        ),
+        start_worker=False,
     )
     with TestClient(app) as client:
         store = app.state.store
         job = store.create_job("https://github.com/example/cuda-extension", None)
-        report = ScanAnalyzer(load_rule_catalog(Path("rules/v1"))).analyze(
+        report = ScanAnalyzer(load_rule_catalog(Path("src/mxready/resources/rules/v1"))).analyze(
             Path("tests/fixtures/repositories/cuda_extension"),
             repository_url="https://github.com/example/cuda-extension",
             commit="c" * 40,
@@ -60,10 +62,11 @@ def test_built_frontend_is_served_without_shadowing_api(tmp_path: Path) -> None:
     app = create_app(
         Settings(
             data_dir=tmp_path / "data",
-            rules_dir=Path("rules/v1"),
+            rules_dir=Path("src/mxready/resources/rules/v1"),
             temp_dir=tmp_path / "tmp",
             frontend_dist=frontend,
-        )
+        ),
+        start_worker=False,
     )
 
     with TestClient(app) as client:
@@ -87,10 +90,11 @@ def test_missing_frontend_keeps_api_only_mode(tmp_path: Path) -> None:
     app = create_app(
         Settings(
             data_dir=tmp_path / "data",
-            rules_dir=Path("rules/v1"),
+            rules_dir=Path("src/mxready/resources/rules/v1"),
             temp_dir=tmp_path / "tmp",
             frontend_dist=tmp_path / "not-built",
-        )
+        ),
+        start_worker=False,
     )
     with TestClient(app) as client:
         assert client.get("/").status_code == 404

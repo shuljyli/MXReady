@@ -11,8 +11,9 @@
 5. 在 PR 中说明问题、证据、测试结果和对外契约变化。
 
 ```bash
-python -m ruff check backend runner scripts tests
+python -m ruff check src scripts tests packaging
 python -m mypy
+python scripts/generate_contracts.py --check
 python -m pytest --cov=mxready --cov=mxready_runner --cov-fail-under=80
 cd frontend
 npm test
@@ -37,6 +38,16 @@ npm run build
 涉及仓库获取、路径处理、文件读取、命令执行、上传、HTML/SVG/Markdown 输出的变更，必须增加对应安全回归测试。不要为了扫描更多项目而放宽硬限制；若确需改变限制，请单独提案并解释威胁模型。
 
 runner 的命令白名单、人工确认、`shell=False`、超时、脱敏和输出上限属于安全契约，不能在普通功能 PR 中绕过。
+
+Python 包使用 `src/` 布局，目录与依赖方向见 [架构说明](docs/architecture.md)。修改模型后运行
+`make contracts`（Windows：`.\scripts\make.ps1 contracts`），提交生成的 TypeScript 类型和 JSON Schema。
+保持 runner 仅依赖标准库。涉及任务执行时覆盖并发领取、租约失效、重启恢复；涉及包资源时覆盖
+`tests/integration/test_distribution.py`，验证 wheel 在源码目录之外可用。
+
+安装模板保留在 `packaging/`，完整发布使用 `make release`（Windows：
+`.\scripts\make.ps1 release`）；不要提交 `dist/` 或将已构建网页复制到受版本管理的 `src/`。
+发布包应使用 `scripts/smoke_release.py` 在目标系统验证安装与启动，详见
+[安装与发布方案](docs/installation.md)。
 
 ## 文档与界面
 

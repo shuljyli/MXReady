@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ElementTree
 from uuid import UUID
 
 import pytest
+
 from mxready.models import (
     AnalysisWarning,
     Finding,

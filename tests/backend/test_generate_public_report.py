@@ -3,9 +3,9 @@ import shutil
 from pathlib import Path
 
 import pytest
-from mxready.errors import MxReadyError
 
-from scripts.generate_public_report import generate_public_report, main
+from mxready.cli.generate_public_report import generate_public_report, main
+from mxready.errors import MxReadyError
 
 
 class FixtureGitClient:
@@ -53,9 +53,7 @@ def test_generate_public_report_clones_with_limits_and_writes_pinned_outputs(
         "pytorch-extension-cpp.md",
     }
     payload = json.loads(
-        (tmp_path / "reports" / "pytorch-extension-cpp.json").read_text(
-            encoding="utf-8"
-        )
+        (tmp_path / "reports" / "pytorch-extension-cpp.json").read_text(encoding="utf-8")
     )
     assert payload["repository"]["url"] == "https://github.com/pytorch/extension-cpp"
     assert payload["repository"]["commit"] == commit

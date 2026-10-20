@@ -2,6 +2,10 @@
 
 本文档覆盖 MXReady Web 服务的两种部署方式（裸机、Docker），以及数据持久化、日志、反向代理等生产注意事项。
 
+Windows、Linux、macOS 普通安装、通用 wheel 与升级方法见 [安装与发布方案](installation.md)。
+发布 wheel 自带网页，服务器可以安装 wheel 后直接使用 `mxready-serve` 或 uvicorn，
+无需在服务器构建前端；下文源码部署命令仍需要 Node.js。
+
 ## 1. 前置条件
 
 - Python 3.11+（建议与 CI 一致使用 3.11）；
@@ -16,10 +20,10 @@
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `MXREADY_DATA_DIR` | `data` | SQLite 数据库所在目录 |
-| `MXREADY_RULES_DIR` | `rules/v1` | YAML 规则集目录 |
+| `MXREADY_RULES_DIR` | 安装包内规则目录 | 可选覆盖默认 YAML 规则目录 |
 | `MXREADY_EXTRA_RULES_DIR` | 未设置 | 追加的自定义规则目录（可选） |
 | `MXREADY_TEMP_DIR` | `data/tmp` | 扫描临时目录（克隆仓库用） |
-| `MXREADY_FRONTEND_DIR` | `frontend/dist` | 前端构建产物目录 |
+| `MXREADY_FRONTEND_DIR` | 发布包内网页；源码为 `frontend/dist` | 可覆盖前端构建产物目录 |
 | `MXREADY_LOG_LEVEL` | `INFO` | 日志级别：`DEBUG`/`INFO`/`WARNING`/`ERROR` |
 | `MXREADY_ALLOWED_HOSTS` | `github.com,gitee.com` | 托管平台白名单（仅内部部署时显式扩展） |
 | `MXREADY_SCAN_RETENTION_DAYS` | `0` | 扫描记录保留天数（0 = 不自动清理，保护申报证据） |
@@ -27,6 +31,8 @@
 | `MXREADY_RATE_LIMIT_PER_MINUTE` | `20` | 每 IP 每分钟请求上限 |
 | `MXREADY_MAX_CONCURRENT_SCANS` | `2` | SQLite 事务内原子执行的并发扫描上限（0 = 不限制） |
 | `MXREADY_MAX_REQUEST_BYTES` | `1048576` | 按实际接收字节数执行的全局请求体上限（1 MiB） |
+| `MXREADY_SCAN_WORKER_THREADS` | `2` | 每进程的队列消费者线程数 |
+| `MXREADY_TASK_LEASE_SECONDS` | `120` | 执行租约秒数，至少 3；每隔时长的三分之一续租 |
 
 > 监听地址与端口由 uvicorn 的 `--host` / `--port` 或环境变量 `UVICORN_HOST` / `UVICORN_PORT` 控制（uvicorn 自身读取），不要在 `MXREADY_*` 中重复配置。
 
@@ -38,11 +44,16 @@ python3.11 -m venv .venv
 pip install .
 npm --prefix frontend ci && npm --prefix frontend run build   # 构建前端
 export MXREADY_DATA_DIR=/srv/mxready/data
-uvicorn mxready.app:create_app --factory --host 0.0.0.0 --port 8000 --workers 2
+uvicorn mxready.app:create_app --factory --host 127.0.0.1 --port 8000 --workers 1
 ```
 
 - 首次启动会在 `MXREADY_DATA_DIR` 下自动创建 `mxready.db`；
 - 生产建议加反向代理（见第 5 节），并为 `/assets` 启用长缓存（服务已返回 `Cache-Control: immutable`）。
+- 任务保存在 SQLite 队列中，通过原子领取、执行令牌和心跳租约协调。需要时可使用多个 API worker，
+  但必须共享同一个本地数据库和一致的规则配置；禁止跨主机通过网络文件系统共享 SQLite。
+- 应用退出会等待当前扫描结束。异常退出后，未领取任务可继续领取，过期执行标为 `SCAN_INTERRUPTED`；
+  不会因为另一个 API worker 启动而误判活跃任务。进程内 IP 限流按进程计数，统一限额应放在代理层。
+- 首次升级前执行备份；启动会自动顺序迁移数据库并增加租约字段及索引。
 
 ### systemd 示例（Linux 服务器）
 

@@ -3,12 +3,13 @@
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from mxready.api.middleware import RateLimitMiddleware, RequestBodyLimitMiddleware
-from mxready.app import create_app
-from mxready.config import Settings
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse
 from starlette.routing import Route
+
+from mxready.api.middleware import RateLimitMiddleware, RequestBodyLimitMiddleware
+from mxready.app import create_app
+from mxready.config import Settings
 
 
 def _echo_app(middleware):
@@ -101,11 +102,12 @@ def test_app_enforces_rate_limit_when_enabled(tmp_path) -> None:
     app = create_app(
         Settings(
             data_dir=tmp_path / "data",
-            rules_dir=Path("rules/v1"),
+            rules_dir=Path("src/mxready/resources/rules/v1"),
             temp_dir=tmp_path / "tmp",
             rate_limit_enabled=True,
             rate_limit_per_minute=1,
-        )
+        ),
+        start_worker=False,
     )
 
     with TestClient(app) as client:
@@ -127,10 +129,11 @@ def test_app_rejects_oversized_requests_by_default(tmp_path) -> None:
     app = create_app(
         Settings(
             data_dir=tmp_path / "data",
-            rules_dir=Path("rules/v1"),
+            rules_dir=Path("src/mxready/resources/rules/v1"),
             temp_dir=tmp_path / "tmp",
             max_request_bytes=256,
-        )
+        ),
+        start_worker=False,
     )
 
     with TestClient(app) as client:

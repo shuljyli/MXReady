@@ -7,10 +7,11 @@ services:
       - "8000:8000"
     environment:
       MXREADY_DATA_DIR: /app/data
-      MXREADY_RULES_DIR: /app/rules/v1
       MXREADY_TEMP_DIR: /app/data/tmp
       MXREADY_FRONTEND_DIR: /app/frontend/dist
       MXREADY_LOG_LEVEL: ${MXREADY_LOG_LEVEL:-INFO}
+      MXREADY_SCAN_WORKER_THREADS: ${MXREADY_SCAN_WORKER_THREADS:-2}
+      MXREADY_TASK_LEASE_SECONDS: ${MXREADY_TASK_LEASE_SECONDS:-120}
     volumes:
       - mxready-data:/app/data
     restart: unless-stopped

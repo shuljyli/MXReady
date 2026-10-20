@@ -3,13 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from mxready.errors import MxReadyError
 from mxready.models import Severity
 from mxready.scanning.rule_loader import load_rule_catalog
 
 
 def test_rule_catalog_is_versioned_strict_and_unique() -> None:
-    catalog = load_rule_catalog(Path("rules/v1"))
+    catalog = load_rule_catalog(Path("src/mxready/resources/rules/v1"))
 
     assert catalog.version == "2"
     assert len(catalog.rules) == 30
@@ -199,6 +200,9 @@ def test_extra_directory_merges_new_rules(tmp_path: Path) -> None:
     catalog = load_rule_catalog(base, extra_directory=extra)
 
     assert {rule.id for rule in catalog.rules} == {"MXR-TEST-001", "MXR-TEST-002"}
+    assert catalog.extra_version == "test"
+    assert catalog.digest != load_rule_catalog(base).digest
+    assert catalog.digest == load_rule_catalog(base, extra_directory=extra).digest
 
 
 def test_extra_directory_identical_rule_is_allowed(tmp_path: Path) -> None:

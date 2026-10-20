@@ -1,6 +1,6 @@
 # MXReady 规则开发指南
 
-规则集位于 `rules/v1/`，由 `manifest.yml` 固定版本与加载顺序。规则是受信任的项目代码，应和 Python 代码一样接受评审；用户提交的仓库不能提供或覆盖规则。
+规则集位于 `src/mxready/resources/rules/v1/`，由 `manifest.yml` 固定版本与加载顺序。规则是受信任的项目代码，应和 Python 代码一样接受评审；用户提交的仓库不能提供或覆盖规则。
 
 ## 清单文件
 

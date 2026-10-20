@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.11", "3.12"]
     runs-on: ${{ matrix.os }}
     steps:
@@ -19,8 +19,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: python -m pip install -e ".[dev]"
-      - run: python -m ruff check backend runner scripts tests
+      - run: python -m ruff check src scripts tests packaging
       - run: python -m mypy
+      - run: python scripts/generate_contracts.py --check
       - run: >-
           python -m pytest
           --cov=mxready
@@ -47,6 +48,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build image
         run: docker build -t mxready:ci .
+      - name: Start image and check API and frontend
+        run: |
+          docker run -d --name mxready-ci -p 127.0.0.1:8000:8000 mxready:ci
+          curl --fail --retry 15 --retry-all-errors --retry-connrefused --retry-delay 1 \
+            --retry-max-time 30 --connect-timeout 1 --max-time 3 http://127.0.0.1:8000/api/health
+          curl --fail http://127.0.0.1:8000/ --output /tmp/mxready-index.html
+          test -s /tmp/mxready-index.html
+      - name: Container logs and cleanup
+        if: always()
+        run: |
+          docker logs mxready-ci || true
+          docker rm -f mxready-ci || true
 
   server-handover-scripts:
     runs-on: ubuntu-latest
@@ -56,6 +69,8 @@ jobs:
         run: |
           for script in \
             scripts/dev.sh \
+            packaging/unix/install.sh \
+            packaging/unix/start.sh \
             examples/verification/checkout-commit.sh \
             examples/verification/run-inspect.sh \
             examples/verification/pre-upload-check.sh; do

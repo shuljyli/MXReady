@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from scripts.scan_repository import main
+from mxready.cli.scan_repository import main
 
 
 def test_cli_writes_three_commit_pinned_outputs(tmp_path: Path) -> None:
@@ -33,9 +33,7 @@ def test_cli_writes_three_commit_pinned_outputs(tmp_path: Path) -> None:
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["repository"]["commit"] == commit
     assert payload["summary"]["total_count"] > 0
-    assert markdown_path.read_text(encoding="utf-8").startswith(
-        "# MXReady 适配体检报告"
-    )
+    assert markdown_path.read_text(encoding="utf-8").startswith("# MXReady 适配体检报告")
     assert badge_path.read_text(encoding="utf-8").startswith("<svg")
 
 

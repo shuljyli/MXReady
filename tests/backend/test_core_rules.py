@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+
 from mxready.models import Severity
 from mxready.scanning.facts import extract_project_facts
 from mxready.scanning.indexer import build_file_index
@@ -206,10 +207,7 @@ RULE_CASES = {
     ),
     "MXR-TEST-001": (
         "test_train.py",
-        (
-            "@pytest.mark.skipif(not torch.cuda.is_available(), "
-            "reason='requires cuda')\n"
-        ),
+        ("@pytest.mark.skipif(not torch.cuda.is_available(), reason='requires cuda')\n"),
         "@pytest.mark.skipif(sys.platform == 'win32', reason='windows only')\n",
     ),
     "MXR-PYTORCH-003": (
@@ -221,7 +219,7 @@ RULE_CASES = {
 
 
 def test_mvp_rule_pack_has_exact_documented_inventory() -> None:
-    catalog = load_rule_catalog(Path("rules/v1"))
+    catalog = load_rule_catalog(Path("src/mxready/resources/rules/v1"))
     actual = {rule.id: rule.severity for rule in catalog.rules}
 
     assert actual == EXPECTED_RULES
@@ -274,4 +272,4 @@ def test_combined_fixture_hits_all_rules_without_using_negative_python() -> None
 def _evaluate(root: Path):
     index = build_file_index(root)
     facts = extract_project_facts(index)
-    return evaluate_rules(load_rule_catalog(Path("rules/v1")), index, facts)
+    return evaluate_rules(load_rule_catalog(Path("src/mxready/resources/rules/v1")), index, facts)

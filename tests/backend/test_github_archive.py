@@ -9,6 +9,7 @@ import zipfile
 from pathlib import Path
 
 import pytest
+
 from mxready.errors import MxReadyError
 from mxready.repository.git_client import RepositoryLimits
 from mxready.repository.github_archive import (
@@ -138,9 +139,7 @@ def test_archive_client_resolves_commit_and_extracts_bounded_regular_files(
             (f"extension-cpp-{commit}/link", b"README.md", stat.S_IFLNK | 0o777),
         ]
     )
-    reader = RecordingHttpReader(
-        [json.dumps({"sha": commit}).encode(), archive]
-    )
+    reader = RecordingHttpReader([json.dumps({"sha": commit}).encode(), archive])
     destination = tmp_path / "repository"
 
     resolved = GitHubArchiveClient(http_reader=reader).clone(

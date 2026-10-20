@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from mxready.errors import MxReadyError
 from mxready.models import Severity
 from mxready.scanning.facts import extract_project_facts
 from mxready.scanning.indexer import build_file_index
@@ -11,10 +14,37 @@ from mxready.scanning.rule_loader import load_rule_catalog
 FIXTURE = Path("tests/fixtures/repositories/cuda_extension")
 
 
+def test_rule_budget_stops_excessive_findings_instead_of_reporting_a_partial_pass():
+    index = build_file_index(FIXTURE)
+    with pytest.raises(MxReadyError) as error:
+        evaluate_rules(
+            load_rule_catalog(Path("src/mxready/resources/rules/v1")),
+            index,
+            extract_project_facts(index),
+            max_findings=1,
+        )
+    assert error.value.code == "ANALYSIS_LIMIT_EXCEEDED"
+
+
+def test_rule_time_budget_is_checked_between_patterns(monkeypatch):
+    index = build_file_index(FIXTURE)
+    clock = iter([0.0, 31.0])
+    monkeypatch.setattr("mxready.scanning.rule_engine.time.monotonic", lambda: next(clock))
+    with pytest.raises(MxReadyError) as error:
+        evaluate_rules(
+            load_rule_catalog(Path("src/mxready/resources/rules/v1")),
+            index,
+            extract_project_facts(index),
+        )
+    assert error.value.code == "ANALYSIS_LIMIT_EXCEEDED"
+
+
 def test_regex_finding_has_line_evidence_and_migration_advice() -> None:
     index = build_file_index(FIXTURE)
     facts = extract_project_facts(index)
-    findings = evaluate_rules(load_rule_catalog(Path("rules/v1")), index, facts)
+    findings = evaluate_rules(
+        load_rule_catalog(Path("src/mxready/resources/rules/v1")), index, facts
+    )
 
     direct_nvcc = next(item for item in findings if item.rule_id == "MXR-TOOLCHAIN-001")
     assert direct_nvcc.relative_path == "setup.py"
@@ -29,7 +59,9 @@ def test_regex_finding_has_line_evidence_and_migration_advice() -> None:
 def test_dependency_and_fact_patterns_use_structured_source_locations() -> None:
     index = build_file_index(FIXTURE)
     facts = extract_project_facts(index)
-    findings = evaluate_rules(load_rule_catalog(Path("rules/v1")), index, facts)
+    findings = evaluate_rules(
+        load_rule_catalog(Path("src/mxready/resources/rules/v1")), index, facts
+    )
 
     cuda_extension = next(item for item in findings if item.rule_id == "MXR-PYTORCH-001")
     flash_attention = next(item for item in findings if item.rule_id == "MXR-DEPENDENCY-001")
@@ -43,7 +75,9 @@ def test_dependency_and_fact_patterns_use_structured_source_locations() -> None:
 def test_findings_are_deduplicated_and_sorted_deterministically() -> None:
     index = build_file_index(FIXTURE)
     facts = extract_project_facts(index)
-    findings = evaluate_rules(load_rule_catalog(Path("rules/v1")), index, facts)
+    findings = evaluate_rules(
+        load_rule_catalog(Path("src/mxready/resources/rules/v1")), index, facts
+    )
 
     severity_order = {
         Severity.BLOCKER: 0,
@@ -69,7 +103,7 @@ def test_findings_are_deduplicated_and_sorted_deterministically() -> None:
 
 def test_root_level_files_match_double_star_globs() -> None:
     findings = evaluate_rules(
-        load_rule_catalog(Path("rules/v1")),
+        load_rule_catalog(Path("src/mxready/resources/rules/v1")),
         build_file_index(FIXTURE),
         extract_project_facts(build_file_index(FIXTURE)),
     )

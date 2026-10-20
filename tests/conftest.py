@@ -5,6 +5,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+
 from mxready.app import create_app
 from mxready.config import Settings
 from mxready.models import (
@@ -21,9 +22,10 @@ def client(tmp_path):
     app = create_app(
         Settings(
             data_dir=tmp_path / "data",
-            rules_dir=Path("rules/v1"),
+            rules_dir=Path("src/mxready/resources/rules/v1"),
             temp_dir=tmp_path / "tmp",
-        )
+        ),
+        start_worker=False,
     )
     with TestClient(app) as http:
         app.state.scan_service.run_scan = Mock()

@@ -1,4 +1,5 @@
 import pytest
+
 from mxready.errors import MxReadyError
 from mxready.repository.identity import (
     build_providers,

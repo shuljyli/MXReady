@@ -2,7 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { getReport, getRules, getScan } from "./api/client";
+import { getReport, getRules, getScan, MxReadyApiError } from "./api/client";
 import type { ScanReport } from "./api/types";
 import { App } from "./App";
 
@@ -40,6 +40,9 @@ const completedReport = {
     commit: "a".repeat(40),
   },
   tool_version: "0.1.0",
+  ruleset_digest: null,
+  extra_ruleset_version: null,
+  analysis_config: {},
   ruleset_version: "2",
   scanned_at: "2026-07-29T00:00:00Z",
   summary: {
@@ -57,6 +60,7 @@ const completedReport = {
 } satisfies ScanReport;
 
 beforeEach(() => {
+  window.history.replaceState(null, "", "/");
   vi.mocked(getRules).mockResolvedValue({
     version: "2",
     rules: [
@@ -69,6 +73,57 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.resetAllMocks();
+});
+
+it("restores a completed scan from the URL after a page refresh", async () => {
+  window.history.replaceState(null, "", `/?scan=${queuedJob.id}`);
+  vi.mocked(getScan).mockResolvedValue({ ...queuedJob, status: "completed" });
+  vi.mocked(getReport).mockResolvedValue(completedReport);
+  render(<App />);
+  expect(await screen.findByText("静态检查已通过")).toBeInTheDocument();
+  expect(window.location.search).toContain(queuedJob.id);
+  await userEvent.click(screen.getByRole("button", { name: "扫描另一个仓库" }));
+  expect(new URL(window.location.href).searchParams.has("scan")).toBe(false);
+});
+
+it("retries a temporary polling failure without abandoning the scan", async () => {
+  vi.useFakeTimers();
+  vi.mocked(getScan)
+    .mockRejectedValueOnce(new MxReadyApiError("NETWORK_ERROR", "暂时断开"))
+    .mockResolvedValue({ ...queuedJob, status: "completed" });
+  vi.mocked(getReport).mockResolvedValue(completedReport);
+  render(<App initialJob={queuedJob} />);
+  await act(async () => { await vi.advanceTimersByTimeAsync(1_500); });
+  expect(screen.queryByText("任务中止")).not.toBeInTheDocument();
+  await act(async () => { await vi.advanceTimersByTimeAsync(3_000); });
+  expect(screen.getByText("静态检查已通过")).toBeInTheDocument();
+});
+
+it("cancels the active progress request when the view unmounts", async () => {
+  vi.useFakeTimers();
+  vi.mocked(getScan).mockImplementation(() => new Promise(() => undefined));
+  const { unmount } = render(<App initialJob={queuedJob} />);
+  await act(async () => { await vi.advanceTimersByTimeAsync(1_500); });
+  const signal = vi.mocked(getScan).mock.calls[0][1];
+  unmount();
+  expect(signal?.aborted).toBe(true);
+});
+
+it("bounds retries and lets the user resume the same scan with the keyboard", async () => {
+  vi.useFakeTimers();
+  vi.mocked(getScan).mockRejectedValue(new MxReadyApiError("NETWORK_ERROR", "连接中断"));
+  render(<App initialJob={queuedJob} pollIntervalMs={1} />);
+  await act(async () => { await vi.advanceTimersByTimeAsync(4_000); });
+  expect(getScan).toHaveBeenCalledTimes(4);
+  const resume = screen.getByRole("button", { name: "继续查看扫描" });
+  vi.mocked(getScan).mockResolvedValue({ ...queuedJob, status: "completed" });
+  vi.mocked(getReport).mockResolvedValue(completedReport);
+  vi.useRealTimers();
+  resume.focus();
+  await userEvent.keyboard("{Enter}");
+  expect(await screen.findByText("静态检查已通过")).toBeInTheDocument();
+  expect(window.location.search).toContain(queuedJob.id);
 });
 
 it("presents the product scope before a scan starts", () => {
@@ -97,8 +152,8 @@ it("polls active jobs and loads the completed report", async () => {
     await vi.advanceTimersByTimeAsync(1_500);
   });
 
-  expect(getScan).toHaveBeenCalledWith(queuedJob.id);
-  expect(getReport).toHaveBeenCalledWith(queuedJob.id);
+  expect(getScan).toHaveBeenCalledWith(queuedJob.id, expect.any(AbortSignal));
+  expect(getReport).toHaveBeenCalledWith(queuedJob.id, expect.any(AbortSignal));
   expect(screen.getByText("静态检查已通过")).toBeInTheDocument();
 });
 
@@ -147,7 +202,7 @@ it("loads the report directly when the initial job is already completed", async 
   );
 
   expect(await screen.findByText("静态检查已通过")).toBeInTheDocument();
-  expect(getReport).toHaveBeenCalledWith(queuedJob.id);
+  expect(getReport).toHaveBeenCalledWith(queuedJob.id, expect.any(AbortSignal));
 });
 
 it("stops on a failed job and can return to the form", async () => {

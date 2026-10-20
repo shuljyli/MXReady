@@ -20,39 +20,53 @@ export class MxReadyApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  let response: Response;
+  const controller = new AbortController();
+  let timedOut = false;
+  const cancel = () => controller.abort();
+  init?.signal?.addEventListener("abort", cancel, { once: true });
+  if (init?.signal?.aborted) controller.abort();
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 15_000);
+
   try {
-    response = await fetch(path, {
+    const response = await fetch(path, {
       ...init,
-      headers: {
-        Accept: "application/json",
-        ...init?.headers,
-      },
+      signal: controller.signal,
+      headers: { Accept: "application/json", ...init?.headers },
     });
-  } catch {
-    throw new MxReadyApiError(
-      "NETWORK_ERROR",
-      "无法连接 MXReady 服务，请确认后端已经启动。",
-    );
-  }
-
-  if (!response.ok) {
-    let error: ApiErrorBody["error"] | undefined;
-    try {
-      const body = (await response.json()) as Partial<ApiErrorBody>;
-      error = body.error;
-    } catch {
-      // A proxy or web server may return a non-JSON error page.
+    if (!response.ok) {
+      let error: ApiErrorBody["error"] | undefined;
+      try {
+        const body = (await response.json()) as Partial<ApiErrorBody>;
+        error = body.error;
+      } catch {
+        // Proxies may return non-JSON error pages.
+      }
+      throw new MxReadyApiError(
+        error?.code ?? "HTTP_ERROR",
+        error?.message ?? `请求失败（HTTP ${response.status}）。`,
+        error?.details ?? {},
+        response.status,
+      );
     }
+    return (await response.json()) as T;
+  } catch (error) {
+    if (timedOut) {
+      throw new MxReadyApiError("REQUEST_TIMEOUT", "请求超时，请稍后继续查看扫描。");
+    }
+    if (init?.signal?.aborted) {
+      throw new MxReadyApiError("REQUEST_CANCELLED", "请求已取消。");
+    }
+    if (error instanceof MxReadyApiError) throw error;
     throw new MxReadyApiError(
-      error?.code ?? "HTTP_ERROR",
-      error?.message ?? `请求失败（HTTP ${response.status}）。`,
-      error?.details ?? {},
-      response.status,
+      "NETWORK_ERROR", "无法连接 MXReady 服务，请确认后端已经启动。",
     );
+  } finally {
+    clearTimeout(timer);
+    init?.signal?.removeEventListener("abort", cancel);
   }
-
-  return (await response.json()) as T;
 }
 
 export function createScan(input: {
@@ -66,17 +80,18 @@ export function createScan(input: {
   });
 }
 
-export function getScan(id: string): Promise<ScanJob> {
-  return request<ScanJob>(`/api/scans/${encodeURIComponent(id)}`);
+export function getScan(id: string, signal?: AbortSignal): Promise<ScanJob> {
+  return request<ScanJob>(`/api/scans/${encodeURIComponent(id)}`, { signal });
 }
 
 export function getRules(): Promise<RuleCatalog> {
   return request<RuleCatalog>("/api/rules");
 }
 
-export function getReport(id: string): Promise<ScanReport> {
+export function getReport(id: string, signal?: AbortSignal): Promise<ScanReport> {
   return request<ScanReport>(
     `/api/scans/${encodeURIComponent(id)}/report`,
+    { signal },
   );
 }
 

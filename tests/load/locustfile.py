@@ -100,6 +100,4 @@ class ScanUser(HttpUser):
             name="scan.report",
         ) as report:
             if report.status_code not in (200, 409):
-                report.failure(
-                    f"scan.report 期望 200/409，实际 {report.status_code}"
-                )
+                report.failure(f"scan.report 期望 200/409，实际 {report.status_code}")

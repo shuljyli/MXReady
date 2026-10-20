@@ -2,7 +2,7 @@ import json
 import zipfile
 from pathlib import Path
 
-from scripts.build_verification_bundle import build_bundle_from_report, main
+from mxready.cli.build_verification_bundle import build_bundle_from_report, main
 
 
 def test_build_bundle_from_report_writes_commit_pinned_safe_manifest(
