@@ -302,3 +302,21 @@ def test_terminal_summary_is_gbk_encodable_for_windows_pipes(report_factory) -> 
     text = render_terminal_summary(report, output_note="r.json / .md / .svg")
 
     text.encode("gbk")
+
+
+def test_terminal_summary_english_fallback_is_ascii_only(report_factory) -> None:
+    report = report_factory(
+        static_status=StaticStatus.BLOCKED,
+        findings=[
+            _terminal_finding(
+                "MXR-TOOLCHAIN-001", Severity.BLOCKER, "检测直接 nvcc 工具调用", "setup.py", 2
+            )
+        ],
+    )
+
+    text = render_terminal_summary(report, output_note="r.json / .md / .svg", english=True)
+
+    assert text.isascii()
+    assert text.splitlines()[0] == "MXReady: blocked | blockers 1, warnings 0, info 0"
+    assert "BLOCKER MXR-TOOLCHAIN-001 (setup.py:2)" in text
+    assert text.splitlines()[-1] == "Report: r.json / .md / .svg"
