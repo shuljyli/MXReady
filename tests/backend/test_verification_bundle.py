@@ -26,7 +26,7 @@ def test_bundle_contains_pinned_identity_runner_schema_and_safety_note(
         names = archive.namelist()
         assert manifest["scan_id"] == str(report.scan_id)
         assert manifest["repository_commit"] == "a" * 40
-        assert manifest["runner_version"] == "0.1.0"
+        assert manifest["runner_version"] == "0.2.0"
         assert manifest["checks"] == [
             {
                 "id": check.id,
