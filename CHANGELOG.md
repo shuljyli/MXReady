@@ -19,6 +19,9 @@
 - `mxready-scan` 与 `mxready-scan-public` 终端直接输出极简检查结果：一行状态与
   阻断/警告/提示计数、按严重程度排序的命中列表（最多 5 条，其余指向报告文件）、
   报告文件位置；输出仅使用 GBK 可编码字符，兼容 Windows 传统代码页管道。
+- `mxready-scan-batch` 批量评估入口：接收清单文件或直接 URL，逐仓复用安全获取与
+  只读分析管线，生成每仓报告与 `batch-summary.csv` / `batch-summary.md` 汇总总表，
+  单仓失败不中断批量；退出码区分全部通过、存在阻塞与存在失败。
 
 ### Changed
 

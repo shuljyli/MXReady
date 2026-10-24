@@ -293,6 +293,29 @@ mxready-build-bundle examples/reports/pytorch-extension-cpp.json \
 
 生成清单默认不含项目命令（ZIP 内附 `project-commands.example.json` 模板，需人工审阅并替换为实际 smoke 命令后填入清单）。请先阅读 [真机验证交接](examples/verification/README.md)，再在自己控制的沐曦服务器上人工补充并执行命令。
 
+### 批量评估多个仓库
+
+迁移评估通常面对一批仓库。`mxready-scan-batch` 接收清单文件（每行一个仓库，
+可选分支/标签/40 位提交，`#` 注释）或直接传 URL，逐仓复用与单仓扫描相同的安全
+获取与只读分析管线，输出每仓报告和汇总总表：
+
+```bash
+mxready-scan-batch repos.txt --output data/batch
+# 或混合来源：mxready-scan-batch repos.txt https://github.com/pytorch/extension-cpp
+```
+
+```text
+[1/3] pytorch/extension-cpp → warnings（阻断 0 · 警告 2 · 提示 1）
+[2/3] example/missing-repo → 失败: REPOSITORY_NOT_FOUND: 未找到仓库或指定分支、标签、提交，请检查输入。
+[3/3] example/cuda-ext → blocked（阻断 1 · 警告 2 · 提示 3）
+汇总: 成功 2 · 失败 1（其中阻塞 1）
+报告: data/batch/batch-summary.csv 与 data/batch/batch-summary.md
+```
+
+`batch-summary.csv`（UTF-8 BOM，Excel 可直接打开）逐仓记录提交、状态、三档计数、
+主要规则与报告文件；`batch-summary.md` 生成带链接的汇总表，适合直接贴进评估结论。
+退出码：`0` 全部成功且无阻塞，`2` 成功但存在阻塞仓库，`1` 存在扫描失败。
+
 ## 状态含义
 
 | 状态 | 含义 |
