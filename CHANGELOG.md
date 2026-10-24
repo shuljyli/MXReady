@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-25
+
 ### Added
 
 - Windows、Linux、macOS 安装 ZIP 与包含网页的通用 wheel/sdist 构建入口；安装模板位于
@@ -43,6 +45,8 @@
 
 ### Fixed
 
+- 修复 `mxready-scan` 在 cp1252 等无法编码中文的旧代码页下输出 `UnicodeEncodeError`
+  的问题：按 `sys.stdout.encoding` 检测，不可编码时回退为纯 ASCII 摘要。
 - 修复 Windows mypy 对 POSIX 进程组 API 的平台分支判定，并在本地类型检查入口增加跨平台目标检查。
 - Docker CI 健康检查对启动阶段连接重置等错误执行有总时限的重试，保留未就绪时的失败结果。
 - 修复启动其他 API 进程时将活跃扫描误标为失败的问题；队列任务可在服务重启后继续领取。
@@ -71,5 +75,6 @@
 - Web 扫描路径永不执行被扫描仓库中的代码。
 - 仓库地址主机白名单、受限 Git 获取、只读索引与上传结果严格校验。
 
-[Unreleased]: https://github.com/shuljyli/MXReady/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/shuljyli/MXReady/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/shuljyli/MXReady/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/shuljyli/MXReady/releases/tag/v0.1.0
