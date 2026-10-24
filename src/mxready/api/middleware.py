@@ -9,13 +9,28 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class _SlidingWindowLimiter:
-    def __init__(self, limit: int, window_seconds: float = 60.0) -> None:
+    """滑动窗口日志限流。桶按 IP 建立且条目过期后并不自动消失，
+    因此周期性清扫空桶与过期桶，避免公网环境下大量一次性 IP 造成内存无界增长。"""
+
+    def __init__(
+        self,
+        limit: int,
+        window_seconds: float = 60.0,
+        *,
+        sweep_interval: int = 64,
+    ) -> None:
         self._limit = limit
         self._window = window_seconds
         self._hits: dict[str, deque[float]] = defaultdict(deque)
+        self._sweep_interval = max(1, sweep_interval)
+        self._calls_since_sweep = 0
 
     def allow(self, key: str) -> bool:
         now = time.monotonic()
+        self._calls_since_sweep += 1
+        if self._calls_since_sweep >= self._sweep_interval:
+            self._calls_since_sweep = 0
+            self._sweep(now)
         window = self._hits[key]
         while window and now - window[0] >= self._window:
             window.popleft()
@@ -23,6 +38,15 @@ class _SlidingWindowLimiter:
             return False
         window.append(now)
         return True
+
+    def _sweep(self, now: float) -> None:
+        expired = [
+            key
+            for key, window in self._hits.items()
+            if not window or now - window[-1] >= self._window
+        ]
+        for key in expired:
+            del self._hits[key]
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):

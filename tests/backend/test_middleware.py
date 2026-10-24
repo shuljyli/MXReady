@@ -7,7 +7,11 @@ from starlette.applications import Starlette
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from mxready.api.middleware import RateLimitMiddleware, RequestBodyLimitMiddleware
+from mxready.api.middleware import (
+    RateLimitMiddleware,
+    RequestBodyLimitMiddleware,
+    _SlidingWindowLimiter,
+)
 from mxready.app import create_app
 from mxready.config import Settings
 
@@ -45,6 +49,42 @@ def test_rate_limit_ignores_non_write_endpoints() -> None:
     with TestClient(app) as client:
         for _ in range(3):
             assert client.post("/ping").status_code == 200
+
+
+def test_sliding_window_limiter_sweeps_expired_ip_buckets(monkeypatch) -> None:
+    clock = {"now": 0.0}
+    monkeypatch.setattr("mxready.api.middleware.time.monotonic", lambda: clock["now"])
+    limiter = _SlidingWindowLimiter(limit=1, sweep_interval=3)
+
+    for index in range(10):
+        assert limiter.allow(f"10.0.0.{index}")
+    assert len(limiter._hits) == 10
+
+    clock["now"] = 120.0
+    assert limiter.allow("10.0.1.1")
+    assert limiter.allow("10.0.1.2")
+
+    assert set(limiter._hits) == {"10.0.1.1", "10.0.1.2"}
+
+
+def test_sliding_window_limiter_keeps_active_buckets_during_sweep(monkeypatch) -> None:
+    clock = {"now": 0.0}
+    monkeypatch.setattr("mxready.api.middleware.time.monotonic", lambda: clock["now"])
+    limiter = _SlidingWindowLimiter(limit=2, sweep_interval=3)
+
+    clock["now"] = 10.0
+    assert limiter.allow("active")
+    clock["now"] = 30.0
+    assert limiter.allow("stale-a")
+    assert limiter.allow("stale-b")
+    clock["now"] = 70.0
+    assert limiter.allow("active")
+
+    clock["now"] = 95.0
+    assert limiter.allow("new")
+    assert limiter.allow("new2")
+
+    assert set(limiter._hits) == {"active", "new", "new2"}
 
 
 def test_request_body_limit_rejects_oversized_bodies() -> None:

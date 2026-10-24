@@ -181,6 +181,48 @@ def test_requirement_parser_normalizes_names_and_ignores_include_options(
     assert facts.locations["dependency:flash-attn"][0].relative_path == "requirements-dev.txt"
 
 
+def test_setup_py_keyword_dependencies_are_extracted_without_execution(tmp_path: Path) -> None:
+    (tmp_path / "setup.py").write_text(
+        "\n".join(
+            [
+                "from setuptools import setup",
+                "from torch.utils.cpp_extension import CUDAExtension",
+                "setup(",
+                "    name='demo',",
+                "    install_requires=['torch>=2.0', 'Flash_Attn[dev]'],",
+                "    extras_require={'dev': ['ninja', 'tensorrt==10.0']},",
+                "    ext_modules=[CUDAExtension('demo', ['kernel.cu'])],",
+                ")",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    assert {"torch", "flash-attn", "ninja", "tensorrt"} <= facts.dependencies
+    tensorrt = facts.locations["dependency:tensorrt"][0]
+    assert tensorrt.relative_path == "setup.py"
+    assert "tensorrt" in tensorrt.evidence.casefold()
+
+
+def test_setup_py_dynamic_dependency_values_are_ignored(tmp_path: Path) -> None:
+    (tmp_path / "setup.py").write_text(
+        "\n".join(
+            [
+                "from setuptools import setup",
+                "requirements = ['torch']",
+                "setup(name='demo', install_requires=requirements)",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    assert facts.dependencies == frozenset()
+
+
 def test_python_fact_parsing_does_not_emit_repository_syntax_warnings(
     tmp_path: Path,
 ) -> None:

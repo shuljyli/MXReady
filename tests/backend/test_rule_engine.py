@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -7,9 +8,13 @@ import pytest
 from mxready.errors import MxReadyError
 from mxready.models import Severity
 from mxready.scanning.facts import extract_project_facts
-from mxready.scanning.indexer import build_file_index
-from mxready.scanning.rule_engine import evaluate_rules
-from mxready.scanning.rule_loader import load_rule_catalog
+from mxready.scanning.indexer import IndexedFile, build_file_index
+from mxready.scanning.rule_engine import (
+    _may_contain,
+    _required_literal,
+    evaluate_rules,
+)
+from mxready.scanning.rule_loader import load_rule_catalog, regex_flags
 
 FIXTURE = Path("tests/fixtures/repositories/cuda_extension")
 
@@ -111,3 +116,88 @@ def test_root_level_files_match_double_star_globs() -> None:
     assert any(
         item.rule_id == "MXR-PYTORCH-001" and item.relative_path == "setup.py" for item in findings
     )
+
+
+def test_prefilter_does_not_change_findings_on_fixture_corpus() -> None:
+    index = build_file_index(FIXTURE)
+    facts = extract_project_facts(index)
+    catalog = load_rule_catalog(Path("src/mxready/resources/rules/v1"))
+
+    with_prefilter = evaluate_rules(catalog, index, facts)
+    without_prefilter = evaluate_rules(catalog, index, facts, enable_prefilter=False)
+
+    assert with_prefilter == without_prefilter
+
+
+def test_prefilter_never_skips_a_file_that_the_regex_matches() -> None:
+    """预过滤漏放会直接造成漏报：对每条规则正则逐一验证
+    “完整正则命中 ⇒ 必需字面量判定放行”。"""
+    corpus = [
+        file.text for file in build_file_index(FIXTURE).files
+    ] + [
+        'subprocess.run(["nvcc", "-c", "kernel.cu"], check=True)\n',
+        "nvidia-smi --query-gpu=name\n",
+        "sm_86 -gencode arch=compute_86,code=sm_86\n",
+        "os.environ['TORCH_CUDA_ARCH_LIST'] = '8.0'\n",
+        "NVCC = /usr/local/cuda/bin/nvcc\n",
+        "#include <cuda_runtime.h>\n#include <cublas_v2.h>\n",
+        "__global__ void k(float* a) { __shfl_down_sync(0xffffffff, a[0], 1); }\n",
+        "__launch_bounds__(256) __global__ void m() {}\n",
+        "torch.distributed.init_process_group(backend='nccl')\n",
+        "@pytest.mark.skipif(not torch.cuda.is_available(), reason='no gpu')\n",
+        "@unittest.skipUnless(torch.cuda.is_available(), 'cuda')\n",
+        "FROM nvidia/cuda:12.1.0-base-ubuntu22.04\nRUN --gpus all x\n",
+        "cudaGraphLaunch(graph, stream); cudaMallocAsync(&p, n, s);\n",
+        "cudaStreamCreate(&s); cudaMemcpyAsync(d, h, n, cudaMemcpyDeviceToHost, s);\n",
+        "cudaSetDevice(0); cudaDeviceSynchronize();\n",
+        "export NCCL_DEBUG=INFO\n",
+        "os.environ['NCCL_P2P_DISABLE'] = '1'\n",
+        "find_package(CUDAToolkit REQUIRED)\nfind_package(Torch REQUIRED)\n",
+        "project(demo LANGUAGES CXX CUDA)\nenable_language(CUDA)\n",
+        "trainer = GradScaler()\nwith autocast(enabled=True):\n    pass\n",
+        "plain documentation text about migration without any markers\n",
+        "CMAKE_CUDA_COMPILER=g++\n",
+    ]
+    catalog = load_rule_catalog(Path("src/mxready/resources/rules/v1"))
+
+    for rule in catalog.rules:
+        for pattern in rule.patterns:
+            if pattern.type != "regex" or pattern.expression is None:
+                continue
+            flags = regex_flags(pattern.flags)
+            compiled = re.compile(pattern.expression, flags)
+            needle = _required_literal(pattern.expression, flags)
+            for text in corpus:
+                if compiled.search(text) is None:
+                    continue
+                allowed = needle is None or _may_contain(
+                    needle,
+                    bool(flags & re.IGNORECASE),
+                    IndexedFile("corpus.txt", len(text), "0" * 64, text),
+                    {},
+                )
+                assert allowed, (rule.id, pattern.expression, text)
+
+
+def test_prefilter_extracts_expected_literals_for_core_rules() -> None:
+    catalog = load_rule_catalog(Path("src/mxready/resources/rules/v1"))
+    by_id = {rule.id: rule for rule in catalog.rules}
+
+    nvcc_needle = _required_literal(
+        by_id["MXR-PATH-001"].patterns[0].expression or "",
+        re.NOFLAG,
+    )
+    assert nvcc_needle == "/usr/local/cuda"
+
+    launch_bounds = _required_literal(
+        by_id["MXR-KERNEL-001"].patterns[0].expression or "",
+        re.NOFLAG,
+    )
+    assert launch_bounds == "__launch_bounds__"
+
+    branch_common = _required_literal(r"(?:sm_80|sm_86)\b", re.NOFLAG)
+    assert branch_common == "sm_8"
+
+    # 分支无共同字面量且唯一片段过短时，预过滤退化为全量扫描而不是冒险。
+    no_common = _required_literal(r"(?:sm|compute)_[0-9]{2,3}", re.NOFLAG)
+    assert no_common is None
