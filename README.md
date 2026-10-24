@@ -258,6 +258,19 @@ mxready-scan tests/fixtures/repositories/cuda_extension --repo-url https://githu
 
 命令生成 `<仓库>-<commit12>.json`、`.md` 和 `.svg`。退出码为：`0` 表示通过或仅有警告，`2` 表示存在阻塞项，`1` 表示操作失败。
 
+终端直接输出极简检查结果（命中按严重程度排序，最多列出 5 条，其余见报告文件）：
+
+```text
+MXReady: blocked | 阻断 1 · 警告 2 · 提示 3
+  阻断 MXR-TOOLCHAIN-001 检测直接 nvcc 工具调用 (setup.py:5)
+  警告 MXR-DEPENDENCY-001 检测 flash-attn 依赖 (requirements.txt:2)
+  警告 MXR-PATH-001 检测硬编码 CUDA 安装路径 (setup.py:4 x2)
+  提示 MXR-CMAKE-001 识别 CMake CUDA 语言 (CMakeLists.txt:2)
+  提示 MXR-HEADER-001 识别 cuda_runtime.h 头文件 (csrc/kernel.cu:1)
+  … 其余 1 项见报告文件
+报告: cuda-extension-dddddddddddd.json / cuda-extension-dddddddddddd.md / cuda-extension-dddddddddddd.svg
+```
+
 ## 公开仓库证据与验证包
 
 需要生成固定文件名的公开报告时，可使用同一套主机白名单、Git 限制和只读分析器：

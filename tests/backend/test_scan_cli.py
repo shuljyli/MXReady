@@ -4,7 +4,7 @@ from pathlib import Path
 from mxready.cli.scan_repository import main
 
 
-def test_cli_writes_three_commit_pinned_outputs(tmp_path: Path) -> None:
+def test_cli_writes_three_commit_pinned_outputs(tmp_path: Path, capsys) -> None:
     output = tmp_path / "reports"
     commit = "d" * 40
 
@@ -25,6 +25,10 @@ def test_cli_writes_three_commit_pinned_outputs(tmp_path: Path) -> None:
     markdown_path = output / f"{stem}.md"
     badge_path = output / f"{stem}.svg"
     assert exit_code == 2
+    captured = capsys.readouterr()
+    assert captured.out.startswith("MXReady: blocked | ")
+    assert "MXR-TOOLCHAIN-001" in captured.out
+    assert f"报告: {stem}.json / {stem}.md / {stem}.svg" in captured.out
     assert {path.name for path in output.iterdir()} == {
         json_path.name,
         markdown_path.name,

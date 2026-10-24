@@ -16,6 +16,7 @@ from mxready.models import (
 )
 from mxready.reporting.badge import COLORS, render_badge
 from mxready.reporting.markdown import render_markdown
+from mxready.reporting.terminal import render_terminal_summary
 
 
 def test_reports_include_commit_and_escape_untrusted_evidence(
@@ -202,3 +203,102 @@ def _complete_report(client, report_factory, **report_options):
         resolved_commit=report.repository.commit,
     )
     return report
+
+
+def _terminal_finding(
+    rule_id: str,
+    severity: Severity,
+    title: str,
+    relative_path: str,
+    line: int,
+    count: int = 1,
+) -> Finding:
+    return Finding(
+        rule_id=rule_id,
+        rule_version=1,
+        severity=severity,
+        category="test",
+        title=title,
+        relative_path=relative_path,
+        line_start=line,
+        line_end=line,
+        evidence="evidence",
+        message="message",
+        recommendation="recommendation",
+        references=[],
+        count=count,
+    )
+
+
+def test_terminal_summary_lists_status_counts_and_findings(report_factory) -> None:
+    report = report_factory(
+        repository_name="cuda-extension",
+        static_status=StaticStatus.BLOCKED,
+        findings=[
+            _terminal_finding(
+                "MXR-TOOLCHAIN-001", Severity.BLOCKER, "检测直接 nvcc 工具调用", "setup.py", 2
+            ),
+            _terminal_finding(
+                "MXR-PATH-001", Severity.WARNING, "检测硬编码 CUDA 安装路径", "build.sh", 3
+            ),
+        ],
+    )
+
+    text = render_terminal_summary(
+        report,
+        output_note="cuda-extension-aaaaaaaaaaaa.json / .md / .svg",
+    )
+
+    lines = text.splitlines()
+    assert lines[0] == "MXReady: blocked | 阻断 1 · 警告 1 · 提示 0"
+    assert "阻断 MXR-TOOLCHAIN-001 检测直接 nvcc 工具调用 (setup.py:2)" in lines[1]
+    assert "警告 MXR-PATH-001 检测硬编码 CUDA 安装路径 (build.sh:3)" in lines[2]
+    assert lines[-1] == "报告: cuda-extension-aaaaaaaaaaaa.json / .md / .svg"
+
+
+def test_terminal_summary_marks_repeated_hits_and_hides_the_rest(report_factory) -> None:
+    report = report_factory(
+        static_status=StaticStatus.WARNINGS,
+        findings=[
+            _terminal_finding(
+                f"MXR-TOOL-{index + 1:03d}",
+                Severity.WARNING,
+                f"规则 {index + 1}",
+                f"mod_{index}.py",
+                index + 1,
+                count=2 if index == 0 else 1,
+            )
+            for index in range(7)
+        ],
+    )
+
+    text = render_terminal_summary(report)
+
+    assert "x2" in text.splitlines()[1]
+    assert "… 其余 2 项见报告文件" in text
+
+
+def test_terminal_summary_reports_a_clean_project_in_one_breath(report_factory) -> None:
+    report = report_factory(static_status=StaticStatus.PASSED, findings=[])
+
+    text = render_terminal_summary(report)
+
+    assert text.splitlines()[:2] == [
+        "MXReady: passed | 阻断 0 · 警告 0 · 提示 0",
+        "  未命中任何规则",
+    ]
+
+
+def test_terminal_summary_is_gbk_encodable_for_windows_pipes(report_factory) -> None:
+    report = report_factory(
+        static_status=StaticStatus.BLOCKED,
+        findings=[
+            _terminal_finding(
+                "MXR-TOOLCHAIN-001", Severity.BLOCKER, "检测直接 nvcc 工具调用", "setup.py", 2
+            )
+        ],
+    )
+
+    text = render_terminal_summary(report, output_note="r.json / .md / .svg")
+
+    text.encode("gbk")

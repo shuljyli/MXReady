@@ -12,6 +12,7 @@ from mxready.errors import MxReadyError
 from mxready.models import ScanReport, StaticStatus
 from mxready.reporting.badge import render_badge
 from mxready.reporting.markdown import render_markdown
+from mxready.reporting.terminal import render_terminal_summary
 from mxready.repository.identity import parse_repository_url
 from mxready.scanning.analyzer import ScanAnalyzer
 from mxready.scanning.rule_loader import load_rule_catalog
@@ -47,8 +48,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
 
     print(
-        f"MXReady: wrote {stem}.json, {stem}.md, and {stem}.svg "
-        f"({report.summary.total_count} findings)"
+        render_terminal_summary(
+            report,
+            output_note=f"{stem}.json / {stem}.md / {stem}.svg",
+        )
     )
     return 2 if report.static_status is StaticStatus.BLOCKED else 0
 

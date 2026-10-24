@@ -16,6 +16,9 @@
 - `setup.py` 依赖声明面的事实提取：保守解析 `install_requires` / `setup_requires` /
   `tests_require` / `extras_require` 中的字面量字符串（依据 PyMigBench 等迁移语料，
   CUDA 扩展项目的依赖最常声明在 setup.py），不求值任何表达式。
+- `mxready-scan` 与 `mxready-scan-public` 终端直接输出极简检查结果：一行状态与
+  阻断/警告/提示计数、按严重程度排序的命中列表（最多 5 条，其余指向报告文件）、
+  报告文件位置；输出仅使用 GBK 可编码字符，兼容 Windows 传统代码页管道。
 
 ### Changed
 
