@@ -20,4 +20,4 @@ def test_health_endpoint_uses_application_version(tmp_path):
         response = client.get("/api/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "version": "0.1.0"}
+    assert response.json() == {"status": "ok", "version": "0.2.1"}

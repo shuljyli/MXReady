@@ -1,5 +1,6 @@
 import hashlib
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
@@ -34,19 +35,20 @@ def test_profile_uses_os_defaults_without_touching_real_user_data(smoke, tmp_pat
     env, data = smoke.profile_environment(tmp_path, "macos")
     assert data == tmp_path / "home/Library/Application Support/MXReady"
     assert env["HOME"] == str(tmp_path / "home")
+    assert env["PYTHON"] == sys.executable
     assert not any(name.startswith("MXREADY_") for name in env)
     assert "PYTHONPATH" not in env and "PYTHONHOME" not in env
     assert "XDG_DATA_HOME" not in env
     env, data = smoke.profile_environment(tmp_path, "windows")
     assert data == tmp_path / "home/AppData/Local/MXReady"
     assert env["LOCALAPPDATA"] == str(tmp_path / "home/AppData/Local")
+    assert env["PYTHON"] == sys.executable
     _, data = smoke.profile_environment(tmp_path, "linux")
     assert data == tmp_path / "home/.local/share/mxready"
 
 
 def test_command_failure_keeps_exit_code_and_log(smoke, tmp_path):
     import subprocess
-    import sys
 
     evidence = smoke.Evidence(tmp_path)
     with pytest.raises(subprocess.CalledProcessError):

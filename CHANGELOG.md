@@ -9,12 +9,46 @@
 
 - 发布安装冒烟保留候选 ZIP 摘要、命令/退出码、日志及结果，检查系统默认用户数据路径和报告重启持久化；
   发布矩阵增加缺依赖失败检查及无包索引安装，明确进程故障、旧库升级与真机验收门槛。
+
+## [0.2.1] - 2026-10-26
+
+### Changed
+
+- 前端整体替换为浅色工作台：精简仓库输入首页，重新设计扫描进度、异常恢复、
+  迁移报告、导出与真机验证界面，继续独立展示静态与硬件状态。
+- 优化移动端单列布局、长路径与代码显示、键盘焦点和文件选择反馈；保留刷新恢复、
+  轮询重试、严重级别筛选及验证结果校验，未更改 API 契约或 runner 行为。
+- 首页使用本地生成并优化的芯片插画，通过 Vite 打包到安装版支持的 assets 目录，
+  无需外部图片或字体服务。
+
+### Fixed
+
+- 修复 Windows 安装 ZIP 在 cp1252 等旧代码页下安装到含中文路径时，pip 打印路径
+  触发 `UnicodeEncodeError` 并退出失败的问题：安装器为 pip 显式设置 UTF-8 输出编码，
+  恢复三平台发布安装冒烟工作流。
+- 修复 Windows 安装脚本优先使用 `py -3` 时可能选中矩阵之外的新版 Python，导致
+  `PyYAML` 没有可用二进制 wheel 而安装失败的问题：`install.ps1` 支持 `PYTHON`
+  环境变量指定解释器，发布安装冒烟显式传入矩阵 Python。
+
+## [0.2.0] - 2026-10-25
+
+### Added
+
 - Windows、Linux、macOS 安装 ZIP 与包含网页的通用 wheel/sdist 构建入口；安装模板位于
   `packaging/`，构建产物统一位于 Git 忽略的 `dist/`，提供 SHA-256 清单和离线依赖安装选项。
 - `mxready-serve` 安装后启动入口，默认监听本机地址并使用各系统的用户数据目录；
   发布包可直接提供完整界面，保留 `MXREADY_FRONTEND_DIR` 覆盖方式。
 - 三平台 Python 3.11/3.12 发布包安装、HTTP、扫描与标准库 runner 冒烟工作流，
   以及安装、升级、卸载和构建文档。
+- `setup.py` 依赖声明面的事实提取：保守解析 `install_requires` / `setup_requires` /
+  `tests_require` / `extras_require` 中的字面量字符串（依据 PyMigBench 等迁移语料，
+  CUDA 扩展项目的依赖最常声明在 setup.py），不求值任何表达式。
+- `mxready-scan` 与 `mxready-scan-public` 终端直接输出极简检查结果：一行状态与
+  阻断/警告/提示计数、按严重程度排序的命中列表（最多 5 条，其余指向报告文件）、
+  报告文件位置；输出仅使用 GBK 可编码字符，兼容 Windows 传统代码页管道。
+- `mxready-scan-batch` 批量评估入口：接收清单文件或直接 URL，逐仓复用安全获取与
+  只读分析管线，生成每仓报告与 `batch-summary.csv` / `batch-summary.md` 汇总总表，
+  单仓失败不中断批量；退出码区分全部通过、存在阻塞与存在失败。
 
 ### Changed
 
@@ -27,9 +61,17 @@
 - TypeScript 响应类型与验证结果 JSON Schema 从后端模型生成，CI 检查生成物是否同步。
 - 文件索引预计算行位置；规则评估增加 10,000 条唯一命中与 30 秒协作式预算，超限任务明确失败。
 - 页面通过 URL 保存扫描 ID，支持刷新恢复、取消请求、15 秒请求超时及有限退避重试。
+- 规则正则评估引入字面量预过滤（Hyperscan NSDI'19 与 Russ Cox trigram 分解思路）：
+  从每条正则保守提取"命中必含"的子串，字面量不出现的文件跳过正则扫描；30 条 regex
+  规则中 25 条被覆盖，实测合成语料扫描时间减半，且与全量扫描结果逐项一致（含等价性测试）。
+- 事实提取层按文件缓存行列表并复用 `IndexedFile` 行偏移，位置去重改为集合判定；
+  重型 Python 构建文件的事实提取实测约 9 倍加速。
+- 限流器滑动窗口桶周期清扫过期 IP，避免公网环境大量一次性 IP 导致内存无界增长。
 
 ### Fixed
 
+- 修复 `mxready-scan` 在 cp1252 等无法编码中文的旧代码页下输出 `UnicodeEncodeError`
+  的问题：按 `sys.stdout.encoding` 检测，不可编码时回退为纯 ASCII 摘要。
 - 修复 Windows mypy 对 POSIX 进程组 API 的平台分支判定，并在本地类型检查入口增加跨平台目标检查。
 - Docker CI 健康检查对启动阶段连接重置等错误执行有总时限的重试，保留未就绪时的失败结果。
 - 修复启动其他 API 进程时将活跃扫描误标为失败的问题；队列任务可在服务重启后继续领取。
@@ -58,5 +100,7 @@
 - Web 扫描路径永不执行被扫描仓库中的代码。
 - 仓库地址主机白名单、受限 Git 获取、只读索引与上传结果严格校验。
 
-[Unreleased]: https://github.com/shuljyli/MXReady/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/shuljyli/MXReady/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/shuljyli/MXReady/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/shuljyli/MXReady/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/shuljyli/MXReady/releases/tag/v0.1.0

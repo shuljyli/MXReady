@@ -47,7 +47,7 @@ curl -s http://127.0.0.1:8000/api/health
 ```
 
 ```json
-{ "status": "ok", "version": "0.1.0" }
+{ "status": "ok", "version": "0.2.1" }
 ```
 
 ## 2. 规则目录

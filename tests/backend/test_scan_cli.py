@@ -1,10 +1,12 @@
+import io
 import json
 from pathlib import Path
 
+from mxready.cli import scan_repository
 from mxready.cli.scan_repository import main
 
 
-def test_cli_writes_three_commit_pinned_outputs(tmp_path: Path) -> None:
+def test_cli_writes_three_commit_pinned_outputs(tmp_path: Path, capsys) -> None:
     output = tmp_path / "reports"
     commit = "d" * 40
 
@@ -25,6 +27,10 @@ def test_cli_writes_three_commit_pinned_outputs(tmp_path: Path) -> None:
     markdown_path = output / f"{stem}.md"
     badge_path = output / f"{stem}.svg"
     assert exit_code == 2
+    captured = capsys.readouterr()
+    assert captured.out.startswith("MXReady: blocked | ")
+    assert "MXR-TOOLCHAIN-001" in captured.out
+    assert f"报告: {stem}.json / {stem}.md / {stem}.svg" in captured.out
     assert {path.name for path in output.iterdir()} == {
         json_path.name,
         markdown_path.name,
@@ -98,3 +104,33 @@ def test_cli_rejects_non_sha_commit(capsys, tmp_path: Path) -> None:
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "40-character lowercase hexadecimal SHA" in captured.err
+
+
+class _LegacyCodePageStdout(io.StringIO):
+    encoding = "cp1252"
+
+
+def test_cli_falls_back_to_ascii_summary_on_legacy_code_page(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    stream = _LegacyCodePageStdout()
+    monkeypatch.setattr(scan_repository.sys, "stdout", stream)
+
+    exit_code = main(
+        [
+            "tests/fixtures/repositories/cuda_extension",
+            "--repo-url",
+            "https://github.com/example/cuda-extension",
+            "--commit",
+            "d" * 40,
+            "--output",
+            str(tmp_path / "reports"),
+        ]
+    )
+
+    output = stream.getvalue()
+    assert exit_code == 2
+    assert output.isascii()
+    assert "BLOCKER" in output
+    assert "Report: cuda-extension-dddddddddddd.json" in output

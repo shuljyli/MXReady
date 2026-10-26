@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mxready"
-version = "0.1.0"
+version = "0.2.1"
 description = "Static readiness checks for moving PyTorch CUDA extensions to MetaX MXMACA"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -54,6 +54,7 @@ mxready-serve = "mxready.cli.serve:main"
 mxready-build-bundle = "mxready.cli.build_verification_bundle:main"
 mxready-scan = "mxready.cli.scan_repository:main"
 mxready-scan-public = "mxready.cli.generate_public_report:main"
+mxready-scan-batch = "mxready.cli.scan_batch:main"
 mxready-runner = "mxready_runner.cli:main"
 
 [tool.setuptools.packages.find]

@@ -12,6 +12,7 @@ from mxready.errors import MxReadyError
 from mxready.models import ScanReport, StaticStatus
 from mxready.reporting.badge import render_badge
 from mxready.reporting.markdown import render_markdown
+from mxready.reporting.terminal import render_terminal_summary
 from mxready.repository.identity import parse_repository_url
 from mxready.scanning.analyzer import ScanAnalyzer
 from mxready.scanning.rule_loader import load_rule_catalog
@@ -46,11 +47,31 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"MXReady scan error: {error}", file=sys.stderr)
         return 1
 
-    print(
-        f"MXReady: wrote {stem}.json, {stem}.md, and {stem}.svg "
-        f"({report.summary.total_count} findings)"
-    )
+    print(_terminal_summary(report, output_note=f"{stem}.json / {stem}.md / {stem}.svg"))
     return 2 if report.static_status is StaticStatus.BLOCKED else 0
+
+
+def _terminal_summary(report: ScanReport, *, output_note: str) -> str:
+    """按标准输出编码选取摘要语言；旧代码页无法编码中文时回退纯 ASCII。"""
+    summary = render_terminal_summary(report, output_note=output_note)
+    if _can_encode(summary):
+        return summary
+    summary = render_terminal_summary(report, output_note=output_note, english=True)
+    if _can_encode(summary):
+        return summary
+    encoding = getattr(sys.stdout, "encoding", None) or "ascii"
+    return summary.encode(encoding, errors="backslashreplace").decode(encoding)
+
+
+def _can_encode(text: str) -> bool:
+    encoding = getattr(sys.stdout, "encoding", None)
+    if not encoding:
+        return True
+    try:
+        text.encode(encoding)
+    except (LookupError, UnicodeEncodeError):
+        return False
+    return True
 
 
 def _build_parser() -> argparse.ArgumentParser:

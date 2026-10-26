@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.1-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -69,10 +69,10 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 
 | 平台 | 安装包 | 完整解压后，在包目录中执行 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-0.1.0-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
-| Linux | `mxready-0.1.0-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
-| macOS（Apple Silicon / Intel） | `mxready-0.1.0-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
-| 已有 Python 环境 | `mxready-0.1.0-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
+| Windows 10/11 | `mxready-0.2.1-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
+| Linux | `mxready-0.2.1-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
+| macOS（Apple Silicon / Intel） | `mxready-0.2.1-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
+| 已有 Python 环境 | `mxready-0.2.1-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
 
 启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。
 安装器在解压目录创建 `.venv/`，数据库保存在系统用户数据目录，升级替换程序时可保留历史报告。
@@ -258,6 +258,19 @@ mxready-scan tests/fixtures/repositories/cuda_extension --repo-url https://githu
 
 命令生成 `<仓库>-<commit12>.json`、`.md` 和 `.svg`。退出码为：`0` 表示通过或仅有警告，`2` 表示存在阻塞项，`1` 表示操作失败。
 
+终端直接输出极简检查结果（命中按严重程度排序，最多列出 5 条，其余见报告文件）：
+
+```text
+MXReady: blocked | 阻断 1 · 警告 2 · 提示 3
+  阻断 MXR-TOOLCHAIN-001 检测直接 nvcc 工具调用 (setup.py:5)
+  警告 MXR-DEPENDENCY-001 检测 flash-attn 依赖 (requirements.txt:2)
+  警告 MXR-PATH-001 检测硬编码 CUDA 安装路径 (setup.py:4 x2)
+  提示 MXR-CMAKE-001 识别 CMake CUDA 语言 (CMakeLists.txt:2)
+  提示 MXR-HEADER-001 识别 cuda_runtime.h 头文件 (csrc/kernel.cu:1)
+  … 其余 1 项见报告文件
+报告: cuda-extension-dddddddddddd.json / cuda-extension-dddddddddddd.md / cuda-extension-dddddddddddd.svg
+```
+
 ## 公开仓库证据与验证包
 
 需要生成固定文件名的公开报告时，可使用同一套主机白名单、Git 限制和只读分析器：
@@ -279,6 +292,29 @@ mxready-build-bundle examples/reports/pytorch-extension-cpp.json \
 ```
 
 生成清单默认不含项目命令（ZIP 内附 `project-commands.example.json` 模板，需人工审阅并替换为实际 smoke 命令后填入清单）。请先阅读 [真机验证交接](examples/verification/README.md)，再在自己控制的沐曦服务器上人工补充并执行命令。
+
+### 批量评估多个仓库
+
+迁移评估通常面对一批仓库。`mxready-scan-batch` 接收清单文件（每行一个仓库，
+可选分支/标签/40 位提交，`#` 注释）或直接传 URL，逐仓复用与单仓扫描相同的安全
+获取与只读分析管线，输出每仓报告和汇总总表：
+
+```bash
+mxready-scan-batch repos.txt --output data/batch
+# 或混合来源：mxready-scan-batch repos.txt https://github.com/pytorch/extension-cpp
+```
+
+```text
+[1/3] pytorch/extension-cpp → warnings（阻断 0 · 警告 2 · 提示 1）
+[2/3] example/missing-repo → 失败: REPOSITORY_NOT_FOUND: 未找到仓库或指定分支、标签、提交，请检查输入。
+[3/3] example/cuda-ext → blocked（阻断 1 · 警告 2 · 提示 3）
+汇总: 成功 2 · 失败 1（其中阻塞 1）
+报告: data/batch/batch-summary.csv 与 data/batch/batch-summary.md
+```
+
+`batch-summary.csv`（UTF-8 BOM，Excel 可直接打开）逐仓记录提交、状态、三档计数、
+主要规则与报告文件；`batch-summary.md` 生成带链接的汇总表，适合直接贴进评估结论。
+退出码：`0` 全部成功且无阻塞，`2` 成功但存在阻塞仓库，`1` 存在扫描失败。
 
 ## 状态含义
 

@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 
 import { MxReadyApiError, uploadVerification } from "../api/client";
 import type { ScanReport, VerificationStatus } from "../api/types";
+import { Icon } from "./Icon";
 
 type VerificationPanelProps = {
   report: ScanReport;
@@ -98,7 +99,6 @@ export function VerificationPanel({
     <section className="verification-panel" aria-labelledby="verification-title">
       <div className="verification-heading">
         <div>
-          <p className="eyebrow">REMOTE VERIFICATION</p>
           <h2 id="verification-title">沐曦真机验证</h2>
         </div>
         <span className={`verification-state state-${status.tone}`}>
@@ -106,42 +106,7 @@ export function VerificationPanel({
         </span>
       </div>
       <p className="verification-detail">{status.detail}</p>
-
-      <div className="verification-truth">
-        <strong>结论边界</strong>
-        <p>
-          静态检查只会发现已编码的迁移风险，不代表项目已经兼容
-          MXMACA。只有相同提交在沐曦 GPU
-          上完成验证后，状态才会变为“已验证”。
-        </p>
-      </div>
-
-      <ol className="verification-steps">
-        <li>
-          <span>01</span>
-          <div>
-            <strong>下载并审阅</strong>
-            <p>先阅读 SECURITY.md 与 mxready.yml 中的全部命令。</p>
-          </div>
-        </li>
-        <li>
-          <span>02</span>
-          <div>
-            <strong>在远程服务器运行</strong>
-            <code>
-              python -m mxready_runner inspect --manifest mxready.yml --output
-              result.json
-            </code>
-          </div>
-        </li>
-        <li>
-          <span>03</span>
-          <div>
-            <strong>人工检查并上传</strong>
-            <p>确认输出已脱敏，再把 result.json 上传到这里。</p>
-          </div>
-        </li>
-      </ol>
+      <p className="verification-reminder">审阅命令后，在沐曦主机运行。</p>
 
       <div className="verification-actions">
         <a
@@ -149,11 +114,7 @@ export function VerificationPanel({
           className="bundle-link"
           href={bundleUrl}
         >
-          <span>
-            <small>ZIP · 标准库 runner</small>
-            下载远程验证包
-          </span>
-          <span aria-hidden="true">↓</span>
+          <Icon name="download" /><span>下载验证包</span>
         </a>
 
         <form className="upload-form" onSubmit={submit}>
@@ -162,6 +123,7 @@ export function VerificationPanel({
             <input
               accept=".json,application/json"
               id="verification-file"
+              aria-describedby="verification-file-help"
               onChange={(event) => chooseFile(event.target.files?.[0])}
               type="file"
             />
@@ -175,8 +137,45 @@ export function VerificationPanel({
           >
             {uploading ? "正在校验…" : "上传验证结果"}
           </button>
+          <small id="verification-file-help">JSON · 最大 1 MiB</small>
         </form>
       </div>
+      <details className="verification-instructions">
+        <summary>运行说明<Icon name="chevron" /></summary>
+        <div className="verification-truth">
+          <p>
+            静态检查只会发现已编码的迁移风险，不代表项目已经兼容
+            MXMACA。只有相同提交在沐曦 GPU
+            上完成验证后，状态才会变为“已验证”。
+          </p>
+        </div>
+        <ol className="verification-steps">
+          <li>
+            <span>01</span>
+            <div>
+              <strong>下载并审阅</strong>
+              <p>先阅读 SECURITY.md 与 mxready.yml 中的全部命令，确认后再运行。</p>
+            </div>
+          </li>
+          <li>
+            <span>02</span>
+            <div>
+              <strong>在远程服务器运行</strong>
+              <code>
+                python -m mxready_runner inspect --manifest mxready.yml --output
+                result.json
+              </code>
+            </div>
+          </li>
+          <li>
+            <span>03</span>
+            <div>
+              <strong>人工检查并上传</strong>
+              <p>确认输出已脱敏，再把 result.json 上传到这里。</p>
+            </div>
+          </li>
+        </ol>
+      </details>
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 
 import type { Finding } from "../api/types";
+import { Icon } from "./Icon";
 
 type FindingCardProps = {
   finding: Finding;
@@ -31,33 +32,35 @@ export function FindingCard({ finding }: FindingCardProps) {
       }`}
     >
       <header className="finding-header">
-        <button
-          aria-controls={contentId}
-          aria-expanded={expanded}
-          aria-label={`${toggleLabel}：${finding.title}`}
-          className="finding-toggle"
-          onClick={() => setExpanded((value) => !value)}
-          type="button"
-        >
-          <span className="finding-badges">
-            <span className="finding-severity">
-              {severityLabels[finding.severity]}
-            </span>
-            <span className="finding-rule">{finding.rule_id}</span>
-          </span>
-          <code className="finding-location">{lineLabel(finding)}</code>
-          <span
-            aria-hidden="true"
-            className={`finding-chevron${expanded ? " finding-chevron-open" : ""}`}
+        <h3 aria-label={finding.title}>
+          <button
+            aria-controls={contentId}
+            aria-expanded={expanded}
+            aria-label={`${toggleLabel}：${finding.title}`}
+            className="finding-toggle"
+            onClick={() => setExpanded((value) => !value)}
+            type="button"
           >
-            ▾
-          </span>
-        </button>
+            <span className="finding-badges">
+              <span className="finding-severity">
+                {severityLabels[finding.severity]}
+              </span>
+              <span className="finding-rule">{finding.rule_id}</span>
+            </span>
+            <code className="finding-location">{lineLabel(finding)}</code>
+            <span className="finding-title">{finding.title}</span>
+            <span
+              aria-hidden="true"
+              className={`finding-chevron${expanded ? " finding-chevron-open" : ""}`}
+            >
+              <Icon name="chevron" />
+            </span>
+          </button>
+        </h3>
       </header>
 
       {expanded ? (
         <div className="finding-body" id={contentId}>
-          <h3>{finding.title}</h3>
           <p className="finding-message">{finding.message}</p>
           <pre className="evidence-block">
             <code>{finding.evidence}</code>

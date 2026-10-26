@@ -3,7 +3,9 @@ param([switch]$Offline)
 $ErrorActionPreference = "Stop"
 $Arguments = @((Join-Path $PSScriptRoot "install.py"))
 if ($Offline) { $Arguments += "--offline" }
-if (Get-Command py -ErrorAction SilentlyContinue) {
+if ($env:PYTHON) {
+  & $env:PYTHON @Arguments
+} elseif (Get-Command py -ErrorAction SilentlyContinue) {
   & py -3 @Arguments
 } elseif (Get-Command python -ErrorAction SilentlyContinue) {
   & python @Arguments

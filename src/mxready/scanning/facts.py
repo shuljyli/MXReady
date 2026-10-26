@@ -5,6 +5,7 @@ import re
 import tomllib
 import warnings
 from collections import defaultdict
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 from mxready.scanning.indexer import FileIndex, IndexedFile
@@ -32,6 +33,7 @@ _BUILD_SYSTEM_PACKAGES = {
     "scikit-build-core": "scikit-build",
     "setuptools": "setuptools",
 }
+_SETUP_REQUIRE_KEYWORDS = ("install_requires", "setup_requires", "tests_require")
 
 
 @dataclass(frozen=True, slots=True, order=True)
@@ -55,6 +57,7 @@ class _FactCollector:
         self.build_systems: set[str] = set()
         self.flags = dict.fromkeys(sorted(_KNOWN_FLAGS), False)
         self.locations: defaultdict[str, list[SourceLocation]] = defaultdict(list)
+        self._seen_locations: defaultdict[str, set[SourceLocation]] = defaultdict(set)
 
     def add_dependency(
         self,
@@ -77,8 +80,11 @@ class _FactCollector:
         self._add_location(f"fact:{name}", location)
 
     def _add_location(self, key: str, location: SourceLocation) -> None:
-        if location not in self.locations[key]:
-            self.locations[key].append(location)
+        seen = self._seen_locations[key]
+        if location in seen:
+            return
+        seen.add(location)
+        self.locations[key].append(location)
 
     def finish(self) -> ProjectFacts:
         locations = {key: tuple(sorted(value)) for key, value in sorted(self.locations.items())}
@@ -118,26 +124,26 @@ def _extract_pyproject(indexed_file: IndexedFile, collector: _FactCollector) -> 
     except (tomllib.TOMLDecodeError, TypeError):
         return
 
+    lines = indexed_file.text.splitlines()
+    folded_lines = [line.casefold() for line in lines]
+
+    def locate(value: str) -> SourceLocation:
+        return _locate_text(indexed_file.relative_path, lines, folded_lines, value)
+
     project = document.get("project")
     if isinstance(project, dict):
         dependencies = project.get("dependencies")
         if isinstance(dependencies, list):
             for dependency in dependencies:
                 if isinstance(dependency, str):
-                    collector.add_dependency(
-                        dependency,
-                        _locate_text(indexed_file, dependency),
-                    )
+                    collector.add_dependency(dependency, locate(dependency))
         optional = project.get("optional-dependencies")
         if isinstance(optional, dict):
             for group in optional.values():
                 if isinstance(group, list):
                     for dependency in group:
                         if isinstance(dependency, str):
-                            collector.add_dependency(
-                                dependency,
-                                _locate_text(indexed_file, dependency),
-                            )
+                            collector.add_dependency(dependency, locate(dependency))
 
     build_system = document.get("build-system")
     if isinstance(build_system, dict):
@@ -150,7 +156,7 @@ def _extract_pyproject(indexed_file: IndexedFile, collector: _FactCollector) -> 
                 if package in _BUILD_SYSTEM_PACKAGES:
                     collector.add_build_system(
                         _BUILD_SYSTEM_PACKAGES[package],
-                        _locate_text(indexed_file, requirement),
+                        locate(requirement),
                     )
 
         backend = build_system.get("build-backend")
@@ -159,7 +165,7 @@ def _extract_pyproject(indexed_file: IndexedFile, collector: _FactCollector) -> 
             if package in _BUILD_SYSTEM_PACKAGES:
                 collector.add_build_system(
                     _BUILD_SYSTEM_PACKAGES[package],
-                    _locate_text(indexed_file, backend),
+                    locate(backend),
                 )
 
     tool = document.get("tool")
@@ -172,7 +178,7 @@ def _extract_pyproject(indexed_file: IndexedFile, collector: _FactCollector) -> 
                     if isinstance(name, str) and name.casefold() != "python":
                         collector.add_dependency(
                             name,
-                            _locate_text(indexed_file, name),
+                            locate(name),
                         )
 
 
@@ -180,7 +186,8 @@ def _extract_requirements(
     indexed_file: IndexedFile,
     collector: _FactCollector,
 ) -> None:
-    for line_number, line in enumerate(indexed_file.text.splitlines(), start=1):
+    lines = indexed_file.text.splitlines()
+    for line_number, line in enumerate(lines, start=1):
         stripped = line.strip()
         if not stripped or stripped.startswith(("#", "-")):
             continue
@@ -189,7 +196,7 @@ def _extract_requirements(
         specification = stripped.split(" #", 1)[0].strip()
         collector.add_dependency(
             specification,
-            _location(indexed_file, line_number),
+            _location(lines, indexed_file.relative_path, line_number),
         )
 
 
@@ -213,6 +220,7 @@ class _PythonFactVisitor(ast.NodeVisitor):
         collector: _FactCollector,
     ) -> None:
         self.indexed_file = indexed_file
+        self.lines = indexed_file.text.splitlines()
         self.collector = collector
         self.aliases: dict[str, str] = {}
 
@@ -236,12 +244,12 @@ class _PythonFactVisitor(ast.NodeVisitor):
         if target_names & {"CUDA_HOME", "CUDA_PATH", "CUDA_ROOT"}:
             self.collector.set_flag(
                 "references_cuda_home",
-                _location(self.indexed_file, node.lineno),
+                self._location(node.lineno),
             )
         if _node_contains_string(node.value, "/usr/local/cuda"):
             self.collector.set_flag(
                 "uses_hardcoded_cuda_path",
-                _location(self.indexed_file, node.lineno),
+                self._location(node.lineno),
             )
         self.generic_visit(node)
 
@@ -253,7 +261,7 @@ class _PythonFactVisitor(ast.NodeVisitor):
         }:
             self.collector.set_flag(
                 "references_cuda_home",
-                _location(self.indexed_file, node.lineno),
+                self._location(node.lineno),
             )
         if node.value is not None and _node_contains_string(
             node.value,
@@ -261,13 +269,13 @@ class _PythonFactVisitor(ast.NodeVisitor):
         ):
             self.collector.set_flag(
                 "uses_hardcoded_cuda_path",
-                _location(self.indexed_file, node.lineno),
+                self._location(node.lineno),
             )
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
         function_name = self._resolve_name(node.func)
-        location = _location(self.indexed_file, node.lineno)
+        location = self._location(node.lineno)
         if function_name == "torch.utils.cpp_extension.CUDAExtension":
             self.collector.set_flag("uses_torch_cuda_extension", location)
         elif function_name == "torch.utils.cpp_extension.CppExtension":
@@ -280,10 +288,36 @@ class _PythonFactVisitor(ast.NodeVisitor):
                 "setuptools" if function_name.startswith("setuptools") else "distutils",
                 location,
             )
+            self._extract_setup_dependencies(node)
         self.generic_visit(node)
 
+    def _extract_setup_dependencies(self, node: ast.Call) -> None:
+        """setup.py 是 CUDA 扩展项目最主流的依赖声明面（PyMigBench 语料证实），
+        保守提取字面量字符串列表，不求值任何表达式。"""
+        for keyword in node.keywords:
+            if keyword.arg in _SETUP_REQUIRE_KEYWORDS:
+                for value, line in _string_list_elements(keyword.value):
+                    self.collector.add_dependency(
+                        value,
+                        self._location(line),
+                    )
+            elif keyword.arg == "extras_require":
+                self._extract_extras_require(keyword.value)
+
+    def _extract_extras_require(self, value: ast.expr) -> None:
+        if not isinstance(value, ast.Dict):
+            return
+        for key, group in zip(value.keys, value.values, strict=False):
+            if not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+                continue
+            for spec, line in _string_list_elements(group):
+                self.collector.add_dependency(
+                    spec,
+                    self._location(line),
+                )
+
     def _record_import(self, full_name: str, line_number: int) -> None:
-        location = _location(self.indexed_file, line_number)
+        location = self._location(line_number)
         if full_name == "setuptools" or full_name.startswith("setuptools."):
             self.collector.add_build_system("setuptools", location)
         if full_name == "tensorrt" or full_name.startswith("tensorrt."):
@@ -299,10 +333,22 @@ class _PythonFactVisitor(ast.NodeVisitor):
         resolved_head = self.aliases.get(head, head)
         return f"{resolved_head}{separator}{tail}"
 
+    def _location(self, line_number: int) -> SourceLocation:
+        return _location(self.lines, self.indexed_file.relative_path, line_number)
+
+
+def _string_list_elements(node: ast.expr) -> Iterator[tuple[str, int]]:
+    if isinstance(node, ast.List):
+        for element in node.elts:
+            if isinstance(element, ast.Constant) and isinstance(element.value, str):
+                yield element.value, element.lineno
+
 
 def _extract_cmake(indexed_file: IndexedFile, collector: _FactCollector) -> None:
-    collector.add_build_system("cmake", _location(indexed_file, 1))
     cmake_source = _strip_cmake_comments(indexed_file.text)
+    original_lines = indexed_file.text.splitlines()
+    collector.add_build_system("cmake", _location(original_lines, indexed_file.relative_path, 1))
+    lines = original_lines
     patterns = {
         "uses_cmake_cuda_language": re.compile(
             r"\b(?:project|enable_language)\s*\([^)]*\bCUDA\b",
@@ -321,13 +367,13 @@ def _extract_cmake(indexed_file: IndexedFile, collector: _FactCollector) -> None
         match = pattern.search(cmake_source)
         if match:
             line_number = cmake_source.count("\n", 0, match.start()) + 1
-            collector.set_flag(flag, _location(indexed_file, line_number))
+            collector.set_flag(flag, _location(lines, indexed_file.relative_path, line_number))
 
-    for line_number, line in enumerate(cmake_source.splitlines(), start=1):
+    for line_number, line in enumerate(lines, start=1):
         if re.search(r"\b(?:CUDA_HOME|CUDA_PATH|CUDA_ROOT)\b", line):
             collector.set_flag(
                 "references_cuda_home",
-                _location(indexed_file, line_number),
+                _location(lines, indexed_file.relative_path, line_number),
             )
 
 
@@ -347,8 +393,9 @@ def _strip_cmake_comments(value: str) -> str:
 
 
 def _extract_shell(indexed_file: IndexedFile, collector: _FactCollector) -> None:
-    for line_number, line in enumerate(indexed_file.text.splitlines(), start=1):
-        location = _location(indexed_file, line_number)
+    lines = indexed_file.text.splitlines()
+    for line_number, line in enumerate(lines, start=1):
+        location = _location(lines, indexed_file.relative_path, line_number)
         code = _strip_shell_comment(line)
         if re.search(r"\bnvcc\b", code, re.IGNORECASE):
             collector.set_flag("invokes_nvcc_directly", location)
@@ -392,19 +439,23 @@ def _node_contains_string(node: ast.AST, value: str) -> bool:
     )
 
 
-def _locate_text(indexed_file: IndexedFile, value: str) -> SourceLocation:
+def _locate_text(
+    relative_path: str,
+    lines: list[str],
+    folded_lines: list[str],
+    value: str,
+) -> SourceLocation:
     needle = value.casefold()
-    for line_number, line in enumerate(indexed_file.text.splitlines(), start=1):
-        if needle in line.casefold():
-            return _location(indexed_file, line_number)
-    return _location(indexed_file, 1)
+    for line_number, line in enumerate(folded_lines, start=1):
+        if needle in line:
+            return _location(lines, relative_path, line_number)
+    return _location(lines, relative_path, 1)
 
 
-def _location(indexed_file: IndexedFile, line_number: int) -> SourceLocation:
-    lines = indexed_file.text.splitlines()
+def _location(lines: list[str], relative_path: str, line_number: int) -> SourceLocation:
     evidence = lines[line_number - 1].strip() if 0 < line_number <= len(lines) else ""
     return SourceLocation(
-        relative_path=indexed_file.relative_path,
+        relative_path=relative_path,
         line=max(1, line_number),
         evidence=evidence[:240],
     )

@@ -12,6 +12,7 @@ from mxready.config import Settings
 from mxready.errors import MxReadyError
 from mxready.models import ScanReport, StaticStatus
 from mxready.reporting.markdown import render_markdown
+from mxready.reporting.terminal import render_terminal_summary
 from mxready.repository.git_client import GitClient
 from mxready.repository.github_archive import GitHubArchiveClient
 from mxready.repository.identity import parse_repository_url
@@ -98,8 +99,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
 
     print(
-        f"MXReady: wrote {arguments.label}.json and {arguments.label}.md "
-        f"for {report.repository.commit} ({report.summary.total_count} findings)"
+        render_terminal_summary(
+            report,
+            output_note=f"{arguments.label}.json / {arguments.label}.md",
+        )
     )
     return 2 if report.static_status is StaticStatus.BLOCKED else 0
 

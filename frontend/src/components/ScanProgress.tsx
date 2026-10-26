@@ -1,4 +1,5 @@
 import type { ScanJob, ScanStatus } from "../api/types";
+import { Icon } from "./Icon";
 
 type ScanProgressProps = {
   job: ScanJob;
@@ -28,11 +29,7 @@ export function ScanProgress({ job }: ScanProgressProps) {
 
   return (
     <section className="progress-panel" aria-labelledby="progress-title">
-      <div className="progress-orbit" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
+      <span className="panel-icon"><Icon name="scan" /></span>
       <p className="eyebrow">正在分析</p>
       <h2 id="progress-title">{repositoryName}</h2>
       <p className="stage-message" aria-live="polite">

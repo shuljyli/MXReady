@@ -42,6 +42,7 @@ def profile_environment(work: Path, platform: str) -> tuple[dict[str, str], Path
     home = work / "home"
     home.mkdir(exist_ok=True)
     env.update(
+        PYTHON=sys.executable,
         HOME=str(home),
         USERPROFILE=str(home),
         PIP_CONFIG_FILE=os.devnull,
@@ -147,7 +148,6 @@ def smoke(archive: Path, wheelhouse: Path | None, evidence: Evidence) -> None:
             install = ["bash", str(bundle / "install.sh")]
             start = ["bash", str(bundle / "start.sh")]
             python = bundle / ".venv" / "bin" / "python"
-            env["PYTHON"] = sys.executable
         if wheelhouse:
             install.append("-Offline" if platform == "windows" else "--offline")
             evidence.run(
