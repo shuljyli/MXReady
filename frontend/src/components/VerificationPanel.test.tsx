@@ -81,3 +81,16 @@ it("uploads one JSON result and returns the updated report", async () => {
   );
   expect(onUpdated).toHaveBeenCalledWith(verified);
 });
+
+it("keeps runner instructions focusable and reveals the safety steps", async () => {
+  render(<VerificationPanel report={staticPassedFixture} onUpdated={vi.fn()} />);
+  expect(screen.getByText("审阅命令后，在沐曦主机运行。")).toBeVisible();
+  expect(screen.getByRole("button", { name: "上传验证结果" })).toBeDisabled();
+  const instructions = screen.getByText("运行说明");
+  instructions.focus();
+  expect(instructions).toHaveFocus();
+  // Native summary keyboard activation is covered in the browser check.
+  await userEvent.click(instructions);
+  expect(instructions.closest("details")).toHaveAttribute("open");
+  expect(screen.getByText(/先阅读 SECURITY.md/)).toBeVisible();
+});

@@ -8,6 +8,7 @@ import {
 
 import type { ScanReport, Severity, StaticStatus } from "../api/types";
 import { FindingCard } from "./FindingCard";
+import { Icon } from "./Icon";
 import { VerificationPanel } from "./VerificationPanel";
 
 type FindingFilter = "all" | Severity;
@@ -154,185 +155,116 @@ export function ReportView({
 
   return (
     <div className="report-view">
-      <section
-        className={`report-hero report-status-${report.static_status}`}
-        aria-labelledby="report-title"
-      >
-        <div className="report-identity">
-          <p className="eyebrow">READINESS REPORT · {status.label}</p>
-          <h1 id="report-title" ref={headingRef} tabIndex={-1}>
-            {status.heading}
-          </h1>
-          <p>{status.description}</p>
+      <header className="report-heading">
+        <div>
+          <h1 id="report-title" ref={headingRef} tabIndex={-1}>迁移报告</h1>
+          <div className="repository-identity">
+            <span className="provider-label">{report.repository.provider}</span>
+            <a href={report.repository.url} rel="noreferrer" target="_blank">
+              {report.repository.owner}/{report.repository.name}
+            </a>
+            <code title={report.repository.commit}>{report.repository.commit.slice(0, 12)}</code>
+          </div>
         </div>
-        <div className="repository-card">
-          <span>{report.repository.provider.toUpperCase()}</span>
-          <a href={report.repository.url} rel="noreferrer" target="_blank">
-            {report.repository.owner}/{report.repository.name}
-          </a>
-          <code title={report.repository.commit}>
-            {report.repository.commit.slice(0, 12)}
-          </code>
-        </div>
-      </section>
+        <button className="secondary-button" onClick={onReset} type="button">新建体检</button>
+      </header>
 
-      <section className="report-summary" aria-label="扫描摘要">
-        <div className="summary-primary">
-          <span>扫描结果</span>
-          <strong>{report.summary.total_count}</strong>
-          <small>条可解释记录</small>
-        </div>
-        <div className="summary-count summary-blocker">
-          <span>阻塞项 {report.summary.blocker_count}</span>
-          <strong>{report.summary.blocker_count}</strong>
-        </div>
-        <div className="summary-count summary-warning">
-          <span>警告项 {report.summary.warning_count}</span>
-          <strong>{report.summary.warning_count}</strong>
-        </div>
-        <div className="summary-count summary-info">
-          <span>提示项 {report.summary.info_count}</span>
-          <strong>{report.summary.info_count}</strong>
-        </div>
-        <dl className="summary-meta">
-          <div>
-            <dt>扫描时间</dt>
-            <dd>{formatDate(report.scanned_at)}</dd>
-          </div>
-          <div>
-            <dt>规则 / 工具</dt>
-            <dd>
-              v{report.ruleset_version} / v{report.tool_version}
-            </dd>
-          </div>
-          <div>
-            <dt>硬件状态</dt>
-            <dd>{verificationLabels[report.verification_status]}</dd>
-          </div>
-        </dl>
-      </section>
-
-      <section className="report-section findings-section">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">EVIDENCE-BACKED FINDINGS</p>
-            <h2>源码发现</h2>
-          </div>
-          <div
-            aria-label="按严重级别筛选"
-            className="finding-filters"
-            onKeyDown={handleFilterKeyDown}
-            role="group"
-          >
-            {filterOptions.map((option) => (
-              <button
-                aria-label={option.ariaLabel}
-                aria-pressed={filter === option.value}
-                data-filter-button=""
-                key={option.value}
-                onClick={() => setFilter(option.value)}
-                tabIndex={filter === option.value ? 0 : -1}
-                type="button"
-              >
-                {option.text}
-                <span>{option.count}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {visibleFindings.length ? (
-          <div className="finding-list">
-            {visibleFindings.map((finding, index) => (
-              <FindingCard
-                finding={finding}
-                key={`${finding.rule_id}-${finding.relative_path}-${finding.line_start}-${index}`}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="empty-findings">
-            <span aria-hidden="true">✓</span>
-            <strong>当前筛选下没有结果</strong>
-            <p>这不代表已经完成 MXMACA 真机兼容验证。</p>
-          </div>
-        )}
-      </section>
-
-      <div className="report-columns">
-        <section className="report-section checklist-section">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">MIGRATION CHECKLIST</p>
-              <h2>迁移清单</h2>
-            </div>
-          </div>
-          {report.migration_checklist.length ? (
-            <ol className="checklist">
-              {report.migration_checklist.map((item, index) => (
-                <li key={`${item.rule_id}-${index}`}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <p>{item.action}</p>
-                    <small>{item.affected_files.join(" · ")}</small>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="section-empty">没有从静态结果生成迁移动作。</p>
-          )}
+      <div className="status-grid">
+        <section className={"status-card report-status-" + report.static_status} aria-label="静态检查">
+          <span className="panel-icon"><Icon name="file" /></span>
+          <div><h2>静态检查</h2><strong className="status-label">{status.heading}</strong><p>{status.description}</p></div>
         </section>
-
-        <section className="report-section export-section">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">PORTABLE OUTPUTS</p>
-              <h2>导出与共享</h2>
-            </div>
-          </div>
-          <p>
-            报告与徽章均固定到当前 40 位提交哈希；项目更新后应重新扫描。
-          </p>
-          <div className="download-grid">
-            <a aria-label="JSON" href={`${downloadBase}/report.json`}>
-              <span>JSON</span>
-              <small>结构化报告 ↓</small>
-            </a>
-            <a aria-label="Markdown" href={`${downloadBase}/report.md`}>
-              <span>Markdown</span>
-              <small>适合 Issue / PR ↓</small>
-            </a>
-            <a aria-label="Badge" href={`${downloadBase}/badge.svg`}>
-              <span>Badge</span>
-              <small>仓库状态徽章 ↗</small>
-            </a>
-          </div>
+        <section className={"status-card hardware-status-" + report.verification_status} aria-label="真机验证状态">
+          <span className="panel-icon"><Icon name="chip" /></span>
+          <div><h2>真机验证</h2><strong className="status-label">{verificationLabels[report.verification_status]}</strong><p>与静态检查独立，绑定当前提交。</p></div>
         </section>
       </div>
 
-      {report.analysis_warnings.length ? (
-        <section className="analysis-warnings" aria-labelledby="warnings-title">
-          <h2 id="warnings-title">扫描范围提示</h2>
-          <ul>
-            {report.analysis_warnings.map((warning, index) => (
-              <li key={`${warning.code}-${index}`}>
-                <code>{warning.code}</code>
-                <span>{warning.relative_path ?? "repository"}</span>
-                <p>{warning.message}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <section className="report-summary" aria-label="扫描摘要">
+        <dl className="summary-counts">
+          <div><dt>发现</dt><dd>{report.summary.total_count}</dd></div>
+          <div className="summary-blocker" aria-label={"阻塞项 " + report.summary.blocker_count}><dt>阻塞</dt><dd>{report.summary.blocker_count}</dd></div>
+          <div className="summary-warning" aria-label={"警告项 " + report.summary.warning_count}><dt>警告</dt><dd>{report.summary.warning_count}</dd></div>
+          <div className="summary-info"><dt>提示</dt><dd>{report.summary.info_count}</dd></div>
+        </dl>
+        <dl className="summary-meta">
+          <div><dt>扫描时间</dt><dd>{formatDate(report.scanned_at)}</dd></div>
+          <div><dt>规则 / 工具</dt><dd>v{report.ruleset_version} / v{report.tool_version}</dd></div>
+        </dl>
+      </section>
 
-      <VerificationPanel report={report} onUpdated={onUpdated} />
+      <div className="report-layout">
+        <div className="report-main">
+          {report.analysis_warnings.length ? (
+            <section className="analysis-warnings" aria-labelledby="warnings-title">
+              <h2 id="warnings-title"><Icon name="info" />扫描范围提示</h2>
+              <ul>{report.analysis_warnings.map((warning, index) => (
+                <li key={warning.code + "-" + index}>
+                  <code>{warning.code}</code>
+                  <span>{warning.relative_path ?? "repository"}</span>
+                  <p>{warning.message}</p>
+                </li>
+              ))}</ul>
+            </section>
+          ) : null}
+
+          <section className="report-section findings-section">
+            <div className="section-heading">
+              <h2>源码发现</h2>
+              <div aria-label="按严重级别筛选" className="finding-filters"
+                onKeyDown={handleFilterKeyDown} role="group">
+                {filterOptions.map((option) => (
+                  <button aria-label={option.ariaLabel} aria-pressed={filter === option.value}
+                    data-filter-button="" key={option.value} onClick={() => setFilter(option.value)}
+                    tabIndex={filter === option.value ? 0 : -1} type="button">
+                    {option.text}<span>{option.count}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {visibleFindings.length ? (
+              <div className="finding-list">{visibleFindings.map((finding, index) => (
+                <FindingCard finding={finding}
+                  key={finding.rule_id + "-" + finding.relative_path + "-" + finding.line_start + "-" + index} />
+              ))}</div>
+            ) : (
+              <div className="empty-findings">
+                <span className="panel-icon"><Icon name="file" /></span>
+                <strong>当前筛选下没有结果</strong>
+                <p>这不代表已经完成 MXMACA 真机兼容验证。</p>
+              </div>
+            )}
+          </section>
+
+          <section className="report-section checklist-section">
+            <div className="section-heading"><h2>迁移清单</h2></div>
+            {report.migration_checklist.length ? (
+              <ol className="checklist">{report.migration_checklist.map((item, index) => (
+                <li key={item.rule_id + "-" + index}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <div><strong>{item.title}</strong><p>{item.action}</p><small>{item.affected_files.join(" · ")}</small></div>
+                </li>
+              ))}</ol>
+            ) : <p className="section-empty">没有从静态结果生成迁移动作。</p>}
+          </section>
+        </div>
+
+        <aside className="report-tools" aria-label="报告工具">
+          <section className="report-section export-section">
+            <div className="section-heading"><h2>导出报告</h2></div>
+            <div className="download-grid">
+              <a aria-label="JSON" href={downloadBase + "/report.json"}><Icon name="file" /><span>JSON</span></a>
+              <a aria-label="Markdown" href={downloadBase + "/report.md"}><Icon name="file" /><span>Markdown</span></a>
+              <a aria-label="Badge" href={downloadBase + "/badge.svg"}><Icon name="shield" /><span>Badge</span></a>
+            </div>
+            <p>绑定当前提交；项目更新后请重新扫描。</p>
+          </section>
+          <VerificationPanel report={report} onUpdated={onUpdated} />
+        </aside>
+      </div>
 
       <div className="report-reset">
-        <button className="secondary-button" onClick={onReset} type="button">
-          扫描另一个仓库
-        </button>
+        <button className="text-button" onClick={onReset} type="button">扫描另一个仓库<Icon name="arrow" /></button>
       </div>
     </div>
   );

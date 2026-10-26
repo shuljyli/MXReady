@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 
 import { createScan } from "../api/client";
 import type { ScanJob } from "../api/types";
+import { Icon } from "./Icon";
 
 type ScanFormProps = {
   onCreated: (job: ScanJob) => void;
@@ -62,11 +63,8 @@ export function ScanForm({ onCreated }: ScanFormProps) {
   return (
     <form className="scan-form" onSubmit={handleSubmit}>
       <div className="form-heading">
-        <p className="eyebrow">开始一次源码体检</p>
+        <span className="step-number" aria-hidden="true">01</span>
         <h2>输入公开仓库</h2>
-        <p>
-          首版聚焦 Python、PyTorch 与 CUDA 扩展项目，不会执行仓库中的任何代码。
-        </p>
       </div>
 
       <div className="field">
@@ -94,7 +92,7 @@ export function ScanForm({ onCreated }: ScanFormProps) {
           maxLength={200}
           name="ref"
           onChange={(event) => setRequestedRef(event.target.value)}
-          placeholder="默认扫描仓库主分支"
+          placeholder="默认分支"
           value={requestedRef}
         />
       </div>
@@ -108,8 +106,9 @@ export function ScanForm({ onCreated }: ScanFormProps) {
 
       <button className="primary-button" disabled={submitting} type="submit">
         <span>{submitting ? "正在创建任务" : "开始体检"}</span>
-        <span aria-hidden="true">{submitting ? "…" : "↗"}</span>
+        {submitting ? <span className="button-spinner" aria-hidden="true" /> : <Icon name="arrow" />}
       </button>
+      <p className="form-safety"><Icon name="shield" />仅静态分析，不执行仓库代码</p>
     </form>
   );
 }

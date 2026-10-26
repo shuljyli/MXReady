@@ -8,8 +8,8 @@ import { ReportView } from "./ReportView";
 it("shows exact counts and code evidence without inventing a score", () => {
   render(<ReportView report={blockedReportFixture} onReset={vi.fn()} />);
 
-  expect(screen.getByText("阻塞项 1")).toBeInTheDocument();
-  expect(screen.getByText("警告项 1")).toBeInTheDocument();
+  expect(screen.getByLabelText("阻塞项 1")).toBeInTheDocument();
+  expect(screen.getByLabelText("警告项 1")).toBeInTheDocument();
   expect(screen.getByText("setup.py:12")).toBeInTheDocument();
   expect(screen.getByText("compiler = 'nvcc'")).toBeInTheDocument();
   expect(screen.getByText("aaaaaaaaaaaa")).toBeInTheDocument();
@@ -55,8 +55,24 @@ it("moves focus to the report heading when the view opens", () => {
   render(<ReportView report={blockedReportFixture} onReset={vi.fn()} />);
 
   expect(
-    screen.getByRole("heading", { name: "发现阻塞迁移的问题" }),
+    screen.getByRole("heading", { name: "迁移报告" }),
   ).toHaveFocus();
+});
+
+it("keeps static and hardware conclusions in separately named regions", () => {
+  render(<ReportView report={blockedReportFixture} onReset={vi.fn()} />);
+  expect(screen.getByRole("region", { name: "静态检查" })).toHaveTextContent("发现阻塞迁移的问题");
+  expect(screen.getByRole("region", { name: "真机验证状态" })).toHaveTextContent("未做真机验证");
+});
+
+it("preserves scan scope warnings and metadata in the redesigned report", () => {
+  render(<ReportView report={{ ...blockedReportFixture, analysis_warnings: [{
+    code: "FILE_SKIPPED", relative_path: "large.cu", message: "文件超过分析限制。",
+  }] }} onReset={vi.fn()} />);
+  expect(screen.getByRole("region", { name: "扫描范围提示" })).toHaveTextContent("large.cu");
+  expect(screen.getByText("文件超过分析限制。")).toBeInTheDocument();
+  expect(screen.getByText("规则 / 工具")).toBeInTheDocument();
+  expect(screen.getByText("扫描时间")).toBeInTheDocument();
 });
 
 it("navigates severity filters with arrow keys", async () => {

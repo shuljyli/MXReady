@@ -3,11 +3,14 @@ import { useEffect, useState } from "react";
 import { getRules } from "./api/client";
 import type { ScanJob } from "./api/types";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Icon } from "./components/Icon";
 import { ReportSkeleton } from "./components/ReportSkeleton";
 import { ReportView } from "./components/ReportView";
 import { ScanForm } from "./components/ScanForm";
 import { ScanProgress } from "./components/ScanProgress";
 import { useScan } from "./hooks/useScan";
+
+const chipIllustration = new URL("./assets/mx-chip.webp", import.meta.url).href;
 
 type AppProps = {
   initialJob?: ScanJob;
@@ -22,113 +25,77 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
     getRules()
       .then((catalog) => setRuleCount(catalog.rules.length))
       .catch(() => {
-        // The header stays usable without the rule count.
+        // The workspace remains usable when the catalog is unavailable.
       });
   }, []);
 
   return (
     <div className="app-shell">
-      <header className="site-header">
+      <a className="skip-link" href="#main-content">跳至主要内容</a>
+      <aside className="workspace-sidebar" aria-label="工作区">
         <a className="brand" href="/" aria-label="MXReady 首页">
-          <span className="brand-mark" aria-hidden="true">
-            MX
-          </span>
-          <span>
-            <strong>MXReady</strong>
-            <small>沐曦适配体检</small>
-          </span>
+          <svg className="brand-mark" viewBox="0 0 36 36" aria-hidden="true">
+            <path d="M3 31V5l15 11L33 5v26h-7V19l-8 6-8-6v12Z" fill="currentColor" />
+            <path d="m3 5 15 11v9L3 14Zm30 0L18 16v9l15-11Z" fill="#399780" />
+          </svg>
+          <strong>MXReady</strong>
         </a>
-        <div className="header-meta">
-          <span className="live-dot" aria-hidden="true" />
-          <span>
-            {`规则集 v1${ruleCount === null ? "" : ` · ${ruleCount} 项`}`}
-          </span>
-        </div>
-      </header>
+        <div className="workspace-current"><Icon name="scan" /><span>源码体检</span></div>
+        <span className="sidebar-caption">CUDA <span aria-hidden="true">→</span> MXMACA</span>
+      </aside>
 
-      <main>
-        {view.kind === "idle" ? (
-          <div className="landing-grid">
-            <section className="hero" aria-labelledby="hero-title">
-              <p className="eyebrow">MXMACA MIGRATION READINESS</p>
-              <h1 id="hero-title">
-                让 CUDA 项目
-                <br />
-                更接近<span>沐曦</span>
-              </h1>
-              <p className="hero-copy">
-                用可解释的静态规则，提前定位 PyTorch CUDA
-                扩展迁移到国产 GPU 生态时值得复核的代码、依赖和构建配置。
-              </p>
-              <div className="scope-strip">
-                <span>
-                  <strong>{ruleCount ?? "…"}</strong>
-                  首批规则
-                </span>
-                <span>
-                  <strong>0</strong>
-                  项目代码执行
-                </span>
-                <span>
-                  <strong>1</strong>
-                  份迁移清单
-                </span>
+      <div className="workspace">
+        <header className="workspace-header">
+          <div className="breadcrumb"><span>工作台</span><span aria-hidden="true">/</span><span>{view.kind === "report" ? "迁移报告" : "源码体检"}</span></div>
+          <span className="header-meta">{"规则集 v1" + (ruleCount === null ? "" : " · " + ruleCount + " 项")}</span>
+        </header>
+        <main id="main-content" tabIndex={-1}>
+          {view.kind === "idle" ? (
+            <div className="scan-workspace">
+              <div className="page-heading">
+                <h1>新建体检</h1>
+                <p>PyTorch CUDA <span aria-hidden="true">→</span> MXMACA</p>
               </div>
-              <aside className="truth-note">
-                <span aria-hidden="true">i</span>
-                <div>
-                  <strong>静态检查不是硬件兼容认证</strong>
-                  <p>
-                    最终结论仍需在相同提交上使用沐曦 GPU
-                    运行验证包，MXReady 会清楚区分两种状态。
-                  </p>
+              <section className="scan-card" aria-label="新建源码体检">
+                <ScanForm onCreated={onCreated} />
+                <div className="chip-art" aria-hidden="true">
+                  <span>CUDA → MXMACA</span>
+                  <img src={chipIllustration} alt="" width="1086" height="1448" />
                 </div>
-              </aside>
+              </section>
+              <ol className="workflow" aria-label="迁移流程">
+                <li><span className="workflow-icon"><Icon name="scan" /></span><div><small>01</small><strong>源码扫描</strong></div></li>
+                <li><span className="workflow-icon"><Icon name="file" /></span><div><small>02</small><strong>迁移报告</strong></div></li>
+                <li><span className="workflow-icon"><Icon name="chip" /></span><div><small>03</small><strong>真机验证</strong></div></li>
+              </ol>
+            </div>
+          ) : null}
+
+          {view.kind === "scanning" ? (
+            <ErrorBoundary label="扫描进度"><ScanProgress job={view.job} /></ErrorBoundary>
+          ) : null}
+          {view.kind === "report-loading" || view.kind === "restoring" ? <ReportSkeleton /> : null}
+          {view.kind === "report" ? (
+            <ErrorBoundary label="报告内容">
+              <ReportView onReset={reset} onUpdated={onUpdated} report={view.report} />
+            </ErrorBoundary>
+          ) : null}
+          {view.kind === "error" ? (
+            <section className="error-panel" role="alert">
+              <span className="panel-icon"><Icon name="info" /></span>
+              <p className="eyebrow">任务中止</p>
+              <h1>这次体检没有完成</h1>
+              <code className="error-code">{view.code}</code>
+              <p>{view.message}</p>
+              <div className="error-actions">
+                {view.scanId ? <button className="primary-button" onClick={retry} type="button">继续查看扫描</button> : null}
+                <button className="secondary-button" onClick={reset} type="button">重新开始</button>
+              </div>
             </section>
-            <ScanForm
-              onCreated={onCreated}
-            />
-          </div>
-        ) : null}
-
-        {view.kind === "scanning" ? (
-          <ErrorBoundary label="扫描进度">
-            <ScanProgress job={view.job} />
-          </ErrorBoundary>
-        ) : null}
-
-        {view.kind === "report-loading" || view.kind === "restoring" ? <ReportSkeleton /> : null}
-
-        {view.kind === "report" ? (
-          <ErrorBoundary label="报告内容">
-            <ReportView
-              onReset={reset}
-              onUpdated={onUpdated}
-              report={view.report}
-            />
-          </ErrorBoundary>
-        ) : null}
-
-        {view.kind === "error" ? (
-          <section className="error-panel" role="alert">
-            <p className="eyebrow">任务中止</p>
-            <span className="error-code">{view.code}</span>
-            <h1>这次体检没有完成</h1>
-            <p>{view.message}</p>
-            {view.scanId ? (
-              <button className="secondary-button" onClick={retry} type="button">继续查看扫描</button>
-            ) : null}
-            <button className="secondary-button" onClick={reset} type="button">
-              重新开始
-            </button>
-          </section>
-        ) : null}
-      </main>
-
-      <footer>
-        <span>MXReady · 青年开源专项基金种子计划</span>
-        <span>面向公开源码的可解释检查</span>
-      </footer>
+          ) : null}
+          <footer className="workspace-footer"><Icon name="info" /><span>静态检查不等于硬件兼容认证</span></footer>
+        </main>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,30 @@
+{
+  "browser": "155.0.8059.86",
+  "mockedApi": true,
+  "checks": [
+    "home 360: no horizontal overflow",
+    "report 360: no horizontal overflow",
+    "home 390: no horizontal overflow",
+    "report 390: no horizontal overflow",
+    "home 768: no horizontal overflow",
+    "report 768: no horizontal overflow",
+    "home 1024: no horizontal overflow",
+    "report 1024: no horizontal overflow",
+    "home 1440: no horizontal overflow",
+    "report 1440: no horizontal overflow",
+    "keyboard skip link and normalized scan submission",
+    "all progress stages and failed task reset",
+    "loading skeleton, URL restoration and report focus",
+    "filter arrows/Home/End, finding Enter/Space, native summary Enter/Space",
+    "report and bundle download links",
+    "visible file focus, extension/size/server rejection, upload refresh",
+    "all 16 static/hardware status combinations",
+    "long content 360: no horizontal overflow",
+    "long content 768: no horizontal overflow",
+    "long content 1440: no horizontal overflow",
+    "200% CSS zoom long report: no horizontal overflow",
+    "empty findings, scan warnings, long paths/code, 200% zoom",
+    "catalog failure, form server error and report retry"
+  ],
+  "pageErrors": []
+}
