@@ -21,6 +21,9 @@
 - 修复 Windows 安装 ZIP 在 cp1252 等旧代码页下安装到含中文路径时，pip 打印路径
   触发 `UnicodeEncodeError` 并退出失败的问题：安装器为 pip 显式设置 UTF-8 输出编码，
   恢复三平台发布安装冒烟工作流。
+- 修复 Windows 安装脚本优先使用 `py -3` 时可能选中矩阵之外的新版 Python，导致
+  `PyYAML` 没有可用二进制 wheel 而安装失败的问题：`install.ps1` 支持 `PYTHON`
+  环境变量指定解释器，发布安装冒烟显式传入矩阵 Python。
 
 ## [0.2.0] - 2026-10-25
 

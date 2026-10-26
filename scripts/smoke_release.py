@@ -56,6 +56,9 @@ def main(argv: list[str] | None = None) -> int:
     env = {
         k: v for k, v in os.environ.items() if k != "PYTHONPATH" and not k.startswith("MXREADY_")
     }
+    # Pin the matrix interpreter on every platform; the Windows py launcher may pick
+    # a newer Python that has no binary wheels for the runtime dependencies.
+    env["PYTHON"] = sys.executable
     # Include non-ASCII characters and spaces to cover installation path quoting.
     with tempfile.TemporaryDirectory(prefix="MXReady 安装 smoke ") as temporary:
         work = Path(temporary)
@@ -75,7 +78,6 @@ def main(argv: list[str] | None = None) -> int:
             install = ["bash", str(bundle / "install.sh")]
             start = ["bash", str(bundle / "start.sh")]
             python = bundle / ".venv" / "bin" / "python"
-            env["PYTHON"] = sys.executable
         if args.wheelhouse:
             install.append("-Offline" if platform == "windows" else "--offline")
         subprocess.run(install, cwd=work, env=env, check=True, timeout=660)

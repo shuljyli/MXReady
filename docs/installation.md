@@ -50,6 +50,9 @@ Linux 可在附件所在目录执行 `sha256sum -c SHA256SUMS.txt`，macOS 执�
 .\start.ps1
 ```
 
+机器上有多个 Python 时，先执行 `$env:PYTHON = "C:\Python311\python.exe"` 指定解释器，
+再运行 `.\install.ps1`。
+
 若 Windows 拦截从网络下载的脚本，核对来源和摘要后，执行
 `Unblock-File .\install.ps1` 与 `Unblock-File .\start.ps1`。
 若执行策略仍阻止脚本，可以只为本次运行使用：
