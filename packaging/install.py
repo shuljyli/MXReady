@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import shutil
 import subprocess
 import sys
@@ -42,7 +43,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.offline:
         command += ["--no-index", "--find-links", str(root / "packages")]
     command.append(str(wheel))
-    subprocess.run(command, check=True, timeout=600)
+    # pip crashes while printing non-ASCII install paths on consoles using legacy code
+    # pages such as cp1252, so force UTF-8 for its output instead of inheriting the code page.
+    environment_variables = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+    subprocess.run(command, check=True, timeout=600, env=environment_variables)
     print("MXReady installed. Run the start script, then open http://127.0.0.1:8000 .")
     return 0
 

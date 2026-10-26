@@ -42,6 +42,8 @@ def test_offline_install_uses_local_wheels_without_shell(tmp_path, monkeypatch):
     assert main(["--offline"]) == 0
     command = run.call_args.args[0]
     assert command[-1] == str(wheel)
+    assert run.call_args.kwargs["env"]["PYTHONIOENCODING"] == "utf-8"
     assert "--no-index" in command
     assert command[command.index("--find-links") + 1] == str(wheel.parent)
-    assert run.call_args.kwargs == {"check": True, "timeout": 600}
+    assert run.call_args.kwargs["check"] is True
+    assert run.call_args.kwargs["timeout"] == 600
