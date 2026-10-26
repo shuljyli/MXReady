@@ -68,14 +68,14 @@ def test_failed_checksum_writes_failed_evidence(smoke, tmp_path):
 
     dist = tmp_path / "dist"
     dist.mkdir()
-    (dist / "mxready-0.1.0-macos.zip").write_bytes(b"corrupt")
-    (dist / "SHA256SUMS.txt").write_text("0" * 64 + "  mxready-0.1.0-macos.zip\n")
+    platform = {"win32": "windows", "darwin": "macos", "linux": "linux"}[sys.platform]
+    archive_name = f"mxready-0.1.0-{platform}.zip"
+    (dist / archive_name).write_bytes(b"corrupt")
+    (dist / "SHA256SUMS.txt").write_text("0" * 64 + f"  {archive_name}\n")
     evidence = tmp_path / "evidence"
-    with pytest.MonkeyPatch.context() as patch:
-        patch.setattr(smoke.sys, "platform", "darwin")
-        with pytest.raises(ValueError, match="checksum"):
-            smoke.main(["--dist", str(dist), "--evidence-dir", str(evidence)])
-    result = json.loads((evidence / "result.json").read_text())
+    with pytest.raises(ValueError, match="checksum"):
+        smoke.main(["--dist", str(dist), "--evidence-dir", str(evidence)])
+    result = json.loads((evidence / "result.json").read_text(encoding="utf-8"))
     assert result["status"] == "failed"
     assert result["commands"] == []
     assert "checksum" in result["error"]
