@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-26
+
 ### Changed
 
 - 前端整体替换为浅色工作台：精简仓库输入首页，重新设计扫描进度、异常恢复、
@@ -13,6 +15,12 @@
   轮询重试、严重级别筛选及验证结果校验，未更改 API 契约或 runner 行为。
 - 首页使用本地生成并优化的芯片插画，通过 Vite 打包到安装版支持的 assets 目录，
   无需外部图片或字体服务。
+
+### Fixed
+
+- 修复 Windows 安装 ZIP 在 cp1252 等旧代码页下安装到含中文路径时，pip 打印路径
+  触发 `UnicodeEncodeError` 并退出失败的问题：安装器为 pip 显式设置 UTF-8 输出编码，
+  恢复三平台发布安装冒烟工作流。
 
 ## [0.2.0] - 2026-10-25
 
@@ -84,6 +92,7 @@
 - Web 扫描路径永不执行被扫描仓库中的代码。
 - 仓库地址主机白名单、受限 Git 获取、只读索引与上传结果严格校验。
 
-[Unreleased]: https://github.com/shuljyli/MXReady/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/shuljyli/MXReady/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/shuljyli/MXReady/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/shuljyli/MXReady/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/shuljyli/MXReady/releases/tag/v0.1.0

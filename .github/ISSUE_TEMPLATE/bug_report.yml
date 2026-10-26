@@ -32,7 +32,7 @@ body:
     attributes:
       label: MXReady 版本
       description: 可通过 `GET /api/health` 或 `pip show mxready` 获取。
-      placeholder: 0.2.0
+      placeholder: 0.2.1
     validations:
       required: true
   - type: input

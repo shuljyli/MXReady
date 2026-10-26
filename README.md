@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.2.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.1-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -69,10 +69,10 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 
 | 平台 | 安装包 | 完整解压后，在包目录中执行 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-0.2.0-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
-| Linux | `mxready-0.2.0-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
-| macOS（Apple Silicon / Intel） | `mxready-0.2.0-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
-| 已有 Python 环境 | `mxready-0.2.0-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
+| Windows 10/11 | `mxready-0.2.1-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
+| Linux | `mxready-0.2.1-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
+| macOS（Apple Silicon / Intel） | `mxready-0.2.1-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
+| 已有 Python 环境 | `mxready-0.2.1-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
 
 启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。
 安装器在解压目录创建 `.venv/`，数据库保存在系统用户数据目录，升级替换程序时可保留历史报告。

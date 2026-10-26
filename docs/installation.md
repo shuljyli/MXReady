@@ -4,10 +4,10 @@
 
 | 使用场景 | 方案 | 使用者需要准备 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-0.2.0-windows.zip` | Python 3.11+（含 pip）、Git、PowerShell 5.1+ |
-| Linux | `mxready-0.2.0-linux.zip` | Python 3.11+（含 venv/pip）、Git、Bash |
-| macOS（Apple Silicon / Intel） | `mxready-0.2.0-macos.zip` | Python 3.11+（含 pip）、Git、Bash |
-| 已有 Python 环境 / 自动化部署 | `mxready-0.2.0-py3-none-any.whl` | Python 3.11+、Git |
+| Windows 10/11 | `mxready-0.2.1-windows.zip` | Python 3.11+（含 pip）、Git、PowerShell 5.1+ |
+| Linux | `mxready-0.2.1-linux.zip` | Python 3.11+（含 venv/pip）、Git、Bash |
+| macOS（Apple Silicon / Intel） | `mxready-0.2.1-macos.zip` | Python 3.11+（含 pip）、Git、Bash |
+| 已有 Python 环境 / 自动化部署 | `mxready-0.2.1-py3-none-any.whl` | Python 3.11+、Git |
 | 容器部署 | 仓库中的 Dockerfile / Compose | Docker Engine + Compose；桌面系统也可用 Docker Desktop |
 | 开发与修改源码 | Git 源码 + 开发脚本 | Python 3.11+、Git、Node.js 22+ |
 
@@ -32,7 +32,7 @@ CI 的 `Release packages` 工作流也提供打包产物下载，工作流不会
 校验下载文件（把占位的文件名替换为实际 ZIP 名称）：
 
 ```powershell
-Get-FileHash .\mxready-0.2.0-windows.zip -Algorithm SHA256
+Get-FileHash .\mxready-0.2.1-windows.zip -Algorithm SHA256
 ```
 
 Linux 可在附件所在目录执行 `sha256sum -c SHA256SUMS.txt`，macOS 执行
@@ -131,7 +131,7 @@ Intel 与 Apple Silicon 使用同一个 macOS ZIP；pip 按所运行的 Python �
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install ./mxready-0.2.0-py3-none-any.whl
+.venv/bin/python -m pip install ./mxready-0.2.1-py3-none-any.whl
 .venv/bin/mxready-serve
 ```
 
@@ -143,7 +143,7 @@ wheel 已包含网页、规则与验证 schema，无需重新构建网页。
 进入解压目录，下载依赖 wheel：
 
 ```bash
-python3 -m pip download --only-binary=:all: --dest packages ./packages/mxready-0.2.0-py3-none-any.whl
+python3 -m pip download --only-binary=:all: --dest packages ./packages/mxready-0.2.1-py3-none-any.whl
 ```
 
 Windows 使用 `py -3 -m pip download`。将整个目录复制到离线机器，执行
@@ -176,11 +176,11 @@ scripts/build_release.py   构建编排，不放业务逻辑
 src/mxready/cli/serve.py    安装后的生产启动入口
 docs/installation.md       安装、升级、离线与构建说明
 dist/                      本地生成，Git 忽略
-  mxready-0.2.0-windows.zip
-  mxready-0.2.0-linux.zip
-  mxready-0.2.0-macos.zip
-  mxready-0.2.0-py3-none-any.whl
-  mxready-0.2.0.tar.gz
+  mxready-0.2.1-windows.zip
+  mxready-0.2.1-linux.zip
+  mxready-0.2.1-macos.zip
+  mxready-0.2.1-py3-none-any.whl
+  mxready-0.2.1.tar.gz
   SHA256SUMS.txt
 ```
 
