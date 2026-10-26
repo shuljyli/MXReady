@@ -129,9 +129,9 @@ it("bounds retries and lets the user resume the same scan with the keyboard", as
 it("presents the product scope before a scan starts", () => {
   render(<App />);
   expect(
-    screen.getByRole("heading", { name: /让 CUDA 项目更接近沐曦/ }),
+    screen.getByRole("heading", { name: "新建体检" }),
   ).toBeInTheDocument();
-  expect(screen.getByText("静态检查不是硬件兼容认证")).toBeInTheDocument();
+  expect(screen.getByText("静态检查不等于硬件兼容认证")).toBeInTheDocument();
   expect(screen.getByLabelText("公开仓库地址")).toBeInTheDocument();
 });
 
@@ -246,7 +246,19 @@ it("shows the rule count loaded from the rules API", async () => {
   render(<App />);
 
   expect(await screen.findByText("规则集 v1 · 3 项")).toBeInTheDocument();
-  expect(
-    screen.getByText("3", { selector: ".scope-strip strong" }),
-  ).toBeInTheDocument();
+});
+
+it("keeps the form usable when the rules catalog is unavailable", async () => {
+  vi.mocked(getRules).mockRejectedValue(new Error("offline"));
+  render(<App />);
+  expect(await screen.findByLabelText("公开仓库地址")).toBeEnabled();
+  expect(screen.getByText("规则集 v1")).toBeInTheDocument();
+  expect(screen.queryByText(/规则集 v1 ·/)).not.toBeInTheDocument();
+});
+
+it("provides a keyboard skip link to the workspace", async () => {
+  render(<App />);
+  await userEvent.tab();
+  expect(screen.getByRole("link", { name: "跳至主要内容" })).toHaveFocus();
+  expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
 });

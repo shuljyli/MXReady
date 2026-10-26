@@ -44,4 +44,5 @@ it("keeps location and severity metadata in the always-visible header", () => {
   expect(screen.getByText("setup.py:12")).toBeInTheDocument();
   expect(screen.getByText("阻塞")).toBeInTheDocument();
   expect(screen.getByText("MXR-TOOLCHAIN-001")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "直接调用 nvcc" })).toBeInTheDocument();
 });
