@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -55,13 +55,13 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | 真机沐曦 GPU 验证 | 设计完成，未在真机跑通 | 报告 `verification_status` 恒为 `not-run` |
 
 工程状态：`ruff check`、`ruff format --check`、`mypy`、契约校验与 354 条 `pytest` 用例全绿，
-分支覆盖率 88.5%（门槛 80%）；CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS。
+分支覆盖率 90%（门槛 80%）；CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS。
 
 ## 已知限制
 
 - **不提供兼容性结论**。所有输出止步于静态风险提示与人工复核建议；"已在沐曦环境验证"必须绑定到具体提交、
   在受控沐曦 GPU 上跑出 `verified` 结果，且不超过 30 天。
-- **规则精度尚未用真实项目校正**。30 条规则的正反例来自受控夹具，公开 CUDA 扩展上的误报率仍需统计。
+- **规则精度尚未用大规模真实项目统计**。34 条规则的正反例来自受控夹具，并在 `examples/reports` 的公开仓库上复核（0 误报）；系统性误报率与漏报率仍需在更多真实项目上统计。
 - **真机验证结果有 30 天有效期**，过期后报告状态转为 `stale`，需要重新上传。
 - **MVP 边界**：不支持私有仓库、不自动修改源码、不做云 GPU 调度、无用户系统、不给百分比兼容分数。
 - **环境要求**：安装包不附带 Python 与 Git，需预装 Python 3.11+ 与 Git。Docker 镜像的构建与启动由 CI 覆盖。
@@ -76,10 +76,10 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 
 | 平台 | 安装包 | 完整解压后，在包目录中执行 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.0-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
-| Linux | `mxready-1.0.0-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
-| macOS（Apple Silicon / Intel） | `mxready-1.0.0-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
-| 已有 Python 环境 | `mxready-1.0.0-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
+| Windows 10/11 | `mxready-0.3.0-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
+| Linux | `mxready-0.3.0-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
+| macOS（Apple Silicon / Intel） | `mxready-0.3.0-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
+| 已有 Python 环境 | `mxready-0.3.0-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
 
 启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。
 安装器在解压目录创建 `.venv/`，数据库保存在系统用户数据目录，升级替换程序时可保留历史报告。

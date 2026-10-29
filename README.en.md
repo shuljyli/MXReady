@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -55,10 +55,10 @@ Release bundles need no Node.js, no PyTorch and no GPU driver. All platforms req
 
 | Platform | Artifact | After extracting, run |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.0-windows.zip` | PowerShell: `.\install.ps1`, then `.\start.ps1` |
-| Linux | `mxready-1.0.0-linux.zip` | `bash install.sh`, then `bash start.sh` |
-| macOS (Apple Silicon / Intel) | `mxready-1.0.0-macos.zip` | `bash install.sh`, then `bash start.sh` |
-| Existing Python environment | `mxready-1.0.0-py3-none-any.whl` | in a dedicated venv: `python -m pip install <wheel>`, then `mxready-serve` |
+| Windows 10/11 | `mxready-0.3.0-windows.zip` | PowerShell: `.\install.ps1`, then `.\start.ps1` |
+| Linux | `mxready-0.3.0-linux.zip` | `bash install.sh`, then `bash start.sh` |
+| macOS (Apple Silicon / Intel) | `mxready-0.3.0-macos.zip` | `bash install.sh`, then `bash start.sh` |
+| Existing Python environment | `mxready-0.3.0-py3-none-any.whl` | in a dedicated venv: `python -m pip install <wheel>`, then `mxready-serve` |
 
 Open <http://127.0.0.1:8000> after starting; press `Ctrl+C` in the terminal to stop.
 The installer creates a `.venv/` next to itself and keeps the database in the OS user-data
@@ -95,7 +95,7 @@ npm run build
 
 CI runs the gate on Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS, plus `pip-audit`, a Docker
 build-and-serve check, shell syntax checks and the frontend suite. Branch coverage is currently
-88.5% against an 80% threshold.
+90% against an 80% threshold.
 
 ### Rule engine benchmark
 

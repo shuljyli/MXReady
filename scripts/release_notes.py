@@ -42,7 +42,7 @@ def render(changelog: str, version: str) -> str | None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--version", required=True, help="要渲染的版本号，例如 1.0.0")
+    parser.add_argument("--version", required=True, help="要渲染的版本号，例如 0.3.0")
     parser.add_argument("--changelog", type=Path, default=DEFAULT_CHANGELOG)
     parser.add_argument("--output", type=Path, required=True, help="写入的 Markdown 路径")
     return parser

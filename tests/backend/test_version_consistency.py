@@ -20,7 +20,7 @@ INSTALL_DOC = ROOT / "docs" / "installation.md"
 API_DOC = ROOT / "docs" / "api.md"
 LOCKFILE = ROOT / "frontend" / "package-lock.json"
 
-# 文档里出现的安装包名：`mxready-1.0.0-windows.zip`、`mxready-1.0.0.tar.gz` 等。
+# 文档里出现的安装包名：`mxready-0.3.0-windows.zip`、`mxready-0.3.0.tar.gz` 等。
 _DOCUMENTED_ARTIFACT = re.compile(r"mxready-(\d+\.\d+\.\d+)")
 
 

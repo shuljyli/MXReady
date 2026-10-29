@@ -5,10 +5,11 @@
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-10-29
+## [0.3.0] - 2026-10-29
 
-首个正式版。工程链路、发布链路与开源治理补全，规则引擎的正确性缺陷修复，
-静态检查能力与对外契约保持不变。
+第三个预览版本。工程链路、发布链路与开源治理补全，规则引擎的正确性缺陷修复，
+并新增四类迁移阻塞项规则。0.x 阶段对外契约仍可能调整，接口与报告字段在 1.0 之前
+不承诺向后兼容。
 
 ### Added
 
@@ -23,12 +24,18 @@
 - 打包补齐 PEP 561 `py.typed` 标记（`mxready` 与 `mxready_runner`），下游类型检查可直接使用本项目的注解。
 - 版本一致性测试：`pyproject`、两个包的 `__version__`、前端 `package.json` 与 lockfile、README 徽章与
   四个安装包名、安装与接口文档中的示例、CHANGELOG 小节必须同源，任一处漂移即测试失败。
+- 新增四类迁移阻塞项规则，规则集升至 v3（34 条规则 / 49 条模式）：`MXR-PTX-001` 内联 PTX `asm`、
+  `MXR-WARP-001` 按 32 硬编码的线程束算术（两者记为 `blocker`），`MXR-THRUST-001` / `MXR-CUB-001`
+  登记 Thrust/CUB 用法（`info`，沐曦 mcThrust / mcCUB 提供 API 不变的 wrapper）。
+  线程束宽度属于"能编译但结果错"的静默缺陷，静态检查是唯一能在 CI 阶段拦住它的手段。
+- `docs/rules.md` 增加"严重度口径"与"覆盖边界"两节：前者把 blocker/warning/info 对齐到
+  SYCLomatic 的 High/Medium/Low 人力分档并给出判级硬规则，后者显式列出不做 AST、不构建带来的盲区。
 
 ### Changed
 
 - 发布工作流在打 tag 时创建 GitHub Release 并挂载三平台 ZIP、wheel、sdist 与 `SHA256SUMS.txt`。
   此前只上传 workflow artifact，Release 页面始终为空；同一 tag 重跑改为覆盖附件。
-- 覆盖率改按 branch 口径统计（88.5%），并排除 `__main__` 守卫；仅统计语句会掩盖"分支只走一半"。
+- 覆盖率改按 branch 口径统计（90%），并排除 `__main__` 守卫；仅统计语句会掩盖"分支只走一半"。
 - CI 矩阵由 3.11/3.12 扩到 3.11/3.12/3.13，classifier 同步；此前声明 `>=3.11` 却只测到 3.12。
 - `mypy` 纳入 `packaging/`（此前 `install.py` 完全未受类型检查），并新增 `ruff format --check` 门禁。
 - `ci.yml` 增加 `concurrency` 分组，连续推送时取消被取代的运行。
@@ -50,6 +57,10 @@
   加行为探针（不判版本号），不可用时自动退化为全量扫描并只记一次 WARNING。
 - 修复 CMake 中已被注释掉的 `# set(CUDA_HOME ...)` 被计为真实 CUDA 路径引用的问题。
 - 修复 `setup.py` 以元组声明依赖（如 `install_requires=("torch",)`）时整条漏采的问题。
+- 修复 `MXR-COMM-001` 首条正则的二次回溯（ReDoS）：`[^\]\n]*` 与 `[A-Z0-9_]+` 字符集重叠且缺少
+  终止符，攻击者可构造 `os.environ["NCCL_` 加长串使其达到 O(n²)——120 KB 单行耗时 19.2 s，
+  端到端 68.7 ms 涨到 5221 ms。改用前瞻替代一个消耗型量词后回到线性，命中结果不变。
+  注意协作式预算只在文件之间检查，单次 `finditer` 内部无法抢占，因此这类缺陷不能只靠超时兜底。
 - 修正 `docs/rules.md` 与 PR 模板中指向已移除 `backend/`、`runner/` 目录的 lint 命令。
 
 ## [0.2.1] - 2026-10-26
@@ -142,8 +153,8 @@
 - Web 扫描路径永不执行被扫描仓库中的代码。
 - 仓库地址主机白名单、受限 Git 获取、只读索引与上传结果严格校验。
 
-[Unreleased]: https://github.com/shuljyli/MXReady/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/shuljyli/MXReady/compare/v0.2.1...v1.0.0
+[Unreleased]: https://github.com/shuljyli/MXReady/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/shuljyli/MXReady/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/shuljyli/MXReady/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/shuljyli/MXReady/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/shuljyli/MXReady/releases/tag/v0.1.0
