@@ -334,6 +334,7 @@ mxready-scan-batch repos.txt --output data/batch
 
 ```bash
 python -m ruff check src scripts tests packaging
+python -m ruff format --check src scripts tests packaging
 python -m mypy
 python scripts/generate_contracts.py --check
 python -m pytest --cov=mxready --cov=mxready_runner --cov-fail-under=80

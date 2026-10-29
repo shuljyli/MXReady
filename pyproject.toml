@@ -19,6 +19,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Software Development :: Quality Assurance",
 ]
 dependencies = [
@@ -80,7 +81,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["src", "scripts"]
+files = ["src", "scripts", "packaging"]
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
@@ -92,3 +93,13 @@ show_error_codes = true
 [[tool.mypy.overrides]]
 module = ["yaml.*"]
 ignore_missing_imports = true
+
+[tool.coverage.run]
+# 只统计语句覆盖率会漏掉"分支只走了一半"的情况，发布前按分支口径衡量。
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "if __name__ == .__main__.:",
+]

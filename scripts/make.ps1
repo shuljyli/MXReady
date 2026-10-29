@@ -1,8 +1,8 @@
 # MXReady development command entry point for Windows PowerShell 5.1+.
-# Usage: .\scripts\make.ps1 install|dev|test|lint|typecheck|contracts|build|release|frontend|clean
+# Usage: .\scripts\make.ps1 install|dev|test|lint|format|typecheck|contracts|build|release|frontend|clean
 param(
   [Parameter(Position = 0)]
-  [ValidateSet("install", "dev", "test", "lint", "typecheck", "contracts", "build", "release", "frontend", "clean")]
+  [ValidateSet("install", "dev", "test", "lint", "format", "typecheck", "contracts", "build", "release", "frontend", "clean")]
   [string]$Target = "dev"
 )
 
@@ -94,6 +94,13 @@ elseif ($Target -eq "lint") {
   Assert-PythonEnv
   & $Python -m ruff check src scripts tests packaging
   Assert-LastExitCode "Python lint failed"
+  & $Python -m ruff format --check src scripts tests packaging
+  Assert-LastExitCode "Python format check failed"
+}
+elseif ($Target -eq "format") {
+  Assert-PythonEnv
+  & $Python -m ruff format src scripts tests packaging
+  Assert-LastExitCode "Python format failed"
 }
 elseif ($Target -eq "typecheck") {
   Assert-PythonEnv

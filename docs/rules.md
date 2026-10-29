@@ -156,6 +156,7 @@ rule_files:
 ```bash
 python -m pytest tests/backend/test_core_rules.py tests/backend/test_rule_engine.py -v
 python -m ruff check src scripts tests packaging
+python -m ruff format --check src scripts tests packaging
 ```
 
 最后必须运行全量质量门，避免规则相互影响。

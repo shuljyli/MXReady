@@ -11,6 +11,7 @@
 <!-- 列出实际执行的命令及结果，不要只写“测试通过”。 -->
 
 - [ ] `python -m ruff check src scripts tests packaging`
+- [ ] `python -m ruff format --check src scripts tests packaging`
 - [ ] `python -m pytest --cov=mxready --cov=mxready_runner --cov-fail-under=80`
 - [ ] `cd frontend && npm test && npm run build`（涉及前端时）
 
