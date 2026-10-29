@@ -39,6 +39,10 @@ EXPECTED_RULES = {
     "MXR-RUNTIME-001": Severity.INFO,
     "MXR-TEST-001": Severity.WARNING,
     "MXR-PYTORCH-003": Severity.INFO,
+    "MXR-PTX-001": Severity.BLOCKER,
+    "MXR-WARP-001": Severity.BLOCKER,
+    "MXR-THRUST-001": Severity.INFO,
+    "MXR-CUB-001": Severity.INFO,
 }
 PRIMARY_SOURCE_PREFIXES = {
     "https://gitee.com/metax-maca/cu-bridge",
@@ -48,6 +52,10 @@ PRIMARY_SOURCE_PREFIXES = {
     "https://docs.nvidia.com/cuda/cuda-programming-guide/",
     "https://docs.pytest.org/",
     "https://docs.python.org/3/library/unittest.html",
+    # MXMACA 官方开发者文档：mcThrust/mcCUB 兼容声明与 waveSize 描述
+    "https://developer.metax-tech.com/",
+    # NVIDIA 一手文档：内联 PTX 绑定 NVIDIA 虚拟 ISA
+    "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html",
 }
 RULE_CASES = {
     "MXR-TOOLCHAIN-001": (
@@ -214,6 +222,26 @@ RULE_CASES = {
         "train.py",
         "scaler = torch.cuda.amp.GradScaler()\n",
         'amp_docs = "autocast is documented"\n',
+    ),
+    "MXR-PTX-001": (
+        "kernel.cu",
+        'asm volatile("fma.rn.f32 %0, %1, %2, %3;" : "=f"(out) : "f"(a), "f"(b));\n',
+        "// inline asm is intentionally avoided so the kernel stays portable.\n",
+    ),
+    "MXR-WARP-001": (
+        "kernel.cu",
+        "int lane = threadIdx.x % 32;\n",
+        "int lane = threadIdx.x % warpSize;\n",
+    ),
+    "MXR-THRUST-001": (
+        "kernel.cu",
+        "thrust::device_vector<float> buffer(1024);\n",
+        "int thrust_debug_level = 1;\n",
+    ),
+    "MXR-CUB-001": (
+        "kernel.cu",
+        "cub::DeviceReduce::Sum(temp, bytes, input, output, count);\n",
+        "int cub_debug_level = 2;\n",
     ),
 }
 
