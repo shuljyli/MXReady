@@ -69,7 +69,11 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
         app.state.scan_service = ScanService(
             store,
             GitClient(),
-            ScanAnalyzer(catalog, providers=providers),
+            ScanAnalyzer(
+                catalog,
+                providers=providers,
+                enable_prefilter=resolved.prefilter_enabled,
+            ),
             resolved,
             providers=providers,
         )

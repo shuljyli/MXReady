@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from mxready.models import (
     Finding,
+    ScanReport,
     ScanStatus,
     Severity,
     SourceReference,
@@ -125,6 +126,32 @@ def test_analyzer_aggregates_repeated_hits_in_one_file(tmp_path: Path) -> None:
     assert len(nvcc) == 1
     assert nvcc[0].count == 2
     assert report.summary.total_count == len(report.findings)
+
+
+def test_report_records_effective_prefilter_state() -> None:
+    """报告记录预过滤的实际生效状态，且不影响既有字段。"""
+    catalog = load_rule_catalog(Path("src/mxready/resources/rules/v1"))
+    root = Path("tests/fixtures/repositories/cuda_extension")
+
+    def run(**kwargs: bool) -> ScanReport:
+        return ScanAnalyzer(catalog, **kwargs).analyze(
+            root,
+            repository_url="https://github.com/example/cuda-extension",
+            commit="b" * 40,
+            scan_id=uuid4(),
+            stage_callback=lambda status: None,
+        )
+
+    with_prefilter = run()
+    without_prefilter = run(enable_prefilter=False)
+
+    assert with_prefilter.analysis_config["prefilter"] == "on"
+    assert without_prefilter.analysis_config["prefilter"] == "off"
+    # 关闭预过滤只影响耗时，不影响结论。
+    assert [f.model_dump() for f in with_prefilter.findings] == [
+        f.model_dump() for f in without_prefilter.findings
+    ]
+    assert with_prefilter.summary == without_prefilter.summary
 
 
 def _finding(*, rule_id: str, path: str, line_start: int = 1, line_end: int = 1) -> Finding:

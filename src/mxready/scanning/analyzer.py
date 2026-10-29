@@ -22,7 +22,7 @@ from mxready.models import (
 from mxready.repository.identity import parse_repository_url
 from mxready.scanning.facts import extract_project_facts
 from mxready.scanning.indexer import build_file_index
-from mxready.scanning.rule_engine import evaluate_rules
+from mxready.scanning.rule_engine import evaluate_rules, prefilter_status
 from mxready.scanning.rule_loader import RuleCatalog
 
 
@@ -34,11 +34,13 @@ class ScanAnalyzer:
         *,
         max_findings: int = 10_000,
         rule_timeout_seconds: float = 30,
+        enable_prefilter: bool = True,
     ) -> None:
         self.catalog = catalog
         self.providers = providers
         self.max_findings = max_findings
         self.rule_timeout_seconds = rule_timeout_seconds
+        self.enable_prefilter = enable_prefilter
 
     def analyze(
         self,
@@ -61,6 +63,7 @@ class ScanAnalyzer:
                 facts,
                 max_findings=self.max_findings,
                 timeout_seconds=self.rule_timeout_seconds,
+                enable_prefilter=self.enable_prefilter,
             )
         )
         summary = summarize_findings(findings)
@@ -84,6 +87,8 @@ class ScanAnalyzer:
                 "rule_timeout_seconds": self.rule_timeout_seconds,
                 "index_max_files": 10_000,
                 "index_max_file_bytes": 1_048_576,
+                # 记录实际生效状态而非配置意图：解析器探测失败时为 "unavailable"。
+                "prefilter": prefilter_status() if self.enable_prefilter else "off",
             },
             scanned_at=datetime.now(UTC),
             summary=summary,

@@ -45,6 +45,20 @@ def _hosts_env(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(host.strip() for host in raw.split(",") if host.strip())
 
 
+# 预过滤开关的合法取值：auto 为默认启用，off 为应急止血（回退全量扫描，
+# 结果集完全不变，只影响耗时）。
+_PREFILTER_MODES = ("auto", "off")
+
+
+def _prefilter_mode_env(name: str, default: str = "auto") -> str:
+    """取值非法时回退默认值：拼错不该让服务起不来，也不该静默关掉优化。"""
+    raw = os.getenv(_ENV_PREFIX + name)
+    if raw is None or not raw.strip():
+        return default
+    mode = raw.strip().casefold()
+    return mode if mode in _PREFILTER_MODES else default
+
+
 @dataclass(frozen=True, slots=True)
 class Settings:
     # 路径
@@ -66,12 +80,20 @@ class Settings:
     max_request_bytes: int = 1_048_576
     scan_worker_threads: int = 2
     task_lease_seconds: int = 120
+    # 规则正则的必需字面量预过滤：auto 启用；off 关闭（应急止血，结论不变）
+    prefilter_mode: str = "auto"
 
     def __post_init__(self) -> None:
         if self.scan_worker_threads < 1 or self.task_lease_seconds < 3:
             raise ValueError("Worker threads must be positive and task leases at least 3 seconds")
         if self.max_concurrent_scans < 0 or self.max_request_bytes < 1:
             raise ValueError("Invalid scan concurrency or request size limit")
+        if self.prefilter_mode not in _PREFILTER_MODES:
+            raise ValueError("prefilter_mode must be 'auto' or 'off'")
+
+    @property
+    def prefilter_enabled(self) -> bool:
+        return self.prefilter_mode != "off"
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -91,4 +113,5 @@ class Settings:
             max_request_bytes=_int_env("MAX_REQUEST_BYTES", 1_048_576),
             scan_worker_threads=_int_env("SCAN_WORKER_THREADS", 2),
             task_lease_seconds=_int_env("TASK_LEASE_SECONDS", 120),
+            prefilter_mode=_prefilter_mode_env("PREFILTER_MODE"),
         )

@@ -31,7 +31,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             load_rule_catalog(
                 settings.rules_dir,
                 extra_directory=settings.extra_rules_dir,
-            )
+            ),
+            enable_prefilter=settings.prefilter_enabled,
         ).analyze(
             repository_root,
             repository_url=identity.clone_url,

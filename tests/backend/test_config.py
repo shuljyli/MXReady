@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from mxready.config import Settings
 
 
@@ -32,3 +34,28 @@ def test_unrelated_env_ignored(monkeypatch) -> None:
     """不相关的环境变量不影响配置。"""
     monkeypatch.setenv("MXREADY_UNKNOWN", "boom")
     assert Settings.from_env() == Settings()
+
+
+def test_prefilter_defaults_to_auto() -> None:
+    assert Settings().prefilter_mode == "auto"
+    assert Settings().prefilter_enabled is True
+
+
+def test_prefilter_mode_env_switch(monkeypatch) -> None:
+    """应急止血开关：off 关闭预过滤，大小写与空白都容忍。"""
+    monkeypatch.setenv("MXREADY_PREFILTER_MODE", " OFF ")
+    settings = Settings.from_env()
+    assert settings.prefilter_mode == "off"
+    assert settings.prefilter_enabled is False
+
+
+def test_prefilter_mode_env_falls_back_on_typo(monkeypatch) -> None:
+    """拼错时回退默认值：既不阻止启动，也不静默关掉优化。"""
+    monkeypatch.setenv("MXREADY_PREFILTER_MODE", "disable")
+    assert Settings.from_env().prefilter_mode == "auto"
+
+
+def test_prefilter_mode_rejects_unknown_construction() -> None:
+    """直接构造是编程错误，必须立刻失败而不是悄悄降级。"""
+    with pytest.raises(ValueError):
+        Settings(prefilter_mode="auto ")
