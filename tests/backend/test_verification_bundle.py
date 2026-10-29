@@ -9,6 +9,7 @@ from uuid import UUID
 
 from mxready.models import ScanStatus, VerificationRun
 from mxready.verification.bundle import build_verification_bundle
+from mxready_runner import __version__ as runner_package_version
 from mxready_runner.inspect import DEFAULT_CHECKS
 
 
@@ -26,7 +27,8 @@ def test_bundle_contains_pinned_identity_runner_schema_and_safety_note(
         names = archive.namelist()
         assert manifest["scan_id"] == str(report.scan_id)
         assert manifest["repository_commit"] == "a" * 40
-        assert manifest["runner_version"] == "0.2.1"
+        # 清单里钉住的必须是 runner 包自身的版本，它决定 runner 是否接受该 bundle。
+        assert manifest["runner_version"] == runner_package_version
         assert manifest["checks"] == [
             {
                 "id": check.id,
