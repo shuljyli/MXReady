@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .pytest-temp/
+.pytest-temp*/
 .ruff_cache/
 .mypy_cache/
 .coverage
@@ -41,4 +42,9 @@ examples/verification/*redacted*.json
 .zcode/
 .DS_Store
 Thumbs.db
+
+# 本地调研与工作区数据（含方案草稿、回滚备份、会话记忆），不对外发布
+/work/
+/.workbuddy/
+/.screenshots/
 
