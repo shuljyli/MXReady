@@ -21,8 +21,8 @@
 - `scripts/release_notes.py`：从 CHANGELOG 渲染 GitHub Release 正文，缺对应版本小节时直接失败，
   避免"版本号升了但没写变更记录"的发布。
 - 打包补齐 PEP 561 `py.typed` 标记（`mxready` 与 `mxready_runner`），下游类型检查可直接使用本项目的注解。
-- 版本一致性测试：`pyproject`、两个包的 `__version__`、前端 `package.json`、README 徽章与四个安装包名、
-  CHANGELOG 小节必须同源，任一处漂移即测试失败。
+- 版本一致性测试：`pyproject`、两个包的 `__version__`、前端 `package.json` 与 lockfile、README 徽章与
+  四个安装包名、安装与接口文档中的示例、CHANGELOG 小节必须同源，任一处漂移即测试失败。
 
 ### Changed
 
