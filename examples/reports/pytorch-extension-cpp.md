@@ -6,9 +6,12 @@
 | --- | --- |
 | 仓库 | https://github\.com/pytorch/extension\-cpp |
 | 提交 | `1c325b202ae5e11de3cefb9a65be28f47949edd4` |
-| MXReady 版本 | 0\.1\.0 |
-| 规则集版本 | 1 |
-| 扫描时间 | 2026\-07\-29T19:12:29\.351728\+00:00 |
+| MXReady 版本 | 0\.3\.0 |
+| 规则集版本 | 3 |
+| 规则集摘要 | sha256:85570ad1732139adfc8221bbc5b187dd1371332c81c3e87f6a04bdf93a72dc6d |
+| 扩展规则版本 | 无 |
+| 分析配置 | \{'max\_findings': 10000, 'rule\_timeout\_seconds': 30, 'index\_max\_files': 10000, 'index\_max\_file\_bytes': 1048576, 'prefilter': 'on'\} |
+| 扫描时间 | 2026\-10\-29T19:16:00\.494515\+00:00 |
 | 静态状态 | `passed` |
 | 硬件验证状态 | `not-run` |
 

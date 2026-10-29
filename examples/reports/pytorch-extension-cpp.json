@@ -8,14 +8,24 @@
     "url": "https://github.com/pytorch/extension-cpp",
     "commit": "1c325b202ae5e11de3cefb9a65be28f47949edd4"
   },
-  "tool_version": "0.1.0",
-  "ruleset_version": "1",
-  "scanned_at": "2026-07-29T19:12:29.351728Z",
+  "tool_version": "0.3.0",
+  "ruleset_version": "3",
+  "ruleset_digest": "sha256:85570ad1732139adfc8221bbc5b187dd1371332c81c3e87f6a04bdf93a72dc6d",
+  "extra_ruleset_version": null,
+  "analysis_config": {
+    "max_findings": 10000,
+    "rule_timeout_seconds": 30,
+    "index_max_files": 10000,
+    "index_max_file_bytes": 1048576,
+    "prefilter": "on"
+  },
+  "scanned_at": "2026-10-29T19:16:00.494515Z",
   "summary": {
     "total_count": 4,
     "blocker_count": 0,
     "warning_count": 0,
-    "info_count": 4
+    "info_count": 4,
+    "top_blockers": []
   },
   "findings": [
     {
@@ -35,7 +45,8 @@
           "title": "MetaX-MACA cu-bridge",
           "url": "https://gitee.com/metax-maca/cu-bridge"
         }
-      ]
+      ],
+      "count": 1
     },
     {
       "rule_id": "MXR-HEADER-001",
@@ -54,7 +65,8 @@
           "title": "MetaX-MACA cu-bridge",
           "url": "https://gitee.com/metax-maca/cu-bridge"
         }
-      ]
+      ],
+      "count": 1
     },
     {
       "rule_id": "MXR-HEADER-002",
@@ -73,7 +85,8 @@
           "title": "MetaX-MACA cu-bridge",
           "url": "https://gitee.com/metax-maca/cu-bridge"
         }
-      ]
+      ],
+      "count": 1
     },
     {
       "rule_id": "MXR-HEADER-001",
@@ -92,7 +105,8 @@
           "title": "MetaX-MACA cu-bridge",
           "url": "https://gitee.com/metax-maca/cu-bridge"
         }
-      ]
+      ],
+      "count": 1
     }
   ],
   "migration_checklist": [],
