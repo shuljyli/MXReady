@@ -90,7 +90,15 @@ class GitHubArchiveClient:
         try:
             payload = json.loads(metadata)
             commit = payload["sha"].lower()
-        except (UnicodeDecodeError, json.JSONDecodeError, KeyError, AttributeError) as error:
+        except (
+            UnicodeDecodeError,
+            json.JSONDecodeError,
+            KeyError,
+            AttributeError,
+            # 顶层不是对象时 `payload["sha"]` 抛 TypeError（列表/字符串索引）；
+            # 这里的目的是把"形状不对"统一收敛成可重试的错误码，而不是让它冒成 500。
+            TypeError,
+        ) as error:
             raise MxReadyError(
                 "INVALID_REPOSITORY_ARCHIVE",
                 "GitHub returned invalid commit metadata.",
