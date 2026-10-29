@@ -6,6 +6,8 @@ import zipfile
 from pathlib import Path
 from runpy import run_path
 
+from mxready.scanning.rule_loader import load_rule_catalog
+
 
 def test_release_archives_contain_ui_and_platform_installers(tmp_path):
     root = Path(__file__).resolve().parents[2]
@@ -26,7 +28,11 @@ def test_release_archives_contain_ui_and_platform_installers(tmp_path):
     result = subprocess.run(
         [sys.executable, "-m", "build", "--no-isolation", "--outdir", str(output), str(staging)],
         capture_output=True,
+        # 子进程在 Windows 中文代码页下输出 GBK 字节；固定 utf-8 + replace 解码，
+        # 否则 reader 线程抛 UnicodeDecodeError，失败时的断言信息会被截断。
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=60,
         check=False,
     )
@@ -64,6 +70,8 @@ with TestClient(create_app(settings, start_worker=False)) as client:
         env={k: v for k, v in os.environ.items() if not k.startswith("MXREADY_")},
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=30,
         check=False,
     )
@@ -82,6 +90,8 @@ def test_wheel_runs_outside_checkout_with_rules_schema_and_runner(tmp_path, repo
         cwd=source,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=60,
         check=False,
     )
@@ -91,6 +101,14 @@ def test_wheel_runs_outside_checkout_with_rules_schema_and_runner(tmp_path, repo
         wheel.extractall(installed)
     report_path = tmp_path / "report.json"
     report_path.write_text(report_factory().model_dump_json(), encoding="utf-8")
+    # 期望的规则清单取自源码树，作为唯一基准；冒烟脚本只负责验证 wheel 装出来的
+    # 规则集与之逐条一致，避免"打包漏了 YAML"这类只在安装后才暴露的缺陷。
+    expected_ids = ",".join(
+        rule.id
+        for rule in load_rule_catalog(
+            Path(root / "src" / "mxready" / "resources" / "rules" / "v1")
+        ).rules
+    )
     smoke = """
 import io, sys, zipfile
 from pathlib import Path
@@ -102,7 +120,8 @@ from mxready.scanning.rule_loader import load_rule_catalog
 from mxready.verification.bundle import build_verification_bundle
 from mxready.cli.scan_repository import main
 from fastapi.testclient import TestClient
-assert len(load_rule_catalog(Settings().rules_dir).rules) == 30
+installed_ids = ','.join(rule.id for rule in load_rule_catalog(Settings().rules_dir).rules)
+assert installed_ids == sys.argv[3], installed_ids
 with TestClient(create_app()) as client:
     assert client.get('/api/health').status_code == 200
 report = ScanReport.model_validate_json(Path(sys.argv[2]).read_text())
@@ -118,11 +137,13 @@ assert main(['fixture','--repo-url','https://github.com/example/project',
         k: v for k, v in os.environ.items() if k != "PYTHONPATH" and not k.startswith("MXREADY_")
     }
     result = subprocess.run(
-        [sys.executable, "-I", "-c", smoke, str(installed), str(report_path)],
+        [sys.executable, "-I", "-c", smoke, str(installed), str(report_path), expected_ids],
         cwd=tmp_path,
         env=clean_env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=30,
         check=False,
     )
@@ -133,6 +154,8 @@ assert main(['fixture','--repo-url','https://github.com/example/project',
         env=clean_env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=10,
         check=False,
     )

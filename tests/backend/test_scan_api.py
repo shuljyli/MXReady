@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from uuid import uuid4
 
 from mxready.models import ScanStatus
+from mxready.scanning.rule_loader import load_rule_catalog
 from mxready_runner.inspect import DEFAULT_CHECKS
 
 
@@ -63,12 +65,15 @@ def test_report_for_queued_scan_returns_409(client) -> None:
 
 
 def test_rules_endpoint_exposes_public_versioned_catalog(client) -> None:
+    catalog = load_rule_catalog(Path("src/mxready/resources/rules/v1"))
+
     response = client.get("/api/rules")
 
     assert response.status_code == 200
     body = response.json()
-    assert body["version"] == "2"
-    assert len(body["rules"]) == 30
+    # 接口投影必须与加载到的规则集逐一对应；用目录做基准，避免改规则时改两处数字。
+    assert body["version"] == catalog.version
+    assert [rule["id"] for rule in body["rules"]] == [rule.id for rule in catalog.rules]
 
 
 def test_upload_verification_updates_and_persists_report(
