@@ -62,6 +62,8 @@ where = ["src"]
 include = ["mxready*"]
 
 [tool.setuptools.package-data]
+"mxready" = ["py.typed"]
+"mxready_runner" = ["py.typed"]
 "mxready.resources" = ["rules/v1/*.yml", "schemas/*.json", "frontend/*", "frontend/assets/*"]
 
 [tool.pytest.ini_options]
