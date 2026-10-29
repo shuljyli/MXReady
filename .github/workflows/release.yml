@@ -70,3 +70,43 @@ jobs:
           name: mxready-installers
           path: dist/
           retention-days: 30
+
+  # 打 tag 时把附件挂到 GitHub Release。此前流程只上传 workflow artifact，
+  # Release 页面始终为空，而 README 又指引用户去 Releases 下载。
+  release:
+    needs: artifacts
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: mxready-installers
+          path: dist
+      - name: Render release notes from CHANGELOG
+        run: >-
+          python scripts/release_notes.py
+          --version "${GITHUB_REF_NAME#v}"
+          --output dist/RELEASE_NOTES.md
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          assets=(dist/*.zip dist/*.whl dist/*.tar.gz dist/SHA256SUMS.txt)
+          # 重跑同一 tag 时改为覆盖附件，避免"Release 已存在"直接失败。
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file dist/RELEASE_NOTES.md
+            gh release upload "$TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$TAG" \
+              --title "MXReady ${TAG}" \
+              --notes-file dist/RELEASE_NOTES.md \
+              "${assets[@]}"
+          fi
