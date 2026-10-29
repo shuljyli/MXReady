@@ -55,7 +55,25 @@ jobs:
         with:
           name: release-candidate
           path: dist
-      - run: python scripts/smoke_release.py --dist dist
+      - name: Install and restart with the default user data directory
+        run: >-
+          python scripts/smoke_release.py --dist dist
+          --evidence-dir evidence/online --candidate-commit ${{ github.sha }}
+      - name: Prepare matching offline dependencies
+        run: >-
+          python -c "import glob,subprocess,sys;
+          subprocess.run([sys.executable,'-m','pip','download','--only-binary=:all:',
+          '--dest','wheelhouse',*glob.glob('dist/*.whl')],check=True)"
+      - name: Check missing dependencies and install without a package index
+        run: >-
+          python scripts/smoke_release.py --dist dist --wheelhouse wheelhouse
+          --evidence-dir evidence/offline --candidate-commit ${{ github.sha }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: installation-evidence-${{ matrix.os }}-python-${{ matrix.python }}
+          path: evidence/
+          retention-days: 30
 
   artifacts:
     needs: install
