@@ -187,7 +187,7 @@ def test_cmake_code_lines_still_set_cuda_home_reference(tmp_path: Path) -> None:
     (tmp_path / "CMakeLists.txt").write_text(
         "\n".join(
             [
-                "# set(CUDA_HOME \"/usr/local/cuda-11.8\")  # 旧版本，已废弃",
+                '# set(CUDA_HOME "/usr/local/cuda-11.8")  # 旧版本，已废弃',
                 "project(demo LANGUAGES CXX CUDA)",
                 'set(CUDA_HOME "/usr/local/cuda-12.1")',
             ]

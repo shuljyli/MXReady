@@ -327,8 +327,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if outcome.report is not None and outcome.report.static_status.value == "blocked"
     )
     print(
-        f"汇总: 成功 {succeeded_count} · 失败 {total - succeeded_count}"
-        f"（其中阻塞 {blocked_count}）"
+        f"汇总: 成功 {succeeded_count} · 失败 {total - succeeded_count}（其中阻塞 {blocked_count}）"
     )
     print(f"报告: {output_dir / 'batch-summary.csv'} 与 {output_dir / 'batch-summary.md'}")
     if succeeded_count < total:

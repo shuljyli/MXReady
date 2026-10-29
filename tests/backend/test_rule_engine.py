@@ -133,9 +133,7 @@ def test_prefilter_does_not_change_findings_on_fixture_corpus() -> None:
 def test_prefilter_never_skips_a_file_that_the_regex_matches() -> None:
     """预过滤漏放会直接造成漏报：对每条规则正则逐一验证
     “完整正则命中 ⇒ 必需字面量判定放行”。"""
-    corpus = [
-        file.text for file in build_file_index(FIXTURE).files
-    ] + [
+    corpus = [file.text for file in build_file_index(FIXTURE).files] + [
         'subprocess.run(["nvcc", "-c", "kernel.cu"], check=True)\n',
         "nvidia-smi --query-gpu=name\n",
         "sm_86 -gencode arch=compute_86,code=sm_86\n",

@@ -163,9 +163,7 @@ def benchmark(corpus: Path, rules: Path, repeat: int) -> dict[str, Any]:
         "end_to_end": {
             "with_prefilter_ms": round(end_to_end_with, 4),
             "without_prefilter_ms": round(end_to_end_without, 4),
-            "speedup": round(end_to_end_without / end_to_end_with, 4)
-            if end_to_end_with
-            else None,
+            "speedup": round(end_to_end_without / end_to_end_with, 4) if end_to_end_with else None,
             "findings": len(with_prefilter),
             "findings_identical": with_prefilter == without_prefilter,
         },
