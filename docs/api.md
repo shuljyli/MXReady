@@ -132,7 +132,7 @@ curl -s http://127.0.0.1:8000/api/scans/2f9a1c1e-0000-0000-0000-000000000000/rep
 | `tool_version` / `ruleset_version` | 工具与规则集版本 |
 | `ruleset_digest` | 完整合并规则的 SHA-256；旧报告可能为 null |
 | `extra_ruleset_version` | 自定义扩展规则版本，没有扩展时为 null |
-| `analysis_config` | 影响分析结果的索引、命中数及规则时间预算参数；旧报告为空对象 |
+| `analysis_config` | 影响分析结果的索引、命中数及规则时间预算参数；`prefilter` 为预过滤实际生效状态（`on` / `off` / `unavailable`）；旧报告为空对象 |
 | `summary` | 统计：`total_count` / `blocker_count` / `warning_count` / `info_count` / `top_blockers`（优先复核清单） |
 | `findings[]` | 每条含 `rule_id` / `severity` / `category` / `relative_path` / `line_start` / `line_end` / `evidence` / `message` / `recommendation` / `references` / `count`（同规则同文件聚合命中数） |
 | `migration_checklist[]` | 按规则分组的迁移待办清单 |

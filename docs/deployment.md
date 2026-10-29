@@ -33,6 +33,7 @@ Windows、Linux、macOS 普通安装、通用 wheel 与升级方法见 [安装�
 | `MXREADY_MAX_REQUEST_BYTES` | `1048576` | 按实际接收字节数执行的全局请求体上限（1 MiB） |
 | `MXREADY_SCAN_WORKER_THREADS` | `2` | 每进程的队列消费者线程数 |
 | `MXREADY_TASK_LEASE_SECONDS` | `120` | 执行租约秒数，至少 3；每隔时长的三分之一续租 |
+| `MXREADY_PREFILTER_MODE` | `auto` | 规则正则的必需字面量预过滤：`auto` 启用，`off` 关闭（应急止血，只影响耗时不影响结论，拼错回退 `auto`） |
 
 > 监听地址与端口由 uvicorn 的 `--host` / `--port` 或环境变量 `UVICORN_HOST` / `UVICORN_PORT` 控制（uvicorn 自身读取），不要在 `MXREADY_*` 中重复配置。
 

@@ -71,8 +71,12 @@ FastAPI 或 PyYAML。后端读取 runner 的 `contracts.py` 和包资源来构�
 原先下载到本地的文件不会自动变化，需要重新下载。静态状态仍与硬件验证状态分开。
 
 报告记录完整合并规则的 SHA-256、扩展规则版本和分析参数。旧报告缺少这些可选字段时仍可读取。
+`analysis_config.prefilter` 记录预过滤的实际生效状态（`on` / `off` / `unavailable`），
+用于区分"配置关闭"与"内部解析接口不可用而降级"。
 规则引擎限制唯一命中数，并在模式、文件和命中边界检查时间预算；时间预算不保证中断单次阻塞的正则调用。
 文件索引保存行偏移，命中行号通过二分定位。
+正则规则先经必需字面量预过滤，只对可能命中的候选文件执行完整正则；预过滤不可用时整条规则退化为
+全量扫描，结论不变。
 
 修改模型后运行 `make contracts` 或 `.\scripts\make.ps1 contracts`，同步生成 TypeScript 响应类型和
 验证结果 JSON Schema；CI 执行 `python scripts/generate_contracts.py --check`。

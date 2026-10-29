@@ -74,9 +74,23 @@ rule_files:
 - 正则应尽量锚定调用上下文，避免仅匹配一个常见单词；
 - 匹配证据最多保留 240 字符。
 
+引擎会从表达式中提取"命中必然包含"的必需字面量做预过滤，判定不可能命中的文件直接跳过、
+不进入正则。提取是保守的：拿不出字面量（或依赖的内部解析接口不可用）时退化为全量扫描，
+**跳过的集合只会更小，结论与全量扫描完全一致**。
+
+由此有两条约束：
+
+- 大小写请用 `flags: [IGNORECASE]` 声明，不要写内联 `(?i)` 或 `(?i:...)`。内联写法只对作用域
+  局部生效，而规则读者通常只看 `flags`，容易误判整条规则的大小写语义；
+- 表达式尽量包含至少 3 个字符的固定字面量（如 `nvcc`、`find_package`）。只有短分支或纯字符类
+  的表达式无法预过滤，在大仓库上会明显变慢。多分支 `(?:a|b)` 要求**每个**分支都能给出字面量，
+  否则整条规则放弃预过滤——这是为了保证零漏报。
+
 ### `dependency`
 
-匹配从 `pyproject.toml`、Poetry 配置和 `requirements*.txt` 静态提取并规范化的依赖名。
+匹配从 `pyproject.toml`、Poetry 配置、`requirements*.txt` 以及 `setup.py` 静态提取并规范化的依赖名。
+`setup.py` 只读取 `install_requires` / `setup_requires` / `tests_require` / `extras_require` 中的
+字面量字符串（列表或元组写法均可），变量等动态值不求值、不采集。
 
 ```yaml
 - type: dependency
@@ -141,7 +155,7 @@ rule_files:
 
 ```bash
 python -m pytest tests/backend/test_core_rules.py tests/backend/test_rule_engine.py -v
-python -m ruff check backend tests
+python -m ruff check src scripts tests packaging
 ```
 
 最后必须运行全量质量门，避免规则相互影响。
