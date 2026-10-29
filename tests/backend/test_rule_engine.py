@@ -10,8 +10,9 @@ from mxready.models import Severity
 from mxready.scanning.facts import extract_project_facts
 from mxready.scanning.indexer import IndexedFile, build_file_index
 from mxready.scanning.rule_engine import (
-    _may_contain,
-    _required_literal,
+    _FoldedCache,
+    _passes_prefilter,
+    _required_prefilter,
     evaluate_rules,
 )
 from mxready.scanning.rule_loader import load_rule_catalog, regex_flags
@@ -166,15 +167,16 @@ def test_prefilter_never_skips_a_file_that_the_regex_matches() -> None:
                 continue
             flags = regex_flags(pattern.flags)
             compiled = re.compile(pattern.expression, flags)
-            needle = _required_literal(pattern.expression, flags)
+            prefilter = _required_prefilter(pattern.expression, flags)
+            if prefilter is None:
+                continue
             for text in corpus:
                 if compiled.search(text) is None:
                     continue
-                allowed = needle is None or _may_contain(
-                    needle,
-                    bool(flags & re.IGNORECASE),
+                allowed = _passes_prefilter(
+                    prefilter,
                     IndexedFile("corpus.txt", len(text), "0" * 64, text),
-                    {},
+                    _FoldedCache(),
                 )
                 assert allowed, (rule.id, pattern.expression, text)
 
@@ -183,21 +185,47 @@ def test_prefilter_extracts_expected_literals_for_core_rules() -> None:
     catalog = load_rule_catalog(Path("src/mxready/resources/rules/v1"))
     by_id = {rule.id: rule for rule in catalog.rules}
 
-    nvcc_needle = _required_literal(
+    nvcc_needle = _required_prefilter(
         by_id["MXR-PATH-001"].patterns[0].expression or "",
         re.NOFLAG,
     )
-    assert nvcc_needle == "/usr/local/cuda"
+    assert nvcc_needle is not None
+    assert [item.text for item in nvcc_needle] == ["/usr/local/cuda"]
 
-    launch_bounds = _required_literal(
+    launch_bounds = _required_prefilter(
         by_id["MXR-KERNEL-001"].patterns[0].expression or "",
         re.NOFLAG,
     )
-    assert launch_bounds == "__launch_bounds__"
+    assert launch_bounds is not None
+    assert [item.text for item in launch_bounds] == ["__launch_bounds__"]
 
-    branch_common = _required_literal(r"(?:sm_80|sm_86)\b", re.NOFLAG)
-    assert branch_common == "sm_8"
+    branch_common = _required_prefilter(r"(?:sm_80|sm_86)\b", re.NOFLAG)
+    assert branch_common is not None
+    assert [item.text for item in branch_common] == ["sm_8"]
 
     # 分支无共同字面量且唯一片段过短时，预过滤退化为全量扫描而不是冒险。
-    no_common = _required_literal(r"(?:sm|compute)_[0-9]{2,3}", re.NOFLAG)
+    no_common = _required_prefilter(r"(?:sm|compute)_[0-9]{2,3}", re.NOFLAG)
     assert no_common is None
+
+
+@pytest.mark.parametrize(
+    "rule_id",
+    [
+        "MXR-ARCH-001",
+        "MXR-DOCKER-001",
+        "MXR-INTRINSIC-001",
+        "MXR-PYTORCH-003",
+        "MXR-RUNTIME-001",
+    ],
+)
+def test_branch_only_rules_gain_a_prefilter(rule_id: str) -> None:
+    """这些规则的每个分支都没有共同连续段，旧实现（集合交集）会整体放弃预过滤。"""
+    catalog = load_rule_catalog(Path("src/mxready/resources/rules/v1"))
+    by_id = {rule.id: rule for rule in catalog.rules}
+
+    for pattern in by_id[rule_id].patterns:
+        if pattern.type != "regex" or pattern.expression is None:
+            continue
+        prefilter = _required_prefilter(pattern.expression, regex_flags(pattern.flags))
+        assert prefilter is not None, (rule_id, pattern.expression)
+        assert len(prefilter) > 1, (rule_id, pattern.expression)
