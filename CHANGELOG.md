@@ -24,7 +24,7 @@
 - 打包补齐 PEP 561 `py.typed` 标记（`mxready` 与 `mxready_runner`），下游类型检查可直接使用本项目的注解。
 - 版本一致性测试：`pyproject`、两个包的 `__version__`、前端 `package.json` 与 lockfile、README 徽章与
   四个安装包名、安装与接口文档中的示例、CHANGELOG 小节必须同源，任一处漂移即测试失败。
-- 新增四类迁移阻塞项规则，规则集升至 v3（34 条规则 / 49 条模式）：`MXR-PTX-001` 内联 PTX `asm`、
+- 新增四类迁移阻塞项规则，规则集升至 v3（34 条规则 / 48 条模式）：`MXR-PTX-001` 内联 PTX `asm`、
   `MXR-WARP-001` 按 32 硬编码的线程束算术（两者记为 `blocker`），`MXR-THRUST-001` / `MXR-CUB-001`
   登记 Thrust/CUB 用法（`info`，沐曦 mcThrust / mcCUB 提供 API 不变的 wrapper）。
   线程束宽度属于"能编译但结果错"的静默缺陷，静态检查是唯一能在 CI 阶段拦住它的手段。
