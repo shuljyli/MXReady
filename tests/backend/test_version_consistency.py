@@ -13,7 +13,7 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-README = ROOT / "README.md"
+READMES = (ROOT / "README.md", ROOT / "README.en.md")
 CHANGELOG = ROOT / "CHANGELOG.md"
 
 
@@ -42,15 +42,16 @@ def test_frontend_package_version_matches_pyproject() -> None:
 
 def test_readme_badge_and_installer_names_match_pyproject() -> None:
     version = _package_version()
-    readme = _read(README)
-    assert f"version-{version}-" in readme, "README 版本徽章未同步"
-    for artifact in (
-        f"mxready-{version}-windows.zip",
-        f"mxready-{version}-linux.zip",
-        f"mxready-{version}-macos.zip",
-        f"mxready-{version}-py3-none-any.whl",
-    ):
-        assert artifact in readme, f"README 安装包名未同步：{artifact}"
+    for path in READMES:
+        readme = _read(path)
+        assert f"version-{version}-" in readme, f"{path.name} 版本徽章未同步"
+        for artifact in (
+            f"mxready-{version}-windows.zip",
+            f"mxready-{version}-linux.zip",
+            f"mxready-{version}-macos.zip",
+            f"mxready-{version}-py3-none-any.whl",
+        ):
+            assert artifact in readme, f"{path.name} 安装包名未同步：{artifact}"
 
 
 def test_changelog_documents_the_current_version() -> None:
