@@ -160,6 +160,66 @@ def test_shell_comment_lines_do_not_set_shell_facts(tmp_path: Path) -> None:
     assert facts.flags["uses_hardcoded_cuda_path"] is False
 
 
+def test_cmake_comment_lines_do_not_set_cuda_home_reference(tmp_path: Path) -> None:
+    """被注释掉的 `# set(CUDA_HOME ...)` 不是真引用，检测必须走剥离注释后的文本。"""
+    (tmp_path / "CMakeLists.txt").write_text(
+        "\n".join(
+            [
+                "cmake_minimum_required(VERSION 3.24)",
+                "project(demo LANGUAGES CXX CUDA)",
+                '# set(CUDA_HOME "/usr/local/cuda-12.1")',
+                "# include_directories(${CUDA_HOME}/include)",
+                'message(STATUS "no cuda home referenced here")',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    assert facts.flags["uses_cmake_cuda_language"] is True
+    assert facts.flags["references_cuda_home"] is False
+    assert "fact:references_cuda_home" not in facts.locations
+
+
+def test_cmake_code_lines_still_set_cuda_home_reference(tmp_path: Path) -> None:
+    """剥离注释不能把真引用一起剥掉，且 evidence 要指向原文那一行。"""
+    (tmp_path / "CMakeLists.txt").write_text(
+        "\n".join(
+            [
+                "# set(CUDA_HOME \"/usr/local/cuda-11.8\")  # 旧版本，已废弃",
+                "project(demo LANGUAGES CXX CUDA)",
+                'set(CUDA_HOME "/usr/local/cuda-12.1")',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    locations = facts.locations["fact:references_cuda_home"]
+    assert [location.line for location in locations] == [3]
+    assert 'set(CUDA_HOME "/usr/local/cuda-12.1")' in locations[0].evidence
+
+
+def test_large_pyproject_dependency_line_numbers_stay_accurate(tmp_path: Path) -> None:
+    """依赖定位由逐行扫描改为整篇折叠查找后，行号必须仍逐条对得上、evidence 不串行。"""
+    dependencies = [f"package-{index}>=1.0.{index}" for index in range(120)]
+    body = "\n".join(f'  "{item}",' for item in dependencies)
+    text = '[project]\nname = "demo"\ndependencies = [\n' + body + "\n]\n"
+    (tmp_path / "pyproject.toml").write_text(text, encoding="utf-8")
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    for offset, name in enumerate(f"package-{index}" for index in range(120)):
+        location = facts.locations[f"dependency:{name}"][0]
+        assert location.line == 4 + offset, name
+        assert name in location.evidence
+
+    # 尾部依赖不能被定位回文件开头
+    assert facts.locations["dependency:package-119"][0].line == 123
+
+
 def test_requirement_parser_normalizes_names_and_ignores_include_options(
     tmp_path: Path,
 ) -> None:
@@ -204,6 +264,28 @@ def test_setup_py_keyword_dependencies_are_extracted_without_execution(tmp_path:
     tensorrt = facts.locations["dependency:tensorrt"][0]
     assert tensorrt.relative_path == "setup.py"
     assert "tensorrt" in tensorrt.evidence.casefold()
+
+
+def test_setup_py_tuple_dependency_values_are_extracted(tmp_path: Path) -> None:
+    """`install_requires=("torch",)` 与列表写法等价，只认 List 会整条漏采。"""
+    (tmp_path / "setup.py").write_text(
+        "\n".join(
+            [
+                "from setuptools import setup",
+                "setup(",
+                "    name='demo',",
+                "    install_requires=('torch>=2.0', 'ninja'),",
+                "    extras_require={'dev': ('tensorrt==10.0',)},",
+                ")",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    assert {"torch", "ninja", "tensorrt"} <= facts.dependencies
+    assert facts.locations["dependency:ninja"][0].line == 4
 
 
 def test_setup_py_dynamic_dependency_values_are_ignored(tmp_path: Path) -> None:
