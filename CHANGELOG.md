@@ -5,15 +5,10 @@
 
 ## [Unreleased]
 
-### Changed
+## [1.0.0] - 2026-10-29
 
-- 规则正则的必需字面量预过滤改为按"或"组织（OR-of-AND）的候选集，分支型规则也能参与过滤，
-  提取覆盖率由 25/30 提升到 29/30；仅 `MXR-ARCH-002`（`(?:sm|compute)` 两支都过短）仍需全量扫描。
-  在 613 文件 / 2 MiB 的真实语料上，规则评估 278 ms 降至 153 ms（约 1.96×），命中结论逐条一致。
-- 折叠视图缓存加 48 MiB 字节上限，超限后只计算不缓存：预过滤需要按文件折叠文本，
-  无上限缓存会让整仓常驻内存翻倍，而淘汰旧项只会让后续文件反复重算，故选择"停止累积"。
-- `pyproject.toml` 依赖行号定位由"逐依赖扫描全部行"改为整篇折叠后一次查找 + 行首偏移查表，
-  500 条依赖的文件上单文件耗时由 5.1 ms 降至 1.8 ms；行号口径与 `str.splitlines()` 严格一致。
+首个正式版。工程链路、发布链路与开源治理补全，规则引擎的正确性缺陷修复，
+静态检查能力与对外契约保持不变。
 
 ### Added
 
@@ -23,6 +18,27 @@
   以便区分"配置关闭"与"内部解析接口不可用而降级"；旧报告缺少该字段仍可解析。
 - `scripts/bench_prefilter.py`：逐规则对比预过滤与完整正则的成本、可跳过文件数，并校验两种模式的
   命中集合一致；输出不含时间戳，两次运行可直接 diff。
+- `scripts/release_notes.py`：从 CHANGELOG 渲染 GitHub Release 正文，缺对应版本小节时直接失败，
+  避免"版本号升了但没写变更记录"的发布。
+- 打包补齐 PEP 561 `py.typed` 标记（`mxready` 与 `mxready_runner`），下游类型检查可直接使用本项目的注解。
+- 版本一致性测试：`pyproject`、两个包的 `__version__`、前端 `package.json`、README 徽章与四个安装包名、
+  CHANGELOG 小节必须同源，任一处漂移即测试失败。
+
+### Changed
+
+- 发布工作流在打 tag 时创建 GitHub Release 并挂载三平台 ZIP、wheel、sdist 与 `SHA256SUMS.txt`。
+  此前只上传 workflow artifact，Release 页面始终为空；同一 tag 重跑改为覆盖附件。
+- 覆盖率改按 branch 口径统计（88.5%），并排除 `__main__` 守卫；仅统计语句会掩盖"分支只走一半"。
+- CI 矩阵由 3.11/3.12 扩到 3.11/3.12/3.13，classifier 同步；此前声明 `>=3.11` 却只测到 3.12。
+- `mypy` 纳入 `packaging/`（此前 `install.py` 完全未受类型检查），并新增 `ruff format --check` 门禁。
+- `ci.yml` 增加 `concurrency` 分组，连续推送时取消被取代的运行。
+- 规则正则的必需字面量预过滤改为按"或"组织（OR-of-AND）的候选集，分支型规则也能参与过滤，
+  提取覆盖率由 25/30 提升到 29/30；仅 `MXR-ARCH-002`（`(?:sm|compute)` 两支都过短）仍需全量扫描。
+  在 613 文件 / 2 MiB 的真实语料上，规则评估 278 ms 降至 153 ms（约 1.96×），命中结论逐条一致。
+- 折叠视图缓存加 48 MiB 字节上限，超限后只计算不缓存：预过滤需要按文件折叠文本，
+  无上限缓存会让整仓常驻内存翻倍，而淘汰旧项只会让后续文件反复重算，故选择"停止累积"。
+- `pyproject.toml` 依赖行号定位由"逐依赖扫描全部行"改为整篇折叠后一次查找 + 行首偏移查表，
+  500 条依赖的文件上单文件耗时由 5.1 ms 降至 1.8 ms；行号口径与 `str.splitlines()` 严格一致。
 
 ### Fixed
 
@@ -126,7 +142,8 @@
 - Web 扫描路径永不执行被扫描仓库中的代码。
 - 仓库地址主机白名单、受限 Git 获取、只读索引与上传结果严格校验。
 
-[Unreleased]: https://github.com/shuljyli/MXReady/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/shuljyli/MXReady/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/shuljyli/MXReady/compare/v0.2.1...v1.0.0
 [0.2.1]: https://github.com/shuljyli/MXReady/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/shuljyli/MXReady/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/shuljyli/MXReady/releases/tag/v0.1.0

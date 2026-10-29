@@ -1,9 +1,11 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.2.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+
+**中文** | [English](README.en.md)
 
 MXReady 是一个面向 Python、PyTorch CUDA 扩展项目的**迁移准备度体检工具**。在把项目迁移到沐曦 MXMACA 之前，它用可解释的静态规则定位 CUDA 工具链、架构参数、原生依赖和构建配置中值得复核的迁移风险，并生成固定到具体 Git 提交的报告与远程验证包。
 
@@ -39,26 +41,31 @@ Web 服务从不导入、安装、构建或执行被扫描仓库中的代码。�
 Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发布。目录约定、任务队列和升级说明见
 [架构说明](docs/architecture.md)。修改模型后使用 `make contracts` 同步生成接口契约。
 
-## 当前进度
+## 功能矩阵
 
-**已完成（本地验证通过）**
+| 能力 | 状态 | 验证方式 |
+| --- | --- | --- |
+| 公开仓库静态扫描（GitHub / Gitee，可指定分支、标签或 40 位提交） | 可用 | 端到端测试 + 示例报告 |
+| 30 条 `MXR-*` 检查规则 | 可用 | 每条规则含正例与相似反例夹具 |
+| 报告输出：JSON / Markdown / SVG 徽章 | 可用 | 契约测试 + `generate_contracts.py --check` |
+| 远程验证包与标准库 runner | 可用 | 安装包回归 + 安全边界测试 |
+| 三平台安装 ZIP 与含网页的 wheel/sdist | 可用 | 发布工作流在 Windows / Linux / macOS 实际安装并启动 |
+| React 单页界面 | 可用 | Vitest + TypeScript 严格模式 |
+| 批量评估（`mxready-scan-batch`） | 可用 | CLI 回归 |
+| 真机沐曦 GPU 验证 | 设计完成，未在真机跑通 | 报告 `verification_status` 恒为 `not-run` |
 
-- MVP 设计规格中的 16 个实施任务全部落地；
-- 30 条检查规则（含 Dockerfile / CUDA 显存 / Stream / Device / 通信后端 / 数学库 / 测试跳过 / 混合精度相关），正反例夹具齐全；
-- 后端 + runner：覆盖离线扫描、安全边界、并发领取、租约失效、验证过期与安装包回归，覆盖率门槛 80%；
-- 前端：覆盖报告、表单、扫描刷新恢复、请求取消与有限重试，使用 Vitest 和 TypeScript 验证；
-- Windows PowerShell 5.1+ 与 Linux/macOS 使用统一命令入口；PowerShell 入口已在 5.1 实跑，Shell 入口由 CI 执行语法检查；
-- Python 3.11.15 隔离环境已完成关键防护与存储回归，CI 持续覆盖 Python 3.11/3.12 × Windows/Linux；
-- 已完成配置注入、结构化日志、SQLite 备份与迁移、流式请求体防护、原子并发限额、CI 矩阵、服务器交接脚本、locust 压测脚本等工程化优化。
-- 已生成三平台 ZIP 与含网页的 wheel/sdist；macOS Apple Silicon + Python 3.11 的全新安装、
-  网页/API、离线扫描及标准库 runner 冒烟通过（安装路径包含中文与空格）。
+工程状态：`ruff check`、`ruff format --check`、`mypy`、契约校验与 354 条 `pytest` 用例全绿，
+分支覆盖率 88.5%（门槛 80%）；CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS。
 
-**仍需外部环境验证（重点）**
+## 已知限制
 
-- **Docker 容器启动**：`docker compose config` 与 CI 镜像构建已覆盖；本机 Docker daemon 未运行，因此本轮没有启动本地容器；
-- **Windows / Linux 安装包实机测试**：发布工作流已配置三平台安装与启动检查，Windows/Linux 的目标系统结果仍须实际运行 CI 后确认；
-- **源码开发交互式启动**：CI 会检查 `scripts/dev.sh` 的 Bash 语法，前后端交互式开发流程仍应在目标系统验证；
-- **真机沐曦 GPU 验证**：仍为 `pending`，等待服务器窗口期后按 [examples/verification/README.md](examples/verification/README.md) 执行。
+- **不提供兼容性结论**。所有输出止步于静态风险提示与人工复核建议；"已在沐曦环境验证"必须绑定到具体提交、
+  在受控沐曦 GPU 上跑出 `verified` 结果，且不超过 30 天。
+- **规则精度尚未用真实项目校正**。30 条规则的正反例来自受控夹具，公开 CUDA 扩展上的误报率仍需统计。
+- **真机验证结果有 30 天有效期**，过期后报告状态转为 `stale`，需要重新上传。
+- **MVP 边界**：不支持私有仓库、不自动修改源码、不做云 GPU 调度、无用户系统、不给百分比兼容分数。
+- **环境要求**：安装包不附带 Python 与 Git，需预装 Python 3.11+ 与 Git。Docker 镜像的构建与启动由 CI 覆盖。
+- **前端未配置 ESLint / Prettier**，以 TypeScript 严格模式与 Vitest 兜底。
 
 > 公开项目示例报告见 [examples/reports](examples/reports)（以 `pytorch-extension-cpp` 为例），远程验证流程见 [examples/verification/README.md](examples/verification/README.md)。
 
@@ -69,10 +76,10 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 
 | 平台 | 安装包 | 完整解压后，在包目录中执行 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-0.2.1-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
-| Linux | `mxready-0.2.1-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
-| macOS（Apple Silicon / Intel） | `mxready-0.2.1-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
-| 已有 Python 环境 | `mxready-0.2.1-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
+| Windows 10/11 | `mxready-1.0.0-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
+| Linux | `mxready-1.0.0-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
+| macOS（Apple Silicon / Intel） | `mxready-1.0.0-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
+| 已有 Python 环境 | `mxready-1.0.0-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
 
 启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。
 安装器在解压目录创建 `.venv/`，数据库保存在系统用户数据目录，升级替换程序时可保留历史报告。
