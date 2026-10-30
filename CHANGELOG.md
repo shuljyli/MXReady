@@ -12,6 +12,11 @@
 
 ### Fixed
 
+- 修复 0.3.0 版本重置时对 `frontend/package-lock.json` 的全局替换误伤：`gensync`、
+  `@rolldown/pluginutils`、`@types/estree`、`min-indent` 的依赖版本、`BlueOak-1.0.0`
+  许可证标识和 Node 引擎范围都被错误改写成 `0.3.0` 相关值，导致 `npm ci` 报
+  `No matching version found for @types/estree@^0.3.0`。lockfile 已恢复为正确解析结果，
+  只保留根项目的版本号变更；`npm ci`、`npm run typecheck`、`npm test` 与 Docker 构建同步恢复。
 - 自扫描把本仓库判成"阻塞"：22 条 `blocker` 全部出自测试夹具与文档描述。三处修复后，
   干净检出（`git archive HEAD`）的自扫描结果为 **0 blocker / 1 warning / 72 info**。
   - `scanning/path_context.py`：按**完整路径段**判定文件角色（`tests` / `fixtures` /
