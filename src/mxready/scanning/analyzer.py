@@ -22,6 +22,7 @@ from mxready.models import (
 from mxready.repository.identity import parse_repository_url
 from mxready.scanning.facts import extract_project_facts
 from mxready.scanning.indexer import build_file_index
+from mxready.scanning.path_context import apply_path_context
 from mxready.scanning.rule_engine import evaluate_rules, prefilter_status
 from mxready.scanning.rule_loader import RuleCatalog
 from mxready.scanning.toolchain import apply_toolchain_profile
@@ -67,6 +68,10 @@ class ScanAnalyzer:
                 enable_prefilter=self.enable_prefilter,
             )
         )
+        # 路径上下文先于工具链画像生效：测试/示例/文档路径上的命中先封顶为提示，
+        # 工具链画像随后只需处理交付路径，避免出现"从 blocker 降为 warning"
+        # 这种对一条早已是提示的 finding 的错误说明。
+        findings, path_warnings = apply_path_context(findings)
         # 严重级别取决于"项目是否已接入 MXMACA 兼容层"这一前提；工具链画像要在
         # 汇总之前生效，否则 summary 计数与 findings 的级别会对不上。
         findings, toolchain_warnings = apply_toolchain_profile(findings, facts)
@@ -106,6 +111,7 @@ class ScanAnalyzer:
                 )
                 for warning in index.warnings
             ]
+            + path_warnings
             + toolchain_warnings,
             static_status=calculate_static_status(summary),
             verification_status=VerificationStatus.NOT_RUN,

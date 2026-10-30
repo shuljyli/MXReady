@@ -107,3 +107,35 @@ def test_indexer_ignores_make_like_names_with_other_extensions(tmp_path: Path) -
     (tmp_path / "Makefile.bak").write_text("NVCC = nvcc\n", encoding="utf-8")
 
     assert build_file_index(tmp_path).files == ()
+
+
+@pytest.mark.parametrize(
+    "directory",
+    [".pytest-temp", ".pytest_tmp", ".pytest-tmp", ".pytest_cache", ".benchmarks"],
+)
+def test_indexer_skips_test_runner_scratch_directories(
+    tmp_path: Path,
+    directory: str,
+) -> None:
+    """测试运行器的临时目录是夹具副本，不属于仓库内容，且每次运行都会漂移。"""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "kernel.cu").write_text("__global__ void k() {}\n", encoding="utf-8")
+    (tmp_path / directory).mkdir()
+    (tmp_path / directory / "kernel.cu").write_text(
+        'asm volatile ("mov.u32 %0, %%laneid;" : "=r"(x));\n',
+        encoding="utf-8",
+    )
+
+    index = build_file_index(tmp_path)
+
+    assert [item.relative_path for item in index.files] == ["src/kernel.cu"]
+
+
+def test_indexer_keeps_pytest_like_names_that_are_not_scratch_dirs(tmp_path: Path) -> None:
+    """按前缀排除，不做子串匹配：`pytest_plugin/` 这类真实目录仍需索引。"""
+    (tmp_path / "pytest_plugin").mkdir()
+    (tmp_path / "pytest_plugin" / "conftest.py").write_text("x = 1\n", encoding="utf-8")
+
+    index = build_file_index(tmp_path)
+
+    assert [item.relative_path for item in index.files] == ["pytest_plugin/conftest.py"]

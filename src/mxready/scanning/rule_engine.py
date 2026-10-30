@@ -16,6 +16,7 @@ from mxready.errors import MxReadyError
 from mxready.models import Finding, Severity
 from mxready.scanning.facts import ProjectFacts, SourceLocation
 from mxready.scanning.indexer import FileIndex, IndexedFile
+from mxready.scanning.python_source import docstring_spans, is_inside_docstring
 from mxready.scanning.rule_loader import (
     RuleCatalog,
     RuleDefinition,
@@ -53,6 +54,13 @@ _SEVERITY_ORDER = {
     Severity.WARNING: 1,
     Severity.INFO: 2,
 }
+
+# 文档字符串里的命中说明"文档在描述这段代码"，不说明"代码这样写了"。降级为提示
+# 而非丢弃：报告里仍能看见，复核时也能看出是文字描述。原因只写在 finding 自身，
+# 不额外发聚合告警——聚合告警留给"成批降级"（路径上下文、工具链画像）。
+_DOCSTRING_NOTE = (
+    "（命中位于 Python 文档字符串：这是对代码的文字描述而不是可执行语句，已降为提示。）"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,6 +156,21 @@ def evaluate_rules(
         raise ValueError("Rule evaluation budgets must be positive")
     deadline = time.monotonic() + timeout_seconds
     folded_cache = _FoldedCache()
+    files_by_path = {item.relative_path: item for item in index.files}
+    docstring_cache: dict[str, tuple[tuple[int, int], ...]] = {}
+
+    def docstring_hit(relative_path: str, line_start: int, line_end: int) -> bool:
+        """命中是否完整落在 Python 文档字符串内；按文件惰性解析并缓存。"""
+        if not relative_path.endswith(".py"):
+            return False
+        indexed = files_by_path.get(relative_path)
+        if indexed is None:
+            return False
+        spans = docstring_cache.get(relative_path)
+        if spans is None:
+            spans = docstring_spans(indexed.text)
+            docstring_cache[relative_path] = spans
+        return is_inside_docstring(spans, line_start, line_end)
 
     def check_budget() -> None:
         if time.monotonic() >= deadline:
@@ -166,17 +189,26 @@ def evaluate_rules(
                 enable_prefilter,
             ):
                 check_budget()
+                severity = rule.severity
+                message = rule.message
+                if severity is not Severity.INFO and docstring_hit(
+                    match.location.relative_path,
+                    match.location.line,
+                    match.line_end,
+                ):
+                    severity = Severity.INFO
+                    message = f"{message}{_DOCSTRING_NOTE}"
                 finding = Finding(
                     rule_id=rule.id,
                     rule_version=rule.version,
-                    severity=rule.severity,
+                    severity=severity,
                     category=rule.category,
                     title=rule.title,
                     relative_path=match.location.relative_path,
                     line_start=match.location.line,
                     line_end=match.line_end,
                     evidence=match.location.evidence[:240],
-                    message=rule.message,
+                    message=message,
                     recommendation=rule.recommendation,
                     references=list(rule.references),
                 )

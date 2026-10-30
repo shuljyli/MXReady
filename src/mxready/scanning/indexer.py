@@ -58,6 +58,10 @@ _HIDDEN_CACHE_DIRECTORIES = {
     ".ruff_cache",
     ".tox",
 }
+# 测试运行器与基准框架的临时目录：内容是夹具的运行时副本，不属于仓库内容，
+# 每次运行还会漂移（pytest 的 `--basetemp=.pytest-temp` 即属此类）。
+# 扫描它们只会产生随时间变化、无法复核的噪音命中，因此整目录排除。
+_SCRATCH_DIRECTORY_PREFIXES = (".benchmarks", ".pytest")
 
 
 @dataclass(frozen=True, slots=True)
@@ -241,6 +245,7 @@ def _is_excluded_directory(name: str) -> bool:
     return (
         name in _EXCLUDED_DIRECTORIES
         or name in _HIDDEN_CACHE_DIRECTORIES
+        or name.startswith(_SCRATCH_DIRECTORY_PREFIXES)
         or name.startswith(".")
         and "cache" in name.casefold()
     )

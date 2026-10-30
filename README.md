@@ -15,7 +15,8 @@ MXReady 是一个面向 Python、PyTorch CUDA 扩展项目的**迁移准备度�
 
 - 接收 GitHub、Gitee 的公开 HTTPS 仓库，以及可选的分支、标签或 40 位提交；
 - 扫描 Python、C/C++、CUDA、CMake、Shell、TOML、YAML 等受支持文本文件；
-- 提供 **30 条首批规则**（`MXR-*`），每条结果包含文件、行号、证据、建议和权威参考；
+- 提供 **35 条首批规则**（`MXR-*`），每条结果包含文件、行号、证据、建议和权威参考；
+- 测试、示例、文档路径与 Python 文档字符串中的命中封顶为提示：仍出现在报告里，但不参与阻塞判定；
 - 输出 JSON、Markdown、SVG 徽章与标准库远程验证包；
 - 明确区分静态状态与真机验证状态；
 - 提供只读本地目录 CLI，便于离线回归和生成示例报告；
@@ -46,7 +47,7 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | 能力 | 状态 | 验证方式 |
 | --- | --- | --- |
 | 公开仓库静态扫描（GitHub / Gitee，可指定分支、标签或 40 位提交） | 可用 | 端到端测试 + 示例报告 |
-| 30 条 `MXR-*` 检查规则 | 可用 | 每条规则含正例与相似反例夹具 |
+| 35 条 `MXR-*` 检查规则 | 可用 | 每条规则含正例与相似反例夹具 |
 | 报告输出：JSON / Markdown / SVG 徽章 | 可用 | 契约测试 + `generate_contracts.py --check` |
 | 远程验证包与标准库 runner | 可用 | 安装包回归 + 安全边界测试 |
 | 三平台安装 ZIP 与含网页的 wheel/sdist | 可用 | 发布工作流在 Windows / Linux / macOS 实际安装并启动 |
@@ -54,7 +55,7 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | 批量评估（`mxready-scan-batch`） | 可用 | CLI 回归 |
 | 真机沐曦 GPU 验证 | 设计完成，未在真机跑通 | 报告 `verification_status` 恒为 `not-run` |
 
-工程状态：`ruff check`、`ruff format --check`、`mypy`、契约校验与 354 条 `pytest` 用例全绿，
+工程状态：`ruff check`、`ruff format --check`、`mypy`、契约校验与 477 条 `pytest` 用例全绿，
 分支覆盖率 90%（门槛 80%）；CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS。
 
 ## 已知限制

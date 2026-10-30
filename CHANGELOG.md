@@ -5,6 +5,28 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- 自扫描把本仓库判成"阻塞"：22 条 `blocker` 全部出自测试夹具与文档描述。三处修复后，
+  干净检出（`git archive HEAD`）的自扫描结果为 **0 blocker / 1 warning / 72 info**。
+  - `scanning/path_context.py`：按**完整路径段**判定文件角色（`tests` / `fixtures` /
+    `examples` / `docs` / `benchmarks`，不做子串匹配，`contest/`、`latest/` 不受影响），
+    非交付路径上的 `blocker` / `warning` 封顶为 `info`。文件仍被索引、仍出现在报告里，
+    降级在 `Finding.message` 与 `analysis_warnings`（`PATH_CONTEXT_DEMOTION`，按角色聚合、
+    含规则 ID 与文件数）双重留痕。
+  - `scanning/python_source.py`：命中若**完整**落在 Python 文档字符串内降为 `info`——
+    文档里写 `subprocess.run(["nvcc", ...])` 作为反例，不等于代码这样写了。普通字符串
+    字面量**不**豁免（`os.system("nvcc main.cu")` 仍报 `blocker`），Python 解析失败一律不豁免。
+  - `scanning/indexer.py`：整目录跳过测试运行器与基准框架的临时目录（`.pytest*`、
+    `.benchmarks`）。那是夹具的运行时副本，不属于仓库内容，且每次运行内容都会漂移。
+- 路径上下文先于工具链画像生效，避免对一条已是 `info` 的 finding 追加"从 blocker 降为
+  warning"这种错误说明（`test_path_demotion_runs_before_toolchain_profile` 守着这条）。
+
+### Changed
+
+- README 与功能矩阵的规则数从"30 条"更正为实际的 35 条（规则集 v4 早已是 35 条／49 条模式）。
+- `docs/rules.md` 增补"路径上下文与文档字符串"一节，说明两处降级的判据、留痕方式与豁免边界。
+
 ## [0.3.0] - 2026-10-29
 
 第三个预览版本。工程链路、发布链路与开源治理补全，规则引擎的正确性缺陷修复，

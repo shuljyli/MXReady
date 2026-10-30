@@ -160,6 +160,39 @@ rule_files:
 降级在 `summarize_findings` **之前**生效，否则 `summary` 的计数会与 `findings` 的级别
 对不上——`test_summary_counts_follow_the_downgraded_severity` 守着这条。
 
+## 路径上下文与文档字符串
+
+静态规则看不到"这段代码是交付产物还是验证材料"，因此除工具链画像外还有两处
+**只降级、不隐藏**的处理。它们都发生在 `summarize_findings` 之前，且都保留文件：
+
+### 1. 非交付路径封顶为提示
+
+`scanning/path_context.py` 按**路径段精确匹配**判定文件角色（不做子串匹配，
+`contest/`、`latest/` 不算测试目录），命中 `blocker` / `warning` 时统一封顶为 `info`：
+
+| 角色 | 路径段 | 理由 |
+|---|---|---|
+| 测试/夹具 | `tests` `test` `testing` `fixtures` `testdata`；文件名 `test_*` / `*_test` | 命中的是测试代码本身，不代表交付产物的迁移风险 |
+| 基准测试 | `benchmarks` `bench` `benches` | 基准代码一般不随交付构建 |
+| 示例 | `examples` `samples` `demo` | 示例代码一般不随交付构建 |
+| 文档 | `docs` `doc` `documentation` | 命中的是文档里的代码片段 |
+
+这些文件**仍然被索引、仍然出现在报告里**——"看不见"比"级别低"更危险。降级在
+`Finding.message` 末尾写明原因，并在 `analysis_warnings` 写一条 `PATH_CONTEXT_DEMOTION`
+（按角色聚合，含规则 ID 与文件数）。路径上下文先于工具链画像生效，避免对一条
+早已是 `info` 的 finding 追加"从 blocker 降为 warning"这种错误说明。
+
+同时，`scanning/indexer.py` 整目录跳过测试运行器的临时目录（`.pytest*`、`.benchmarks`）：
+那是夹具的运行时副本，不属于仓库内容，每次运行内容还会漂移。
+
+### 2. 文档字符串不构成行为
+
+`scanning/python_source.py` 识别模块 / 类 / 函数首条字符串常量的行区间，命中若**完整**
+落在这个区间内，降为 `info` 并在 `message` 注明。典型场景：一段文档写着
+`subprocess.run(["nvcc", ...])` 作为反例，被 `MXR-TOOLCHAIN-001` 判成 blocker。
+
+豁免范围刻意收窄：普通字符串字面量**不豁免**——`os.system("nvcc main.cu")` 的命令就在
+字符串里，豁免它会制造真实漏报。Python 解析失败（生成代码、语法错误）一律不豁免。
 
 ## 证据与去重
 
