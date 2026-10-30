@@ -30,6 +30,13 @@
   线程束宽度属于"能编译但结果错"的静默缺陷，静态检查是唯一能在 CI 阶段拦住它的手段。
 - `docs/rules.md` 增加"严重度口径"与"覆盖边界"两节：前者把 blocker/warning/info 对齐到
   SYCLomatic 的 High/Medium/Low 人力分档并给出判级硬规则，后者显式列出不做 AST、不构建带来的盲区。
+- 新增 `MXR-TOOLCHAIN-002`（info）与工具链画像，规则集升至 v4（35 条规则 / 49 条模式）：
+  从 `make_maca` / `cmake_maca` / `cucc` / `CUCC_PATH` / `CUCC_CMAKE_ENTRY` / `cu-bridge`
+  路径识别已接入 cu-bridge 的项目。识别到之后，声明式构建文件（`Makefile` / `*.mk` /
+  `CMakeLists.txt` / `*.cmake`）里的 `NVCC = nvcc` 由 blocker 降为 warning——cu-bridge
+  在构建期接管这些调用，继续报阻塞等于把已迁移项目判成未迁移。`.py` / `.sh` 里的
+  `nvcc` 调用保持 blocker，因为它可能绕过 `make_maca` 注入的 `PATH`。降级会在 finding
+  的 message 与 `analysis_warnings` 里双重留痕，不做静默处理。
 
 ### Changed
 
@@ -49,6 +56,12 @@
 
 ### Fixed
 
+- 修复 `Makefile` / `*.mk` 完全不在扫描范围导致的**假绿灯**：索引器白名单只收
+  `CMakeLists.txt` 与 `Dockerfile`，34 条规则的作用域也没有一条包含 Makefile，
+  两层叠加使 `NVCC = nvcc` 这类最典型的阻塞项完全不可见。实测一个只有
+  `Makefile` + `main.cu` 的仓库返回 `passed`。
+  这对沐曦场景尤其致命——cu-bridge 的官方入口 `make_maca` 本身就是 make 包装器，
+  cu-bridge 生态的主战场正是 Makefile。
 - 修复内联 `(?i)` / `(?i:...)` 未反映到字面量大小写语义，导致预过滤跳过本应命中的文件（漏报）：
   字面量现在携带所处作用域的 effective flags，`(?i:AB)cd` 只把 `AB` 视为忽略大小写。
 - 修复 `str.casefold()` 与 `re.IGNORECASE` 在土耳其语 I 家族（`I` `i` `İ` `ı`）上不同构导致的漏报：

@@ -119,12 +119,47 @@ rule_files:
 - `uses_cmake_cuda_language`
 - `uses_cmake_cuda_package`
 - `uses_cmake_torch_package`
+- `uses_cu_bridge_toolchain`
 - `uses_hardcoded_cuda_path`
 - `uses_torch_cpp_extension`
 - `uses_torch_cpp_extension_load`
 - `uses_torch_cuda_extension`
 
-新增事实需要先在 `facts.py` 中实现保守的静态提取和独立测试。
+其中被内置规则直接消费的是 `imports_apex`、`imports_tensorrt`、`uses_cmake_cuda_language`、
+`uses_cu_bridge_toolchain`、`uses_torch_cpp_extension_load`、`uses_torch_cuda_extension`。
+其余事实属于**扩展点**：`MXREADY_EXTRA_RULES_DIR` 指向的自定义规则可以直接引用它们，
+不要求内置规则消费——但新增事实仍必须先在 `facts.py` 中实现保守的静态提取并补独立测试。
+
+`uses_cu_bridge_toolchain` 的证据面限定在构建与部署文件（`Makefile` / `*.mk` / `*.sh` /
+`*.py` / `*.cmake` / `CMakeLists.txt` / `Dockerfile`），标记来自 cu-bridge 用户手册列出的
+入口与环境变量：`make_maca`、`cmake_maca`、`cucc`、`CUCC_PATH`、`CUCC_CMAKE_ENTRY`、
+`cu-bridge` 路径。`MACA_CLANG_PATH` **不算**证据——它由 MACA SDK 设置，原生 MACA 项目
+同样会出现。
+
+## 工具链画像与严重级别降级
+
+命中规则的严重级别取决于一个前提："项目尚未接入 MXMACA 兼容层"。检测到
+`uses_cu_bridge_toolchain` 后，这个前提不再普遍成立，`scanning/toolchain.py` 会对
+**声明式构建文件**里的构建入口类命中做一次降级：
+
+| 条件 | 结果 |
+|---|---|
+| `Makefile` / `*.mk` / `CMakeLists.txt` / `*.cmake` 中的 `NVCC = nvcc` | blocker → warning |
+| `.py` / `.sh` 中的 `nvcc` 调用 | **保持 blocker** |
+| 源码语义类规则（PTX、线程束宽度） | 不受影响 |
+
+只降一级、不降到 `info`：cu-bridge 接管的是构建入口，无法证明每个 `nvcc` 调用都走了
+包装器；`.py` / `.sh` 里是运行时命令，`subprocess.run(["nvcc", ...])` 仍可能绕过
+`make_maca` 注入的 `PATH`。
+
+降级必须留痕，否则就是用配置把结论藏起来。实现上有两处强制：
+
+1. 被降级的 `Finding.message` 末尾追加降级说明（含原因与复核提示）；
+2. `analysis_warnings` 增加一条 `TOOLCHAIN_CU_BRIDGE_DOWNGRADE`，写明规则 ID 与文件数。
+
+降级在 `summarize_findings` **之前**生效，否则 `summary` 的计数会与 `findings` 的级别
+对不上——`test_summary_counts_follow_the_downgraded_severity` 守着这条。
+
 
 ## 证据与去重
 
