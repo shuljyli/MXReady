@@ -9,8 +9,8 @@
     "commit": "1c325b202ae5e11de3cefb9a65be28f47949edd4"
   },
   "tool_version": "0.3.0",
-  "ruleset_version": "3",
-  "ruleset_digest": "sha256:85570ad1732139adfc8221bbc5b187dd1371332c81c3e87f6a04bdf93a72dc6d",
+  "ruleset_version": "4",
+  "ruleset_digest": "sha256:badf12ad29ce6f7cff9e6f07b4df4034822fbe9773571cad6517d9c65325c531",
   "extra_ruleset_version": null,
   "analysis_config": {
     "max_findings": 10000,
@@ -19,7 +19,7 @@
     "index_max_file_bytes": 1048576,
     "prefilter": "on"
   },
-  "scanned_at": "2026-10-29T19:16:00.494515Z",
+  "scanned_at": "2026-10-30T04:40:49.534084Z",
   "summary": {
     "total_count": 4,
     "blocker_count": 0,
