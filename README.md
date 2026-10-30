@@ -53,7 +53,7 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | 三平台安装 ZIP 与含网页的 wheel/sdist | 可用 | 发布工作流在 Windows / Linux / macOS 实际安装并启动 |
 | React 单页界面 | 可用 | Vitest + TypeScript 严格模式 |
 | 批量评估（`mxready-scan-batch`） | 可用 | CLI 回归 |
-| 真机沐曦 GPU 验证 | 设计完成，未在真机跑通 | 报告 `verification_status` 恒为 `not-run` |
+| 真机沐曦 GPU 验证 | 设计完成，未在真机跑通 | 计划近期租用沐曦算力上机检验；当前报告 `verification_status` 恒为 `not-run` |
 
 工程状态：`ruff check`、`ruff format --check`、`mypy`、契约校验与 477 条 `pytest` 用例全绿，
 分支覆盖率 90%（门槛 80%）；CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS。
@@ -395,7 +395,7 @@ npm run build
 ## MVP 路线图
 
 1. 用三个公开 CUDA 扩展项目生成可复现报告并校正规则精度；
-2. 申请沐曦远程服务器，完成至少一次相同提交的脱敏验证；
+2. 租用沐曦算力，完成至少一次相同提交的脱敏上机验证；
 3. 选择一个上游项目提交小范围、可评审的迁移 PR；
 4. 根据真实适配反馈扩充规则与最小验证模板。
 
