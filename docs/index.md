@@ -22,6 +22,7 @@
 | [api.md](api.md) | HTTP API 手册，含 `curl` 示例 |
 | [deployment.md](deployment.md) | 裸机 / systemd / Docker / nginx / 备份 / 日志 |
 | [installation.md](installation.md) | 三平台安装包、离线准备、升级与发布构建 |
+| [release-acceptance.md](release-acceptance.md) | 发布候选、安装/故障/旧库/真机验收门槛与证据留存 |
 | [rules.md](rules.md) | 规则 YAML 结构、三种匹配模式、预过滤契约、正反例要求 |
 | [runner.md](runner.md) | 远程验证 runner 的命令白名单、确认流程与结果格式 |
 | [security.md](security.md) | 威胁模型与安全边界 |
@@ -30,7 +31,7 @@
 
 ## 一页内的技术事实
 
-- **规则数**：30 条（`MXR-*`），两条阻塞级、十八条警告级、十条提示级。
+- **规则数**：35 条（`MXR-*`），四条阻塞级、十八条警告级、十三条提示级。
 - **静态与硬件状态严格分离**：报告的 `static_status` 与 `verification_status` 互不推导，
   真机验证结果有 30 天有效期，过期转为 `stale`。
 - **不给百分比兼容分数**：规则命中数是风险提示，不是兼容概率。

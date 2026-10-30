@@ -195,6 +195,9 @@ ZIP 内仅保留 `packages/`、安装/启动入口、共享安装器、安装说
 解压对应 ZIP、运行安装入口，在源码目录之外检查网页、静态资源、规则与验证 ZIP。
 通过后才上传构建附件；这不表示已经在所有 CPU、所有 Python 版本或沐曦真机上完成验证。
 
+维护者的证据留存命令和逐项发布门槛见 [发布验收](release-acceptance.md)。
+安装矩阵保留每组的在线和 `--no-index` 检查日志；后者不等于操作系统已断网。
+
 服务器的 systemd、Docker、代理和备份方案见源码中的 `docs/deployment.md`；
 完整安全约束见 `docs/security.md`；硬件验证流程见 `docs/runner.md`。
 打包依据：[PyPA 打包指南](https://packaging.python.org/en/latest/tutorials/packaging-projects/)、
