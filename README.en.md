@@ -111,13 +111,13 @@ prefilter yields an identical finding set. The output has no timestamps so two r
 | Capability | Status | How it is verified |
 | --- | --- | --- |
 | Static scan of public repositories | Available | End-to-end tests + example reports |
-| 30 `MXR-*` rules | Available | Each rule has a positive and a similar negative fixture |
+| 35 `MXR-*` rules | Available | Each rule has a positive and a similar negative fixture |
 | Report output: JSON / Markdown / SVG badge | Available | Contract tests + `generate_contracts.py --check` |
 | Verification bundle and stdlib-only runner | Available | Installer regression + security boundary tests |
 | Windows / Linux / macOS installers and UI wheel | Available | Release workflow installs and starts on all three OSes |
 | React single-page UI | Available | Vitest + TypeScript strict mode |
 | Batch assessment (`mxready-scan-batch`) | Available | CLI regression |
-| Real MetaX GPU verification | Designed, not yet run on hardware | Report `verification_status` stays `not-run` |
+| Real MetaX GPU verification | Designed, not yet run on hardware | MetaX compute will be rented soon for on-hardware checks; report `verification_status` stays `not-run` |
 
 ## Known limitations
 
@@ -168,7 +168,7 @@ prefilter yields an identical finding set. The output has no timestamps so two r
 ## Roadmap
 
 1. Generate reproducible reports on three public CUDA extension projects and calibrate rule precision;
-2. Obtain a MetaX remote server and complete at least one redacted verification of the same commit;
+2. Rent MetaX compute and complete at least one redacted on-hardware verification of the same commit;
 3. Submit a small, reviewable migration pull request upstream;
 4. Extend the rule set and the minimal verification template based on real adaptation feedback.
 
