@@ -21,6 +21,7 @@ _ALLOWED_EXTENSIONS = {
     ".h",
     ".hpp",
     ".md",
+    ".mk",
     ".py",
     ".sh",
     ".toml",
@@ -28,7 +29,15 @@ _ALLOWED_EXTENSIONS = {
     ".yaml",
     ".yml",
 }
-_ALLOWED_FILENAMES = {"CMakeLists.txt", "Dockerfile"}
+# Makefile 三种常见拼写都要收：CUDA 侧大量项目（含 cuda-samples）用 Make 构建，
+# cu-bridge 的官方入口 make_maca 本身就是 make 包装器，漏掉它等于漏掉整条构建链。
+_ALLOWED_FILENAMES = {
+    "CMakeLists.txt",
+    "Dockerfile",
+    "GNUmakefile",
+    "Makefile",
+    "makefile",
+}
 _EXCLUDED_DIRECTORIES = {
     ".git",
     ".venv",

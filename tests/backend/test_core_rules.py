@@ -43,9 +43,12 @@ EXPECTED_RULES = {
     "MXR-WARP-001": Severity.BLOCKER,
     "MXR-THRUST-001": Severity.INFO,
     "MXR-CUB-001": Severity.INFO,
+    "MXR-TOOLCHAIN-002": Severity.INFO,
 }
 PRIMARY_SOURCE_PREFIXES = {
     "https://gitee.com/metax-maca/cu-bridge",
+    # cu-bridge 用户手册（make_maca / cucc / conf.json 三段变换的出处）
+    "https://gitee.com/p4ul/cu-bridge",
     "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide",
     "https://docs.pytorch.org/docs/stable/cpp_extension.html",
     "https://cmake.org/cmake/help/latest/module/FindCUDAToolkit.html",
@@ -65,6 +68,13 @@ RULE_CASES = {
             'compiler_documentation = "nvcc is described in the build guide"\n'
             "nvcc = _join_rocm_home('bin', 'hipcc')\n"
         ),
+    ),
+    # 用 Makefile 做正例：它同时验证"索引器收录 Makefile"与"规则作用域覆盖 Makefile"，
+    # 这两层任缺一层，NVCC = nvcc 就完全不可见。
+    "MXR-TOOLCHAIN-002": (
+        "Makefile",
+        "all:\n\tmake_maca\n",
+        "# 本仓库只构建 NVIDIA 目标\nNVCC = nvcc\n",
     ),
     "MXR-PATH-001": (
         "setup.py",

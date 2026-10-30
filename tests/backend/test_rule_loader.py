@@ -13,16 +13,16 @@ def test_rule_catalog_is_versioned_strict_and_unique() -> None:
     catalog = load_rule_catalog(Path("src/mxready/resources/rules/v1"))
 
     # 改规则必须同步升 ruleset_version：digest 会随内容变化，旧报告靠版本号区分口径。
-    assert catalog.version == "3"
+    assert catalog.version == "4"
     # 规则条目的黄金副本在 test_core_rules.py::EXPECTED_RULES，这里不再重复钉数量，
     # 否则每加一条规则都要改两处，两处必然漂移。
     assert catalog.rules
     assert len({rule.id for rule in catalog.rules}) == len(catalog.rules)
     assert [rule.id for rule in catalog.rules[:4]] == [
         "MXR-TOOLCHAIN-001",
+        "MXR-TOOLCHAIN-002",
         "MXR-PATH-001",
         "MXR-PYTORCH-001",
-        "MXR-DEPENDENCY-001",
     ]
     assert catalog.rules[0].severity is Severity.BLOCKER
     assert all(rule.recommendation for rule in catalog.rules)

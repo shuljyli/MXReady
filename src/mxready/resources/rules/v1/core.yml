@@ -1,9 +1,22 @@
 - id: MXR-TOOLCHAIN-001
-  version: 1
+  version: 2
   title: 检测直接 nvcc 工具调用
   category: toolchain
   severity: blocker
-  file_globs: ["**/*.py", "**/*.sh", "**/*.cmake", "**/CMakeLists.txt"]
+  # Makefile / *.mk 必须在内：CUDA 侧大量项目（含 cuda-samples）用 Make 构建，
+  # cu-bridge 的官方入口 make_maca 本身就是 make 包装器。此前这里漏掉 Makefile，
+  # 导致 `NVCC = nvcc` 这类最容易命中的写法完全不可见。
+  file_globs:
+    [
+      "**/*.py",
+      "**/*.sh",
+      "**/*.cmake",
+      "**/CMakeLists.txt",
+      "**/Makefile",
+      "**/makefile",
+      "**/GNUmakefile",
+      "**/*.mk",
+    ]
   patterns:
     - type: regex
       expression: '(?:subprocess\.(?:run|Popen|call|check_call|check_output)|os\.system)\s*\([^\n]{0,200}\bnvcc\b'
@@ -20,12 +33,54 @@
     - title: MetaX-MACA cu-bridge
       url: https://gitee.com/metax-maca/cu-bridge
 
+- id: MXR-TOOLCHAIN-002
+  version: 1
+  title: 识别 cu-bridge 工具链接入
+  category: toolchain
+  severity: info
+  file_globs:
+    [
+      "**/*.py",
+      "**/*.sh",
+      "**/*.cmake",
+      "**/CMakeLists.txt",
+      "**/Makefile",
+      "**/makefile",
+      "**/GNUmakefile",
+      "**/*.mk",
+      "**/Dockerfile",
+      "**/*.dockerfile",
+    ]
+  patterns:
+    - type: fact
+      name: uses_cu_bridge_toolchain
+      equals: true
+  message: 项目已包含 cu-bridge 工具链入口（make_maca / cmake_maca / cucc / CUCC_* 环境变量），构建层已接入 MXMACA 兼容层。
+  recommendation: 请复核 cu-bridge 版本与 conf.json 的覆盖范围，并在沐曦环境验证构建；若有脚本绕过包装器直接调用 nvcc，仍需单独处理。
+  references:
+    - title: MetaX-MACA cu-bridge
+      url: https://gitee.com/metax-maca/cu-bridge
+    - title: cu-bridge 使用手册
+      url: https://gitee.com/p4ul/cu-bridge/tree/master
+
 - id: MXR-PATH-001
   version: 1
   title: 检测硬编码 CUDA 安装路径
   category: path
   severity: warning
-  file_globs: ["**/*.py", "**/*.sh", "**/*.cmake", "**/CMakeLists.txt", "**/*.toml", "**/*.cfg"]
+  file_globs:
+    [
+      "**/*.py",
+      "**/*.sh",
+      "**/*.cmake",
+      "**/CMakeLists.txt",
+      "**/*.toml",
+      "**/*.cfg",
+      "**/Makefile",
+      "**/makefile",
+      "**/GNUmakefile",
+      "**/*.mk",
+    ]
   patterns:
     - type: regex
       expression: '/usr/local/cuda(?:/|\b)'
@@ -134,7 +189,15 @@
   title: 检测直接 nvidia-smi 调用
   category: tool
   severity: warning
-  file_globs: ["**/*.py", "**/*.sh"]
+  file_globs:
+    [
+      "**/*.py",
+      "**/*.sh",
+      "**/Makefile",
+      "**/makefile",
+      "**/GNUmakefile",
+      "**/*.mk",
+    ]
   patterns:
     - type: regex
       expression: '(?:subprocess\.(?:run|Popen|call|check_call|check_output)|os\.system)\s*\([^\n]{0,200}\bnvidia-smi\b'

@@ -1,4 +1,4 @@
 schema_version: "1.0"
-ruleset_version: "3"
+ruleset_version: "4"
 rule_files:
   - core.yml

@@ -84,3 +84,26 @@ def test_indexer_rejects_more_than_the_bounded_number_of_source_files(
         build_file_index(tmp_path, max_files=1)
 
     assert error.value.code == "TOO_MANY_FILES"
+
+
+@pytest.mark.parametrize(
+    "filename",
+    ["Makefile", "makefile", "GNUmakefile", "build.mk", "cmake/platform.mk"],
+)
+def test_indexer_collects_make_build_files(tmp_path: Path, filename: str) -> None:
+    """Make 构建文件必须进索引：CUDA 侧大量项目（含 cuda-samples）靠它构建，
+    cu-bridge 的 make_maca 也是 make 包装器。缺了它，`NVCC = nvcc` 永远不可见。"""
+    target = tmp_path / filename
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("NVCC = nvcc\n", encoding="utf-8")
+
+    index = build_file_index(tmp_path)
+
+    assert [item.relative_path for item in index.files] == [filename]
+
+
+def test_indexer_ignores_make_like_names_with_other_extensions(tmp_path: Path) -> None:
+    """`Makefile.bak` 不是构建入口——扩展名不在白名单、文件名也不完全匹配。"""
+    (tmp_path / "Makefile.bak").write_text("NVCC = nvcc\n", encoding="utf-8")
+
+    assert build_file_index(tmp_path).files == ()

@@ -21,11 +21,20 @@ _KNOWN_FLAGS = {
     "uses_cmake_cuda_language",
     "uses_cmake_cuda_package",
     "uses_cmake_torch_package",
+    "uses_cu_bridge_toolchain",
     "uses_hardcoded_cuda_path",
     "uses_torch_cpp_extension",
     "uses_torch_cpp_extension_load",
     "uses_torch_cuda_extension",
 }
+_MAKEFILE_FILENAMES = {"GNUmakefile", "Makefile", "makefile"}
+# cu-bridge 的入口与必配环境变量，均取自其用户手册；命中任一即说明构建层已接入
+# MXMACA 兼容层。MACA_CLANG_PATH 单独排除——它由 MACA SDK 设置，原生 MACA 项目
+# 也会出现，不能作为 cu-bridge 的证据。
+_CU_BRIDGE_MARKERS = re.compile(
+    r"\b(?:make_maca|cmake_maca|cucc)\b|\bCUCC_(?:PATH|CMAKE_ENTRY)\b|cu-bridge",
+    re.IGNORECASE,
+)
 _BUILD_SYSTEM_PACKAGES = {
     "flit-core": "flit",
     "hatchling": "hatch",
@@ -113,10 +122,39 @@ def extract_project_facts(index: FileIndex) -> ProjectFacts:
             _extract_python(indexed_file, collector)
         if name == "CMakeLists.txt" or lower_name.endswith(".cmake"):
             _extract_cmake(indexed_file, collector)
-        if lower_name.endswith(".sh"):
+        if lower_name.endswith(".sh") or _is_makefile(name, lower_name):
+            # Makefile 与 shell 共享 `#` 注释与"一行一条命令"的形态，
+            # 同一套逐行提取规则可以直接复用。
             _extract_shell(indexed_file, collector)
+        if _may_reference_toolchain(name, lower_name):
+            _detect_cu_bridge(indexed_file, collector)
 
     return collector.finish()
+
+
+def _is_makefile(name: str, lower_name: str) -> bool:
+    return name in _MAKEFILE_FILENAMES or lower_name.endswith(".mk")
+
+
+def _may_reference_toolchain(name: str, lower_name: str) -> bool:
+    """只在构建与部署相关文件里找 cu-bridge 痕迹，避免在 .cu 注释里误命中。"""
+    return (
+        _is_makefile(name, lower_name)
+        or lower_name.endswith((".sh", ".py", ".cmake"))
+        or name in {"CMakeLists.txt", "Dockerfile"}
+        or lower_name.endswith(".dockerfile")
+    )
+
+
+def _detect_cu_bridge(indexed_file: IndexedFile, collector: _FactCollector) -> None:
+    lines = indexed_file.text.splitlines()
+    for line_number, line in enumerate(lines, start=1):
+        if _CU_BRIDGE_MARKERS.search(_strip_shell_comment(line)):
+            collector.set_flag(
+                "uses_cu_bridge_toolchain",
+                _location(lines, indexed_file.relative_path, line_number),
+            )
+            return
 
 
 def _extract_pyproject(indexed_file: IndexedFile, collector: _FactCollector) -> None:

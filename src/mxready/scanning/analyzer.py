@@ -24,6 +24,7 @@ from mxready.scanning.facts import extract_project_facts
 from mxready.scanning.indexer import build_file_index
 from mxready.scanning.rule_engine import evaluate_rules, prefilter_status
 from mxready.scanning.rule_loader import RuleCatalog
+from mxready.scanning.toolchain import apply_toolchain_profile
 
 
 class ScanAnalyzer:
@@ -66,6 +67,9 @@ class ScanAnalyzer:
                 enable_prefilter=self.enable_prefilter,
             )
         )
+        # 严重级别取决于"项目是否已接入 MXMACA 兼容层"这一前提；工具链画像要在
+        # 汇总之前生效，否则 summary 计数与 findings 的级别会对不上。
+        findings, toolchain_warnings = apply_toolchain_profile(findings, facts)
         summary = summarize_findings(findings)
         identity = parse_repository_url(repository_url, self.providers)
 
@@ -101,7 +105,8 @@ class ScanAnalyzer:
                     message=warning.message,
                 )
                 for warning in index.warnings
-            ],
+            ]
+            + toolchain_warnings,
             static_status=calculate_static_status(summary),
             verification_status=VerificationStatus.NOT_RUN,
         )
