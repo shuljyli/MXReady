@@ -32,6 +32,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "build>=1.2,<2",
+  # scripts/optimize_docs_images.py re-encodes the design screenshots under
+  # docs/design; nothing in the product imports Pillow.
+  "Pillow>=10,<12",
   "setuptools>=83",
   "httpx>=0.27,<1",
   "mypy>=1.14,<2",

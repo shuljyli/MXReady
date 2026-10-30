@@ -15,19 +15,18 @@
 
 | 交付物 | 内容 |
 | --- | --- |
-| [新建体检设计图](design/frontend-refresh/new-scan.png) | 品牌侧栏、仓库表单、芯片插画、三步流程 |
-| [迁移报告设计图](design/frontend-refresh/report.png) | 静态与硬件状态、结果筛选、证据、迁移清单、导出、验证 |
-| [完整生图提示词](design/frontend-refresh/prompts.md) | 内置生图工具的两次提示词与参考图关系 |
+| [新建体检设计图](design/frontend-refresh/new-scan.webp) | 品牌侧栏、仓库表单、芯片插画、三步流程 |
+| [迁移报告设计图](design/frontend-refresh/report.webp) | 静态与硬件状态、结果筛选、证据、迁移清单、导出、验证 |
 
 两张图由内置生图模型生成，已人工查看。它们是布局和风格参考，不是运行截图；报告中的仓库、提交、规则、证据和数量均为设计示例。
 
 ### 新建体检
 
-![新建体检概念设计](design/frontend-refresh/new-scan.png)
+![新建体检概念设计](design/frontend-refresh/new-scan.webp)
 
 ### 迁移报告
 
-![迁移报告概念设计](design/frontend-refresh/report.png)
+![迁移报告概念设计](design/frontend-refresh/report.webp)
 
 ### 设计图到实现的修正
 
@@ -202,6 +201,17 @@ jsdom 测试仅证明 DOM/交互，不作为布局验收证据；响应式需实
 
 首页插画由内置生图工具独立生成，压缩为 1086×1448 WebP（80,784 字节），位于 `frontend/src/assets/mx-chip.webp`。使用 Vite 静态 URL 引用，构建产物进入 `dist/assets/`，与 FastAPI 的 `/assets` 挂载及 wheel 包资源约定一致。没有新增后端静态路由。
 
+<details>
+<summary>插画生成提示词（需要重新生成资产时使用）</summary>
+
+```text
+Create a refined decorative illustration asset for the MXReady software developer workspace. Portrait composition approximately 3:4. A single abstract floating stack of three square microchip ceramic slabs in an isometric view, cream-white top face, frosted pale sage green edges, very dark forest green thin circuit traces elegantly extending toward the edges of the canvas. Top ceramic face bears just small letters 'MX' in dark green. Premium architectural product visualization, quiet technical sophistication, soft natural diffuse light, gentle shadows, warm off-white background #f3f5ef, extremely restrained green and cream palette. The chip occupies middle 65% with comfortable negative space above and below. Entirely decorative abstract conceptual chip, no representation of a real vendor hardware product. No UI, no panels, no borders, no buttons, no other text, no watermark, no blue or purple neon, no gradients or dark backdrop. High detail precise materials, clean lines, very low contrast background, similar to a luxury minimal engineering illustration.
+```
+
+</details>
+
+两张概念设计图仅作为设计对照留档，其生成提示词不随仓库保留：图本身已归档为 WebP，页面由真实 React 实现，不再需要重新生成。
+
 | 检查 | 结果 |
 | --- | --- |
 | 前端单元及交互回归 | 9 个文件，45 项测试通过；包括先失败再实现的新界面回归 |
@@ -218,12 +228,13 @@ jsdom 测试仅证明 DOM/交互，不作为布局验收证据；响应式需实
 
 ### 实际页面截图
 
-- [桌面首页](design/frontend-refresh/implemented-home.png)
-- [移动端首页](design/frontend-refresh/implemented-home-mobile.png)
-- [桌面报告](design/frontend-refresh/implemented-report.png)
-- [移动端报告](design/frontend-refresh/implemented-report-mobile.png)
-- [浏览器检查记录](design/frontend-refresh/browser-check-results.json)
+- [桌面首页](design/frontend-refresh/implemented-home.webp)
+- [移动端首页](design/frontend-refresh/implemented-home-mobile.webp)
+- [桌面报告](design/frontend-refresh/implemented-report.webp)
+- [移动端报告](design/frontend-refresh/implemented-report-mobile.webp)
 
 这些截图是实际 React 页面在受控 API fixture 下的结果，仓库和报告内容来自测试数据。设计概念图保留用于对照。
+
+六张图统一存为 WebP：真实页面截图用无损编码（逐像素与原 PNG 一致），概念设计图用 q92 有损（PSNR ≥ 44 dB），合计 463 KB，约为原 PNG 的 15%。生成命令为 `python scripts/optimize_docs_images.py`。
 
 验收边界：本轮未运行真实公开仓库扫描、FastAPI 端到端、完整 Python 质量门、wheel/ZIP 安装冒烟或沐曦真机验证；本机 Python 环境未安装 FastAPI，后端代码亦未修改。已核对前端构建资产目录与现有服务/打包路径，不将此核对表述为安装测试通过。200% 为 CSS 缩放检查，不能代替所有浏览器的原生缩放与辅助技术测试。当前目录没有 `.git` 元数据，未创建分支或提交。

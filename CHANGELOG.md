@@ -37,6 +37,10 @@
   在构建期接管这些调用，继续报阻塞等于把已迁移项目判成未迁移。`.py` / `.sh` 里的
   `nvcc` 调用保持 blocker，因为它可能绕过 `make_maca` 注入的 `PATH`。降级会在 finding
   的 message 与 `analysis_warnings` 里双重留痕，不做静默处理。
+- `scripts/optimize_docs_images.py`：把 `docs/design` 下的设计图转成 WebP，按内容分档编码——真实
+  页面截图用无损（逐像素与 PNG 一致），渲染插画用 q92 有损（PSNR 44–46 dB）。分辨率一律不动：
+  这些图含可读的 UI 文字，降采样是不可逆损失，而 WebP 本身已能收回绝大部分体积。`--check`
+  用于确认目录里不再残留 PNG。Pillow 只进 `dev` 依赖组，产品代码不引用它。
 
 ### Changed
 
@@ -53,6 +57,17 @@
   无上限缓存会让整仓常驻内存翻倍，而淘汰旧项只会让后续文件反复重算，故选择"停止累积"。
 - `pyproject.toml` 依赖行号定位由"逐依赖扫描全部行"改为整篇折叠后一次查找 + 行首偏移查表，
   500 条依赖的文件上单文件耗时由 5.1 ms 降至 1.8 ms；行号口径与 `str.splitlines()` 严格一致。
+- 六张设计图由 PNG 改为 WebP，合计 3065 KB 降至 463 KB（−85%）。两张 1536×1024 的生成概念图各约
+  1.2 MB，是仓库字节的主要来源——PNG 存连续色调插画本就低效，同一批像素用有损 WebP 只需 85 KB。
+  受控内容整体由 3.95 MB 降到约 1.4 MB，`git clone` 与 CI checkout 同步变轻。
+
+### Removed
+
+- 移除 `docs/design/frontend-refresh/prompts.md`（7.5 KB）与 `browser-check-results.json`（1.3 KB）
+  两份过程产物。插画提示词是 `frontend/src/assets/mx-chip.webp` 的复现依据，已并入
+  `docs/frontend-redesign.md` 的折叠小节；两张概念图的提示词不再保留，因为图已归档、页面由真实
+  React 实现，不存在重新生成的场景。浏览器检查的 23 条明细已由 `docs/frontend-redesign.md` 的
+  验收表覆盖，原文件又缺少提交与机器信息，无法据此复现，故只留结论、不留原始快照。
 
 ### Fixed
 
@@ -75,6 +90,9 @@
   端到端 68.7 ms 涨到 5221 ms。改用前瞻替代一个消耗型量词后回到线性，命中结果不变。
   注意协作式预算只在文件之间检查，单次 `finditer` 内部无法抢占，因此这类缺陷不能只靠超时兜底。
 - 修正 `docs/rules.md` 与 PR 模板中指向已移除 `backend/`、`runner/` 目录的 lint 命令。
+- 修正 `README.md` 中"34 条规则"的过期计数（规则集在 v4 已增至 35 条）：该处改为不写具体条数并
+  指向 `docs/rules.md`。版本一致性测试守住了版本号与产物名，但规则条数不在其覆盖范围内——
+  写死的数字每扩一条规则都要人工同步，漏改不会被任何门禁拦住。
 
 ## [0.2.1] - 2026-10-26
 
