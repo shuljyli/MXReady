@@ -124,7 +124,7 @@ prefilter yields an identical finding set. The output has no timestamps so two r
 - **No compatibility verdict.** Every output stops at a static risk signal. A statement such as
   "verified on MetaX" requires a `verified` result for the same commit, produced on a controlled
   MetaX GPU, no older than 30 days.
-- **Rule precision has not been calibrated on real projects.** The 30 rules are exercised by
+- **Rule precision has not been calibrated on real projects.** The 35 rules are exercised by
   controlled fixtures; false-positive rates on public CUDA extensions still need measurement.
 - **Verification results expire after 30 days** and turn into `stale`, requiring a re-run.
 - **Release scope**: no private repositories, no automatic source rewriting, no cloud GPU scheduling,

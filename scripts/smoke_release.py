@@ -110,7 +110,7 @@ from mxready.models import ScanReport
 from mxready.resources import verification_schema_bytes
 from mxready.scanning.rule_loader import load_rule_catalog
 from mxready.verification.bundle import build_verification_bundle
-assert len(load_rule_catalog(Settings().rules_dir).rules) == 30
+assert len(load_rule_catalog(Settings().rules_dir).rules) >= 35
 assert json.loads(verification_schema_bytes())['type'] == 'object'
 Path('fixture').mkdir()
 Path('fixture/setup.py').write_text('from torch.utils.cpp_extension import CUDAExtension')
