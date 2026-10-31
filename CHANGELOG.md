@@ -54,6 +54,8 @@ MXMACA；正式版本将在后续发布。
     `.benchmarks`）。那是夹具的运行时副本，不属于仓库内容，且每次运行内容都会漂移。
 - 路径上下文先于工具链画像生效，避免对一条已是 `info` 的 finding 追加"从 blocker 降为
   warning"这种错误说明（`test_path_demotion_runs_before_toolchain_profile` 守着这条）。
+- 发布工作流在本机只装 `.[dev]` 时 `mypy` 报 `mcp.server.fastmcp` 的 `import-not-found`：
+  为可选依赖 `mcp.*` 增加类型检查豁免，核心与开发安装不再被迫装上 MCP SDK。
 
 ### Changed
 

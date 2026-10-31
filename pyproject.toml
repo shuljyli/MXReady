@@ -100,7 +100,8 @@ strict_equality = true
 show_error_codes = true
 
 [[tool.mypy.overrides]]
-module = ["yaml.*"]
+# `mcp` is an optional extra (`.[mcp]`); the dev install must type-check without it.
+module = ["yaml.*", "mcp.*"]
 ignore_missing_imports = true
 
 [tool.coverage.run]
