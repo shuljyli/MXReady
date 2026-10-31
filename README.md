@@ -349,6 +349,10 @@ mxready-scan-batch repos.txt --output data/batch
 主要规则与报告文件；`batch-summary.md` 生成带链接的汇总表，适合直接贴进评估结论。
 退出码：`0` 全部成功且无阻塞，`2` 成功但存在阻塞仓库，`1` 存在扫描失败。
 
+输入方式请按场景选择：Web 界面一次提交一个公开仓库 URL；本地目录使用 `mxready-scan`；
+多个公开仓库使用上述批量 CLI。批量清单不是源码压缩包，Web 界面也不提供批量清单或源码 ZIP 上传。
+验证 runner 生成的 `result.json` 是真机验证结果，不是待扫描的源码输入。
+
 ## MCP（供编码 Agent 调用）
 
 `mxready-mcp` 把同一套扫描管线暴露为 Model Context Protocol 工具。它的用途是让编码 Agent
