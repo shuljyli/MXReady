@@ -29,6 +29,23 @@ MXReady 先把代码读一遍（只读，不运行），把可能出问题的地
 
 MVP 不包含私有仓库、自动修改源码、远程 GPU 服务器的 Docker 编排、云 GPU 调度、用户系统或百分比"兼容分数"。
 
+## 在真实项目上发现了什么
+
+[`NVIDIA/apex`](https://github.com/NVIDIA/apex) 在提交 `575968bc1f9127ccd61003a681472a83af4ff1a1` 上的体检结果：
+**阻断 12 · 警告 65 · 提示 140**。完整报告见 [examples/reports/nvidia-apex.md](examples/reports/nvidia-apex.md)。
+
+12 条阻断里最有代表性的四条：
+
+| 位置 | 命中 | 为什么在沐曦上会坏 |
+| --- | --- | --- |
+| `csrc/welford.cu:36` | `#define WARP_SIZE 32` | 线程束宽度写死 32，沐曦是 64 |
+| `nhwc_batch_norm_kernel.h:1245` | `int lane_id = threadIdx.x & 31;` | lane 0 和 lane 32 会被算成同一条 lane |
+| `group_norm_nhwc.h:40` | `asm volatile("red.release.gpu.global.add.s32 …")` | 内联 PTX 绑定 NVIDIA 后端 |
+| `setup.py:65` | `subprocess.check_output([cuda_dir + "/bin/nvcc", "-V"])` | 直接调 `nvcc` 探测版本，沐曦环境里没有这个命令 |
+
+四条里有两条**能编译通过**，但 lane 计算和线程束宽度在 64 宽度的 wave 上会算出错误结果，测试也未必覆盖得到；
+另两条在沐曦上直接编不过。这两类问题都会让一次迁移拖上几周。
+
 ## 架构
 
 ```text
@@ -61,8 +78,8 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | MCP 工具（`mxready-mcp`，需 `.[mcp]`） | 可用 | 后端测试 + 实际 stdio 握手 |
 | 真机沐曦 GPU 验证 | 设计完成，未在真机跑通 | 报告 `verification_status` 恒为 `not-run` |
 
-工程状态：`ruff check`、`ruff format --check`、`mypy`、契约校验与 477 条 `pytest` 用例全绿，
-分支覆盖率 90%（门槛 80%）；CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS。
+工程状态：`ruff check`、`ruff format --check`、`mypy`、契约校验与 `pytest` 用例全绿（当前 490 余条），
+分支覆盖率 89%（门槛 80%）；CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS。
 
 ## 已知限制
 
@@ -74,7 +91,9 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 - **环境要求**：安装包不附带 Python 与 Git，需预装 Python 3.11+ 与 Git。Docker 镜像的构建与启动由 CI 覆盖。
 - **前端未配置 ESLint / Prettier**，以 TypeScript 严格模式与 Vitest 兜底。
 
-> 公开项目示例报告见 [examples/reports](examples/reports)（以 `pytorch-extension-cpp` 为例），远程验证流程见 [examples/verification/README.md](examples/verification/README.md)。
+> 公开项目示例报告见 [examples/reports](examples/reports)：`pytorch-extension-cpp` 全部通过（4 条提示），
+> `nvidia-apex` 为阻断状态（12 条阻断）。两份放在一起是为了说明报告会真的判绿，也会真的判红。
+> 远程验证流程见 [examples/verification/README.md](examples/verification/README.md)。
 
 ## 安装包（Windows / Linux / macOS）
 

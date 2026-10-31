@@ -1,0 +1,4796 @@
+{
+  "schema_version": "1.0",
+  "scan_id": "e4b0bd83-b4cd-5e80-aa3f-ff31fa474401",
+  "repository": {
+    "provider": "github",
+    "owner": "NVIDIA",
+    "name": "apex",
+    "url": "https://github.com/NVIDIA/apex",
+    "commit": "575968bc1f9127ccd61003a681472a83af4ff1a1"
+  },
+  "tool_version": "0.3.0",
+  "ruleset_version": "4",
+  "ruleset_digest": "sha256:badf12ad29ce6f7cff9e6f07b4df4034822fbe9773571cad6517d9c65325c531",
+  "extra_ruleset_version": null,
+  "analysis_config": {
+    "max_findings": 10000,
+    "rule_timeout_seconds": 30,
+    "index_max_files": 10000,
+    "index_max_file_bytes": 1048576,
+    "prefilter": "on"
+  },
+  "scanned_at": "2026-10-31T02:27:09.616246Z",
+  "summary": {
+    "total_count": 217,
+    "blocker_count": 12,
+    "warning_count": 65,
+    "info_count": 140,
+    "top_blockers": [
+      "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "apex/contrib/csrc/group_norm/group_norm_nhwc.h",
+      "apex/contrib/csrc/group_norm/group_norm_nhwc_bwd_one_pass_kernel.cuh",
+      "apex/contrib/csrc/layer_norm/ln_utils.cuh",
+      "apex/contrib/csrc/peer_memory/peer_memory_cuda.cu",
+      "apex/contrib/csrc/transducer/philox.cuh",
+      "apex/contrib/csrc/xentropy/xentropy_kernel.cu",
+      "csrc/welford.cu",
+      "setup.py"
+    ]
+  },
+  "findings": [
+    {
+      "rule_id": "MXR-PTX-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "ptx",
+      "title": "检测内联 PTX 汇编",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc.h",
+      "line_start": 40,
+      "line_end": 44,
+      "evidence": "asm volatile(\"red.release.gpu.global.add.s32 [%0], %1;\" ::\"l\"(barrier), \"r\"(step));",
+      "message": "内联汇编块嵌入的是 NVIDIA 虚拟 ISA（PTX）指令，MXMACA 后端不执行 PTX；这类代码可能固化 NVIDIA 指令语义。",
+      "recommendation": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "references": [
+        {
+          "title": "NVIDIA Inline PTX Assembly",
+          "url": "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html"
+        },
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-PTX-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "ptx",
+      "title": "检测内联 PTX 汇编",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc_bwd_one_pass_kernel.cuh",
+      "line_start": 401,
+      "line_end": 412,
+      "evidence": "asm volatile(\"red.release.gpu.global.add.s32 [%0], 1;\" ::\"l\"(barrier));",
+      "message": "内联汇编块嵌入的是 NVIDIA 虚拟 ISA（PTX）指令，MXMACA 后端不执行 PTX；这类代码可能固化 NVIDIA 指令语义。",
+      "recommendation": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "references": [
+        {
+          "title": "NVIDIA Inline PTX Assembly",
+          "url": "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html"
+        },
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-PTX-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "ptx",
+      "title": "检测内联 PTX 汇编",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 86,
+      "line_end": 129,
+      "evidence": "asm volatile(\"atom.add.release.gpu.u32 %0,[%1],%2;\"",
+      "message": "内联汇编块嵌入的是 NVIDIA 虚拟 ISA（PTX）指令，MXMACA 后端不执行 PTX；这类代码可能固化 NVIDIA 指令语义。",
+      "recommendation": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "references": [
+        {
+          "title": "NVIDIA Inline PTX Assembly",
+          "url": "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html"
+        },
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "rule_id": "MXR-WARP-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "warp",
+      "title": "检测硬编码 32 线程束假设",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 296,
+      "line_end": 1187,
+      "evidence": "if (threadIdx.x % 32 == 0) {",
+      "message": "代码按 32 线程一组计算 lane 或定义线程束宽度常量；MXMACA 的线程束（wave）宽度为 64，这类算术可能编译通过但结果错位。",
+      "recommendation": "请复核 lane 计算与掩码宽度，改用运行时查询的线程束宽度，并在沐曦环境用最小用例比对结果。",
+      "references": [
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 14
+    },
+    {
+      "rule_id": "MXR-PTX-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "ptx",
+      "title": "检测内联 PTX 汇编",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 62,
+      "line_end": 669,
+      "evidence": "asm volatile(\"cvt.rn.f16.f32 %0, %1;\" : \"=h\"(lo) : \"f\"(src[2 * i + 0]));",
+      "message": "内联汇编块嵌入的是 NVIDIA 虚拟 ISA（PTX）指令，MXMACA 后端不执行 PTX；这类代码可能固化 NVIDIA 指令语义。",
+      "recommendation": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "references": [
+        {
+          "title": "NVIDIA Inline PTX Assembly",
+          "url": "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html"
+        },
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 15
+    },
+    {
+      "rule_id": "MXR-WARP-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "warp",
+      "title": "检测硬编码 32 线程束假设",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 1245,
+      "line_end": 2351,
+      "evidence": "int lane_id = threadIdx.x & 31;",
+      "message": "代码按 32 线程一组计算 lane 或定义线程束宽度常量；MXMACA 的线程束（wave）宽度为 64，这类算术可能编译通过但结果错位。",
+      "recommendation": "请复核 lane 计算与掩码宽度，改用运行时查询的线程束宽度，并在沐曦环境用最小用例比对结果。",
+      "references": [
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "rule_id": "MXR-PTX-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "ptx",
+      "title": "检测内联 PTX 汇编",
+      "relative_path": "apex/contrib/csrc/layer_norm/ln_utils.cuh",
+      "line_start": 316,
+      "line_end": 318,
+      "evidence": "asm volatile(\"red.release.gpu.global.add.s32 [%0], %1;\" ::\"l\"(barrier), \"r\"(step));",
+      "message": "内联汇编块嵌入的是 NVIDIA 虚拟 ISA（PTX）指令，MXMACA 后端不执行 PTX；这类代码可能固化 NVIDIA 指令语义。",
+      "recommendation": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "references": [
+        {
+          "title": "NVIDIA Inline PTX Assembly",
+          "url": "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html"
+        },
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-PTX-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "ptx",
+      "title": "检测内联 PTX 汇编",
+      "relative_path": "apex/contrib/csrc/peer_memory/peer_memory_cuda.cu",
+      "line_start": 204,
+      "line_end": 248,
+      "evidence": "asm volatile(\"ld.volatile.global.v4.u32 {%0,%1,%2,%3}, [%4];\"",
+      "message": "内联汇编块嵌入的是 NVIDIA 虚拟 ISA（PTX）指令，MXMACA 后端不执行 PTX；这类代码可能固化 NVIDIA 指令语义。",
+      "recommendation": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "references": [
+        {
+          "title": "NVIDIA Inline PTX Assembly",
+          "url": "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html"
+        },
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 5
+    },
+    {
+      "rule_id": "MXR-PTX-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "ptx",
+      "title": "检测内联 PTX 汇编",
+      "relative_path": "apex/contrib/csrc/transducer/philox.cuh",
+      "line_start": 70,
+      "line_end": 87,
+      "evidence": "asm(\"add.cc.u32      %0, %4, %8;\\n\\t\"",
+      "message": "内联汇编块嵌入的是 NVIDIA 虚拟 ISA（PTX）指令，MXMACA 后端不执行 PTX；这类代码可能固化 NVIDIA 指令语义。",
+      "recommendation": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "references": [
+        {
+          "title": "NVIDIA Inline PTX Assembly",
+          "url": "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html"
+        },
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-WARP-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "warp",
+      "title": "检测硬编码 32 线程束假设",
+      "relative_path": "apex/contrib/csrc/xentropy/xentropy_kernel.cu",
+      "line_start": 169,
+      "line_end": 215,
+      "evidence": "int lane = threadIdx.x % 32;",
+      "message": "代码按 32 线程一组计算 lane 或定义线程束宽度常量；MXMACA 的线程束（wave）宽度为 64，这类算术可能编译通过但结果错位。",
+      "recommendation": "请复核 lane 计算与掩码宽度，改用运行时查询的线程束宽度，并在沐曦环境用最小用例比对结果。",
+      "references": [
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-WARP-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "warp",
+      "title": "检测硬编码 32 线程束假设",
+      "relative_path": "csrc/welford.cu",
+      "line_start": 36,
+      "line_end": 37,
+      "evidence": "#define WARP_SIZE 32",
+      "message": "代码按 32 线程一组计算 lane 或定义线程束宽度常量；MXMACA 的线程束（wave）宽度为 64，这类算术可能编译通过但结果错位。",
+      "recommendation": "请复核 lane 计算与掩码宽度，改用运行时查询的线程束宽度，并在沐曦环境用最小用例比对结果。",
+      "references": [
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-TOOLCHAIN-001",
+      "rule_version": 2,
+      "severity": "blocker",
+      "category": "toolchain",
+      "title": "检测直接 nvcc 工具调用",
+      "relative_path": "setup.py",
+      "line_start": 65,
+      "line_end": 65,
+      "evidence": "raw_output = subprocess.check_output([cuda_dir + \"/bin/nvcc\", \"-V\"], universal_newlines=True)",
+      "message": "项目直接调用或固定指定 nvcc，迁移到 MXMACA/cu-bridge 时工具入口与参数需要复核。",
+      "recommendation": "请复核调用点，按 cu-bridge 当前版本配置对应工具链，并在沐曦环境验证构建。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/bottleneck/bottleneck.py",
+      "line_start": 8,
+      "line_end": 8,
+      "evidence": "from apex import check_cudnn_version_and_warn",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "apex/contrib/bottleneck/halo_exchangers.py",
+      "line_start": 102,
+      "line_end": 102,
+      "evidence": "# Create another global nccl communicator in addition to the one created by torch.distributed.init_process_group(\"nccl\")",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/clip_grad/clip_grad.py",
+      "line_start": 10,
+      "line_end": 10,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/conv_bias_relu/conv_bias_relu.py",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "from apex import check_cudnn_version_and_warn",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "library",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "relative_path": "apex/contrib/csrc/bottleneck/bottleneck.cpp",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "#include <cudnn_frontend.h>",
+      "message": "源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。",
+      "recommendation": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "library",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "relative_path": "apex/contrib/csrc/conv_bias_relu/conv_bias_relu.cpp",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "#include <cudnn_frontend.h>",
+      "message": "源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。",
+      "recommendation": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "library",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "relative_path": "apex/contrib/csrc/cudnn_gbn/norm_sample.cpp",
+      "line_start": 26,
+      "line_end": 30,
+      "evidence": "#include <cudnn_frontend.h>",
+      "message": "源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。",
+      "recommendation": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "library",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "relative_path": "apex/contrib/csrc/cudnn_gbn/norm_sample.h",
+      "line_start": 29,
+      "line_end": 30,
+      "evidence": "#include <cudnn.h>",
+      "message": "源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。",
+      "recommendation": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc_bwd_one_pass_kernel.cuh",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "__global__ __launch_bounds__(THREADS_PER_BLOCK_) void group_norm_nhwc_bwd_one_pass_kernel(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc_fwd_one_pass_kernel.cuh",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "__global__ __launch_bounds__(THREADS_PER_BLOCK_) void group_norm_nhwc_fwd_one_pass_kernel(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 195,
+      "line_end": 596,
+      "evidence": "__global__ __launch_bounds__(BLOCK_DIM_X, BLOCKS_PER_SM) void gn_cuda_kernel(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+      "line_start": 292,
+      "line_end": 1202,
+      "evidence": "frag_sum_per_channel[i].x += __shfl_xor_sync(FINAL_MASK, frag_sum_per_channel[i].x, mask, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 24
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "library",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "relative_path": "apex/contrib/csrc/groupbn/batch_norm.h",
+      "line_start": 28,
+      "line_end": 29,
+      "evidence": "#include <cudnn.h>",
+      "message": "源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。",
+      "recommendation": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "library",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "relative_path": "apex/contrib/csrc/groupbn/batch_norm_add_relu.h",
+      "line_start": 28,
+      "line_end": 29,
+      "evidence": "#include <cudnn.h>",
+      "message": "源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。",
+      "recommendation": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 381,
+      "line_end": 2366,
+      "evidence": "x[i] += __shfl_sync(0xffffffffU, x[i], THREADS_PER_PIXEL + lane_id);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 10
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+      "line_start": 695,
+      "line_end": 2187,
+      "evidence": "__global__ __launch_bounds__(THREADS_PER_CTA) void nhwc_batch_norm_fwd_inference(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 5
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/layer_norm/ln_bwd_kernels.cuh",
+      "line_start": 8,
+      "line_end": 202,
+      "evidence": "__global__ __launch_bounds__(Ktraits::THREADS_PER_CTA) void ln_bwd_kernel(layer_norm::BwdParams params) {",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/layer_norm/ln_fwd_kernels.cuh",
+      "line_start": 9,
+      "line_end": 9,
+      "evidence": "__global__ __launch_bounds__(Ktraits::THREADS_PER_CTA) void ln_fwd_kernel(FwdParams params) {",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/layer_norm/ln_utils.cuh",
+      "line_start": 82,
+      "line_end": 532,
+      "evidence": "return __shfl_xor_sync(uint32_t(-1), x, idx);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "apex/contrib/csrc/peer_memory/peer_memory_cuda.cu",
+      "line_start": 258,
+      "line_end": 258,
+      "evidence": "__launch_bounds__(THREADS_PER_CTA)",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "apex/contrib/csrc/transducer/transducer_joint_kernel.cu",
+      "line_start": 25,
+      "line_end": 25,
+      "evidence": "x += __shfl_down_sync(0xffffffff, x, offset, width);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/examples/gpu_direct_storage/benchmark_load.py",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "import apex.contrib.gpu_direct_storage as gds",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/examples/gpu_direct_storage/benchmark_save.py",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "import apex.contrib.gpu_direct_storage as gds",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/examples/gpu_direct_storage/example_load.py",
+      "line_start": 1,
+      "line_end": 1,
+      "evidence": "import apex.contrib.gpu_direct_storage as gds",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/examples/gpu_direct_storage/example_save.py",
+      "line_start": 1,
+      "line_end": 1,
+      "evidence": "import apex.contrib.gpu_direct_storage as gds",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/examples/nccl_allocator/allreduce.py",
+      "line_start": 6,
+      "line_end": 6,
+      "evidence": "from apex.contrib import nccl_allocator",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "apex/contrib/examples/nccl_allocator/allreduce.py",
+      "line_start": 17,
+      "line_end": 17,
+      "evidence": "dist.init_process_group(backend=\"nccl\")",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/examples/nccl_allocator/cache.py",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "from apex.contrib import nccl_allocator",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/examples/nccl_allocator/change_cuda_allocator.py",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "from apex.contrib import nccl_allocator",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/examples/nccl_allocator/toy_ddp.py",
+      "line_start": 8,
+      "line_end": 8,
+      "evidence": "from apex.contrib import nccl_allocator",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "apex/contrib/examples/nccl_allocator/toy_ddp.py",
+      "line_start": 30,
+      "line_end": 30,
+      "evidence": "dist.init_process_group(backend=\"nccl\")",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/layer_norm/layer_norm.py",
+      "line_start": 5,
+      "line_end": 5,
+      "evidence": "from apex._autocast_utils import _cast_if_autocast_enabled",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/nccl_allocator/nccl_allocator.py",
+      "line_start": 18,
+      "line_end": 18,
+      "evidence": "from apex import deprecated_warning",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-COMM-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "communication",
+      "title": "检测 NCCL 环境变量覆盖",
+      "relative_path": "apex/contrib/nccl_allocator/nccl_allocator.py",
+      "line_start": 44,
+      "line_end": 45,
+      "evidence": "os.environ[\"NCCL_NVLS_ENABLE\"] = \"1\"",
+      "message": "项目覆盖了 NVIDIA NCCL 环境变量，多卡通信配置包含平台特定假设。",
+      "recommendation": "请复核通信后端、环境变量和拓扑配置，并在沐曦多卡环境进行针对性验证。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/openfold_triton/__init__.py",
+      "line_start": 14,
+      "line_end": 25,
+      "evidence": "from apex.contrib.openfold_triton._layer_norm_backward_kernels import (",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/openfold_triton/layer_norm.py",
+      "line_start": 9,
+      "line_end": 17,
+      "evidence": "from apex.contrib.openfold_triton._layer_norm_backward_kernels import (",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/openfold_triton/mha.py",
+      "line_start": 10,
+      "line_end": 10,
+      "evidence": "from apex.contrib.openfold_triton._mha_kernel import (",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/optimizers/distributed_fused_adam.py",
+      "line_start": 25,
+      "line_end": 32,
+      "evidence": "from apex.contrib import nccl_allocator",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/optimizers/distributed_fused_lamb.py",
+      "line_start": 9,
+      "line_end": 9,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/optimizers/fp16_optimizer.py",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/optimizers/fused_adam.py",
+      "line_start": 6,
+      "line_end": 6,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/optimizers/fused_lamb.py",
+      "line_start": 6,
+      "line_end": 6,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/optimizers/fused_sgd.py",
+      "line_start": 6,
+      "line_end": 6,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-TOOL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "tool",
+      "title": "检测直接 nvidia-smi 调用",
+      "relative_path": "apex/contrib/sparsity/permutation_search_kernels/permutation_utilities.py",
+      "line_start": 32,
+      "line_end": 32,
+      "evidence": "gpus_found = str(subprocess.check_output([\"nvidia-smi\", \"-L\"])).count(\"UUID\")",
+      "message": "项目直接调用 nvidia-smi，设备发现或诊断流程依赖 NVIDIA 专用工具。",
+      "recommendation": "请复核诊断逻辑并提供可替换工具入口，再在沐曦服务器验证设备信息采集。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/sparsity/test/checkpointing_test_part1.py",
+      "line_start": 5,
+      "line_end": 6,
+      "evidence": "from apex.contrib.sparsity import ASP",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/sparsity/test/checkpointing_test_part2.py",
+      "line_start": 5,
+      "line_end": 6,
+      "evidence": "from apex.contrib.sparsity import ASP",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/sparsity/test/checkpointing_test_reference.py",
+      "line_start": 5,
+      "line_end": 6,
+      "evidence": "from apex.contrib.sparsity import ASP",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/sparsity/test/test_permutation_application.py",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "from apex.contrib.sparsity.permutation_lib import Permutation",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/sparsity/test/toy_problem.py",
+      "line_start": 5,
+      "line_end": 6,
+      "evidence": "from apex.contrib.sparsity import ASP",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/bottleneck/test_bottleneck_module.py",
+      "line_start": 6,
+      "line_end": 11,
+      "evidence": "from apex.distributed_testing.distributed_test_base import NcclDistributedTestBase",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "apex/contrib/test/bottleneck/test_bottleneck_module.py",
+      "line_start": 228,
+      "line_end": 228,
+      "evidence": "torch.distributed.init_process_group(\"nccl\")",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/clip_grad/test_clip_grad.py",
+      "line_start": 8,
+      "line_end": 8,
+      "evidence": "from apex.contrib.clip_grad import clip_grad_norm_",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/conv_bias_relu/test_conv_bias_relu.py",
+      "line_start": 11,
+      "line_end": 11,
+      "evidence": "from apex.contrib.conv_bias_relu import (",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/cudnn_gbn/test_cudnn_gbn_with_two_gpus.py",
+      "line_start": 10,
+      "line_end": 13,
+      "evidence": "from apex.distributed_testing.distributed_test_base import NcclDistributedTestBase",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/focal_loss/test_focal_loss.py",
+      "line_start": 14,
+      "line_end": 14,
+      "evidence": "from apex.contrib.focal_loss import focal_loss",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/fused_dense/test_fused_dense.py",
+      "line_start": 10,
+      "line_end": 10,
+      "evidence": "from apex import fused_dense",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/group_norm/test_group_norm.py",
+      "line_start": 18,
+      "line_end": 19,
+      "evidence": "from apex.contrib.group_norm import GroupNorm",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/index_mul_2d/test_index_mul_2d.py",
+      "line_start": 8,
+      "line_end": 8,
+      "evidence": "from apex.contrib.index_mul_2d import index_mul_2d",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/layer_norm/test_fast_layer_norm.py",
+      "line_start": 10,
+      "line_end": 10,
+      "evidence": "from apex.contrib.layer_norm.layer_norm import FastLayerNorm",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/openfold_triton/test_fused_adam_swa.py",
+      "line_start": 24,
+      "line_end": 24,
+      "evidence": "from apex.contrib.openfold_triton.fused_adam_swa import AdamMathType, FusedAdamSWA",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/openfold_triton/test_openfold_mha.py",
+      "line_start": 10,
+      "line_end": 10,
+      "evidence": "from apex.contrib.openfold_triton import AttnTri as openfold_attention_triton",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/openfold_triton/test_sync_triton_auto_tune_cache_across_gpus.py",
+      "line_start": 12,
+      "line_end": 12,
+      "evidence": "from apex.contrib.openfold_triton import (",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "apex/contrib/test/openfold_triton/test_sync_triton_auto_tune_cache_across_gpus.py",
+      "line_start": 59,
+      "line_end": 60,
+      "evidence": "dist.init_process_group(\n            \"nccl\",",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/optimizers/test_dist_adam.py",
+      "line_start": 13,
+      "line_end": 16,
+      "evidence": "from apex.contrib.optimizers.distributed_fused_adam import DistributedFusedAdam",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/optimizers/test_distributed_fused_lamb.py",
+      "line_start": 8,
+      "line_end": 9,
+      "evidence": "from apex.contrib.optimizers.distributed_fused_lamb import DistributedFusedLAMB",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/peer_memory/test_peer_halo_exchange_module.py",
+      "line_start": 7,
+      "line_end": 10,
+      "evidence": "from apex.distributed_testing.distributed_test_base import NcclDistributedTestBase",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "apex/contrib/test/peer_memory/test_peer_halo_exchange_module.py",
+      "line_start": 267,
+      "line_end": 267,
+      "evidence": "torch.distributed.init_process_group(\"nccl\")",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/transducer/test_transducer_joint.py",
+      "line_start": 7,
+      "line_end": 8,
+      "evidence": "from apex.contrib.transducer import TransducerJoint",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/transducer/test_transducer_loss.py",
+      "line_start": 7,
+      "line_end": 8,
+      "evidence": "from apex.contrib.transducer import TransducerLoss",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/test/xentropy/test_label_smoothing.py",
+      "line_start": 10,
+      "line_end": 10,
+      "evidence": "from apex.contrib import xentropy as label_smoothing",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/torchsched/backend.py",
+      "line_start": 19,
+      "line_end": 21,
+      "evidence": "from apex.contrib.torchsched import config",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/torchsched/inductor/__init__.py",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "from apex.contrib.torchsched.inductor.graph import patch_graph_lowering",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/torchsched/inductor/event.py",
+      "line_start": 20,
+      "line_end": 21,
+      "evidence": "import apex.contrib.torchsched.config as torchsched_config",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/torchsched/inductor/graph.py",
+      "line_start": 23,
+      "line_end": 25,
+      "evidence": "from apex.contrib.torchsched import config as torchsched_config",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/torchsched/inductor/scheduler.py",
+      "line_start": 26,
+      "line_end": 32,
+      "evidence": "from apex.contrib.torchsched import config",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 5
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/torchsched/inductor/wrapper.py",
+      "line_start": 27,
+      "line_end": 39,
+      "evidence": "from apex.contrib.torchsched import config",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/torchsched/passes/__init__.py",
+      "line_start": 5,
+      "line_end": 5,
+      "evidence": "from apex.contrib.torchsched.passes.pre_grad_passes import pre_grad_custom_pass",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/contrib/torchsched/passes/pre_grad_passes.py",
+      "line_start": 15,
+      "line_end": 15,
+      "evidence": "from apex.contrib.torchsched import config",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/distributed_testing/__init__.py",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "from apex.distributed_testing.distributed_test_base import (",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/distributed_testing/distributed_test_base.py",
+      "line_start": 11,
+      "line_end": 11,
+      "evidence": "from apex.distributed_testing._ucc_util import HAS_UCC",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/fused_dense/fused_dense.py",
+      "line_start": 5,
+      "line_end": 5,
+      "evidence": "from apex._autocast_utils import _cast_if_autocast_enabled",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/mlp/mlp.py",
+      "line_start": 8,
+      "line_end": 8,
+      "evidence": "from apex._autocast_utils import _cast_if_autocast_enabled",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/normalization/fused_layer_norm.py",
+      "line_start": 10,
+      "line_end": 10,
+      "evidence": "from apex._autocast_utils import _cast_if_autocast_enabled",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/optimizers/fused_adagrad.py",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/optimizers/fused_adam.py",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/optimizers/fused_lamb.py",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/optimizers/fused_mixed_precision_lamb.py",
+      "line_start": 8,
+      "line_end": 8,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/optimizers/fused_novograd.py",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "apex/optimizers/fused_sgd.py",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "from apex.multi_tensor_apply import multi_tensor_applier",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "library",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "relative_path": "csrc/fused_dense_cuda.cu",
+      "line_start": 10,
+      "line_end": 15,
+      "evidence": "#include <cublas_v2.h>",
+      "message": "源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。",
+      "recommendation": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "library",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "relative_path": "csrc/megatron/fused_weight_gradient_dense_16bit_prec_cuda.cu",
+      "line_start": 11,
+      "line_end": 11,
+      "evidence": "#include <cublas_v2.h>",
+      "message": "源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。",
+      "recommendation": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "library",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "relative_path": "csrc/megatron/fused_weight_gradient_dense_cuda.cu",
+      "line_start": 11,
+      "line_end": 11,
+      "evidence": "#include <cublas_v2.h>",
+      "message": "源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。",
+      "recommendation": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/megatron/generic_scaled_masked_softmax.h",
+      "line_start": 43,
+      "line_end": 43,
+      "evidence": "return __shfl_down_sync(mask, value, laneMask, width);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/megatron/scaled_masked_softmax.h",
+      "line_start": 82,
+      "line_end": 82,
+      "evidence": "return __shfl_xor_sync(mask, value, laneMask, width);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/megatron/scaled_upper_triang_masked_softmax.h",
+      "line_start": 105,
+      "line_end": 105,
+      "evidence": "return __shfl_xor_sync(mask, value, laneMask, width);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "library",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "relative_path": "csrc/mlp_cuda.cu",
+      "line_start": 10,
+      "line_end": 15,
+      "evidence": "#include <cublas_v2.h>",
+      "message": "源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。",
+      "recommendation": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/type_shim.h",
+      "line_start": 291,
+      "line_end": 333,
+      "evidence": "for (int i = 16; i >= lanes; i >>= 1) final = final + __shfl_down_sync(0xffffffff, final, i);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/welford.cu",
+      "line_start": 42,
+      "line_end": 112,
+      "evidence": "for (int i = WARP_SIZE / 2; i > 0; i >>= 1) val = val + __shfl_down_sync(0xffffffff, val, i);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "examples/dcgan/main_amp.py",
+      "line_start": 15,
+      "line_end": 15,
+      "evidence": "from apex import amp",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "examples/imagenet/main_amp.py",
+      "line_start": 117,
+      "line_end": 117,
+      "evidence": "torch.distributed.init_process_group(backend='nccl',",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "examples/imagenet/main_amp.py",
+      "line_start": 137,
+      "line_end": 137,
+      "evidence": "import apex",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "examples/simple/distributed/distributed_data_parallel.py",
+      "line_start": 7,
+      "line_end": 9,
+      "evidence": "from apex.parallel import DistributedDataParallel",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "examples/simple/distributed/distributed_data_parallel.py",
+      "line_start": 29,
+      "line_end": 29,
+      "evidence": "torch.distributed.init_process_group(backend='nccl',",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于示例路径：示例代码一般不随交付构建，已从 warning 降为提示。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-BUILD-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "build",
+      "title": "检测 TORCH_CUDA_ARCH_LIST 覆盖",
+      "relative_path": "setup.py",
+      "line_start": 130,
+      "line_end": 140,
+      "evidence": "os.environ[\"TORCH_CUDA_ARCH_LIST\"] = \"7.5;8.0;8.6;9.0;10.0;11.0;12.0\"",
+      "message": "项目显式覆盖 TORCH_CUDA_ARCH_LIST，构建产物可能绑定 NVIDIA 架构列表。",
+      "recommendation": "请复核 PyTorch 扩展的架构选择方式，移除不适用假设，并在 MXMACA 环境验证构建。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ],
+      "count": 6
+    },
+    {
+      "rule_id": "MXR-ARCH-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "architecture",
+      "title": "检测 CUDA gencode 参数",
+      "relative_path": "setup.py",
+      "line_start": 542,
+      "line_end": 547,
+      "evidence": "\"-gencode=arch=compute_90,code=sm_90\",",
+      "message": "构建参数显式生成 NVIDIA compute/sm 目标，可能固化了设备架构假设。",
+      "recommendation": "请复核目标架构参数，依据 MXMACA 工具链要求调整，并在沐曦设备验证生成物。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "rule_id": "MXR-ARCH-002",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "architecture",
+      "title": "检测硬编码 sm 或 compute 架构",
+      "relative_path": "setup.py",
+      "line_start": 542,
+      "line_end": 547,
+      "evidence": "\"-gencode=arch=compute_90,code=sm_90\",",
+      "message": "项目硬编码了 NVIDIA sm/compute 架构编号，需要确认目标编译器如何处理该配置。",
+      "recommendation": "请复核架构列表是否可配置，并在 MXMACA 工具链上验证编译参数和运行结果。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/L0/run_fused_layer_norm/test_fused_layer_norm.py",
+      "line_start": 8,
+      "line_end": 8,
+      "evidence": "from apex.normalization import FusedLayerNorm, FusedRMSNorm, MixedFusedLayerNorm, MixedFusedRMSNorm",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/L0/run_mlp/test_mlp.py",
+      "line_start": 12,
+      "line_end": 12,
+      "evidence": "from apex.mlp import MLP",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/L0/run_optimizers/test_adam.py",
+      "line_start": 9,
+      "line_end": 9,
+      "evidence": "import apex",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/L0/run_optimizers/test_fused_novograd.py",
+      "line_start": 8,
+      "line_end": 8,
+      "evidence": "import apex",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/L0/run_optimizers/test_fused_optimizer.py",
+      "line_start": 7,
+      "line_end": 7,
+      "evidence": "import apex",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/L0/run_optimizers/test_lamb.py",
+      "line_start": 8,
+      "line_end": 9,
+      "evidence": "import apex",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/L1/common/main_amp.py",
+      "line_start": 18,
+      "line_end": 203,
+      "evidence": "from apex.fp16_utils import *",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 5
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "tests/L1/common/main_amp.py",
+      "line_start": 189,
+      "line_end": 189,
+      "evidence": "torch.distributed.init_process_group(backend=\"nccl\", init_method=\"env://\")",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/distributed/DDP/ddp_race_condition_test.py",
+      "line_start": 5,
+      "line_end": 5,
+      "evidence": "from apex.parallel import DistributedDataParallel as DDP",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "tests/distributed/DDP/ddp_race_condition_test.py",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "torch.distributed.init_process_group(backend=\"nccl\", init_method=\"env://\")",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/distributed/amp_master_params/amp_master_params.py",
+      "line_start": 7,
+      "line_end": 9,
+      "evidence": "from apex.parallel import DistributedDataParallel",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "tests/distributed/amp_master_params/amp_master_params.py",
+      "line_start": 29,
+      "line_end": 29,
+      "evidence": "torch.distributed.init_process_group(backend=\"nccl\", init_method=\"env://\")",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/distributed/synced_batchnorm/python_single_gpu_unit_test.py",
+      "line_start": 62,
+      "line_end": 62,
+      "evidence": "from apex.parallel.sync_batchnorm import SyncBatchNorm",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/distributed/synced_batchnorm/single_gpu_unit_test.py",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "import apex",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/distributed/synced_batchnorm/test_batchnorm1d.py",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "import apex",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/distributed/synced_batchnorm/test_groups.py",
+      "line_start": 9,
+      "line_end": 31,
+      "evidence": "import apex",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "tests/distributed/synced_batchnorm/test_groups.py",
+      "line_start": 49,
+      "line_end": 49,
+      "evidence": "torch.distributed.init_process_group(backend=\"nccl\", init_method=\"env://\")",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/distributed/synced_batchnorm/two_gpu_test_different_batch_size.py",
+      "line_start": 6,
+      "line_end": 6,
+      "evidence": "from apex.parallel import SyncBatchNorm as ApexSyncBatchNorm",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "tests/distributed/synced_batchnorm/two_gpu_test_different_batch_size.py",
+      "line_start": 38,
+      "line_end": 39,
+      "evidence": "torch.distributed.init_process_group(\n    \"nccl\",",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "dependency",
+      "title": "检测 apex 依赖或导入",
+      "relative_path": "tests/distributed/synced_batchnorm/two_gpu_unit_test.py",
+      "line_start": 9,
+      "line_end": 31,
+      "evidence": "import apex",
+      "message": "项目依赖或导入 apex，其混合精度与融合算子包含设备相关原生组件，需要单独确认目标平台版本。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "communication",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "relative_path": "tests/distributed/synced_batchnorm/two_gpu_unit_test.py",
+      "line_start": 40,
+      "line_end": 40,
+      "evidence": "torch.distributed.init_process_group(backend=\"nccl\", init_method=\"env://\")",
+      "message": "项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/_autocast_utils.py",
+      "line_start": 26,
+      "line_end": 26,
+      "evidence": "return torch.cuda.amp.autocast_mode._cast(args, torch.get_autocast_gpu_dtype())",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/contrib/conv_bias_relu/conv_bias_relu.py",
+      "line_start": 11,
+      "line_end": 89,
+      "evidence": "@torch.amp.custom_fwd(cast_inputs=torch.half, device_type=\"cuda\")",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 8
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "apex/contrib/csrc/bottleneck/bottleneck.cpp",
+      "line_start": 60,
+      "line_end": 60,
+      "evidence": "cudaDeviceReset();",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "apex/contrib/csrc/conv_bias_relu/conv_bias_relu.cpp",
+      "line_start": 66,
+      "line_end": 66,
+      "evidence": "cudaDeviceReset();",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-RUNTIME-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 数据拷贝与事件 Runtime API",
+      "relative_path": "apex/contrib/csrc/cudnn_gbn/norm_sample.cpp",
+      "line_start": 263,
+      "line_end": 443,
+      "evidence": "cudaMemsetAsync(peer_devPtrs[rank_id], 0, peer_size * 4, stream);",
+      "message": "源码调用 CUDA 数据拷贝或事件 API，其同步语义与错误处理需要结合目标运行时确认。",
+      "recommendation": "请复核拷贝路径、同步点与事件使用方式，并在沐曦环境验证数据一致性与性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-MEMORY-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 显存管理 Runtime API",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc.cpp",
+      "line_start": 599,
+      "line_end": 980,
+      "evidence": "CHECK_CUDA(cudaMalloc((void**)&x_d, x_sz));",
+      "message": "源码调用 CUDA 显存管理 Runtime API，需要确认 cu-bridge 对相应 API 的映射与行为差异。",
+      "recommendation": "请复核显存分配/释放调用点与错误处理，并结合 cu-bridge 当前版本在沐曦环境验证。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 23
+    },
+    {
+      "rule_id": "MXR-RUNTIME-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 数据拷贝与事件 Runtime API",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc.cpp",
+      "line_start": 760,
+      "line_end": 966,
+      "evidence": "CHECK_CUDA(cudaMemcpyAsync(x_d, x_h, x_sz, cudaMemcpyHostToDevice, cudaStreamDefault));",
+      "message": "源码调用 CUDA 数据拷贝或事件 API，其同步语义与错误处理需要结合目标运行时确认。",
+      "recommendation": "请复核拷贝路径、同步点与事件使用方式，并在沐曦环境验证数据一致性与性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 21
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc.cpp",
+      "line_start": 912,
+      "line_end": 998,
+      "evidence": "CHECK_CUDA(cudaDeviceSynchronize());",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-STREAM-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 流（Stream）API",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc.cpp",
+      "line_start": 934,
+      "line_end": 934,
+      "evidence": "CHECK_CUDA(cudaStreamSynchronize(cudaStreamDefault));",
+      "message": "源码调用 CUDA 流（Stream）API，流创建、同步与事件语义需要结合目标运行时确认。",
+      "recommendation": "请复核流与事件的使用方式，并在沐曦环境验证并发与同步行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-CUB-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "library",
+      "title": "识别 CUB 用法",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc_bwd_one_pass_kernel.cuh",
+      "line_start": 6,
+      "line_end": 58,
+      "evidence": "#include <cub/cub.cuh>",
+      "message": "项目使用 CUB；MXMACA 提供 mcCUB 且对外 API 接口不变，通常无需改动源码。",
+      "recommendation": "请复核 CUB 版本与 mcCUB 的对应关系，并在沐曦环境验证编译与结果。",
+      "references": [
+        {
+          "title": "MXMACA AI training manual",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/587/C500_AITrainningMaunal_CN.html"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-CUB-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "library",
+      "title": "识别 CUB 用法",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc_bwd_two_pass.cu",
+      "line_start": 6,
+      "line_end": 39,
+      "evidence": "#include <cub/cub.cuh>",
+      "message": "项目使用 CUB；MXMACA 提供 mcCUB 且对外 API 接口不变，通常无需改动源码。",
+      "recommendation": "请复核 CUB 版本与 mcCUB 的对应关系，并在沐曦环境验证编译与结果。",
+      "references": [
+        {
+          "title": "MXMACA AI training manual",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/587/C500_AITrainningMaunal_CN.html"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-CUB-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "library",
+      "title": "识别 CUB 用法",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc_fwd_one_pass_kernel.cuh",
+      "line_start": 6,
+      "line_end": 58,
+      "evidence": "#include <cub/cub.cuh>",
+      "message": "项目使用 CUB；MXMACA 提供 mcCUB 且对外 API 接口不变，通常无需改动源码。",
+      "recommendation": "请复核 CUB 版本与 mcCUB 的对应关系，并在沐曦环境验证编译与结果。",
+      "references": [
+        {
+          "title": "MXMACA AI training manual",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/587/C500_AITrainningMaunal_CN.html"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-CUB-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "library",
+      "title": "识别 CUB 用法",
+      "relative_path": "apex/contrib/csrc/group_norm/group_norm_nhwc_fwd_two_pass.cu",
+      "line_start": 6,
+      "line_end": 32,
+      "evidence": "#include <cub/cub.cuh>",
+      "message": "项目使用 CUB；MXMACA 提供 mcCUB 且对外 API 接口不变，通常无需改动源码。",
+      "recommendation": "请复核 CUB 版本与 mcCUB 的对应关系，并在沐曦环境验证编译与结果。",
+      "references": [
+        {
+          "title": "MXMACA AI training manual",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/587/C500_AITrainningMaunal_CN.html"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn.hpp",
+      "line_start": 2,
+      "line_end": 3,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda.cu",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_cuda_host_template.cuh",
+      "line_start": 5,
+      "line_end": 5,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_utils.cpp",
+      "line_start": 13,
+      "line_end": 13,
+      "evidence": "CUDA_CHECK(cudaGetDeviceCount(&count));",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/group_norm_v2/gn_utils.hpp",
+      "line_start": 2,
+      "line_end": 3,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/groupbn/batch_norm.cu",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "apex/contrib/csrc/groupbn/batch_norm.cu",
+      "line_start": 262,
+      "line_end": 270,
+      "evidence": "cudaGetDevice(&device_id);",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/groupbn/batch_norm_add_relu.cu",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "apex/contrib/csrc/groupbn/batch_norm_add_relu.cu",
+      "line_start": 271,
+      "line_end": 279,
+      "evidence": "cudaGetDevice(&device_id);",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/groupbn/ipc.cu",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/optimizers/fused_adam_cuda_kernel.cu",
+      "line_start": 1,
+      "line_end": 1,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/optimizers/fused_adam_cuda_kernel.cu",
+      "line_start": 2,
+      "line_end": 2,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-MEMORY-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 显存管理 Runtime API",
+      "relative_path": "apex/contrib/csrc/peer_memory/peer_memory_cuda.cu",
+      "line_start": 30,
+      "line_end": 325,
+      "evidence": "cudaFree(ptr);",
+      "message": "源码调用 CUDA 显存管理 Runtime API，需要确认 cu-bridge 对相应 API 的映射与行为差异。",
+      "recommendation": "请复核显存分配/释放调用点与错误处理，并结合 cu-bridge 当前版本在沐曦环境验证。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "rule_id": "MXR-RUNTIME-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 数据拷贝与事件 Runtime API",
+      "relative_path": "apex/contrib/csrc/peer_memory/peer_memory_cuda.cu",
+      "line_start": 321,
+      "line_end": 327,
+      "evidence": "cudaMemset(ptr, 0, size);",
+      "message": "源码调用 CUDA 数据拷贝或事件 API，其同步语义与错误处理需要结合目标运行时确认。",
+      "recommendation": "请复核拷贝路径、同步点与事件使用方式，并在沐曦环境验证数据一致性与性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "apex/contrib/csrc/peer_memory/peer_memory_cuda.cu",
+      "line_start": 488,
+      "line_end": 488,
+      "evidence": "cudaGetDevice(&device);",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/transducer/transducer_joint_kernel.cu",
+      "line_start": 2,
+      "line_end": 2,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/transducer/transducer_joint_kernel.cu",
+      "line_start": 3,
+      "line_end": 3,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "apex/contrib/csrc/transducer/transducer_loss_kernel.cu",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "apex/contrib/csrc/transducer/transducer_loss_kernel.cu",
+      "line_start": 5,
+      "line_end": 5,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/contrib/cudnn_gbn/batch_norm.py",
+      "line_start": 5,
+      "line_end": 5,
+      "evidence": "from torch.cuda.amp import custom_bwd, custom_fwd",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/contrib/layer_norm/layer_norm.py",
+      "line_start": 41,
+      "line_end": 41,
+      "evidence": "with torch.amp.autocast(\"cuda\", enabled=False):",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/contrib/optimizers/distributed_fused_adam.py",
+      "line_start": 2310,
+      "line_end": 2398,
+      "evidence": "grad_scaler: torch.cuda.amp.GradScaler | None = None,",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 6
+    },
+    {
+      "rule_id": "MXR-MEMORY-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 显存管理 Runtime API",
+      "relative_path": "apex/contrib/sparsity/permutation_search_kernels/CUDA_kernels/permutation_search_kernels.cu",
+      "line_start": 97,
+      "line_end": 591,
+      "evidence": "cudaFree(*dmatrix);",
+      "message": "源码调用 CUDA 显存管理 Runtime API，需要确认 cu-bridge 对相应 API 的映射与行为差异。",
+      "recommendation": "请复核显存分配/释放调用点与错误处理，并结合 cu-bridge 当前版本在沐曦环境验证。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 28
+    },
+    {
+      "rule_id": "MXR-RUNTIME-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 数据拷贝与事件 Runtime API",
+      "relative_path": "apex/contrib/sparsity/permutation_search_kernels/CUDA_kernels/permutation_search_kernels.cu",
+      "line_start": 166,
+      "line_end": 618,
+      "evidence": "gpuErrchk(cudaMemcpy(d_permutations, permutations, num_permutations * group_width * 4 * sizeof(unsigned int),",
+      "message": "源码调用 CUDA 数据拷贝或事件 API，其同步语义与错误处理需要结合目标运行时确认。",
+      "recommendation": "请复核拷贝路径、同步点与事件使用方式，并在沐曦环境验证数据一致性与性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 19
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "apex/contrib/sparsity/permutation_search_kernels/CUDA_kernels/permutation_search_kernels.cu",
+      "line_start": 179,
+      "line_end": 616,
+      "evidence": "gpuErrchk(cudaDeviceSynchronize());",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/contrib/test/conv_bias_relu/test_conv_bias_relu.py",
+      "line_start": 109,
+      "line_end": 221,
+      "evidence": "with torch.amp.autocast(\"cuda\", dtype=torch.half):",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 8
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/contrib/test/cudnn_gbn/test_cudnn_gbn_with_two_gpus.py",
+      "line_start": 136,
+      "line_end": 136,
+      "evidence": "with torch.amp.autocast(\"cuda\"):",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/contrib/test/layer_norm/test_fast_layer_norm.py",
+      "line_start": 280,
+      "line_end": 280,
+      "evidence": "with torch.amp.autocast(\"cuda\", enabled=True, dtype=dtype):",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/contrib/test/optimizers/test_dist_adam.py",
+      "line_start": 464,
+      "line_end": 465,
+      "evidence": "ref_scaler = torch.amp.GradScaler(\"cuda\", **grad_scaler_args)",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/contrib/test/optimizers/test_distributed_fused_lamb.py",
+      "line_start": 4,
+      "line_end": 87,
+      "evidence": "from torch.cuda.amp import GradScaler",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/fused_dense/fused_dense.py",
+      "line_start": 63,
+      "line_end": 75,
+      "evidence": "with torch.amp.autocast(\"cuda\", enabled=False):",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "apex/normalization/fused_layer_norm.py",
+      "line_start": 674,
+      "line_end": 720,
+      "evidence": "with torch.amp.autocast(\"cuda\", enabled=False):",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 6
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/fused_dense_cuda.cu",
+      "line_start": 11,
+      "line_end": 11,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/layer_norm_cuda_kernel.cu",
+      "line_start": 1,
+      "line_end": 1,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/layer_norm_cuda_kernel.cu",
+      "line_start": 2,
+      "line_end": 2,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/fused_rotary_positional_embedding.h",
+      "line_start": 22,
+      "line_end": 22,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/fused_weight_gradient_dense_16bit_prec_cuda.cu",
+      "line_start": 12,
+      "line_end": 12,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/fused_weight_gradient_dense_cuda.cu",
+      "line_start": 12,
+      "line_end": 12,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/megatron/generic_scaled_masked_softmax_cuda.cu",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/generic_scaled_masked_softmax_cuda.cu",
+      "line_start": 22,
+      "line_end": 22,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/megatron/scaled_masked_softmax_cuda.cu",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/scaled_masked_softmax_cuda.cu",
+      "line_start": 22,
+      "line_end": 22,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/megatron/scaled_softmax_cuda.cu",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/scaled_softmax_cuda.cu",
+      "line_start": 22,
+      "line_end": 22,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/megatron/scaled_upper_triang_masked_softmax_cuda.cu",
+      "line_start": 19,
+      "line_end": 19,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/megatron/scaled_upper_triang_masked_softmax_cuda.cu",
+      "line_start": 22,
+      "line_end": 22,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/mlp_cuda.cu",
+      "line_start": 11,
+      "line_end": 11,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-RUNTIME-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 数据拷贝与事件 Runtime API",
+      "relative_path": "csrc/mlp_cuda.cu",
+      "line_start": 1171,
+      "line_end": 1211,
+      "evidence": "cudaMemsetAsync(semaphores, 0, semaphore_size, stream);",
+      "message": "源码调用 CUDA 数据拷贝或事件 API，其同步语义与错误处理需要结合目标运行时确认。",
+      "recommendation": "请复核拷贝路径、同步点与事件使用方式，并在沐曦环境验证数据一致性与性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "csrc/multi_tensor_axpby_kernel.cu",
+      "line_start": 121,
+      "line_end": 121,
+      "evidence": "// AT_CUDA_CHECK(cudaDeviceSynchronize());",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "csrc/multi_tensor_l2norm_kernel.cu",
+      "line_start": 322,
+      "line_end": 426,
+      "evidence": "// AT_CUDA_CHECK(cudaDeviceSynchronize());",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "csrc/multi_tensor_l2norm_kernel_mp.cu",
+      "line_start": 153,
+      "line_end": 153,
+      "evidence": "// AT_CUDA_CHECK(cudaDeviceSynchronize());",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "csrc/multi_tensor_l2norm_scale_kernel.cu",
+      "line_start": 238,
+      "line_end": 238,
+      "evidence": "// AT_CUDA_CHECK(cudaDeviceSynchronize());",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "csrc/multi_tensor_lamb_stage_1.cu",
+      "line_start": 119,
+      "line_end": 119,
+      "evidence": "// AT_CUDA_CHECK(cudaDeviceSynchronize());",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "csrc/multi_tensor_lamb_stage_2.cu",
+      "line_start": 95,
+      "line_end": 95,
+      "evidence": "// AT_CUDA_CHECK(cudaDeviceSynchronize());",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "csrc/multi_tensor_scale_kernel.cu",
+      "line_start": 110,
+      "line_end": 110,
+      "evidence": "// AT_CUDA_CHECK(cudaDeviceSynchronize());",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/multi_tensor_sgd_kernel.cu",
+      "line_start": 6,
+      "line_end": 6,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda.h 驱动头文件",
+      "relative_path": "csrc/welford.cu",
+      "line_start": 4,
+      "line_end": 4,
+      "evidence": "#include <cuda.h>",
+      "message": "源码直接包含 CUDA Driver 头文件，需要核对所用 Driver API 的目标映射。",
+      "recommendation": "请复核 Driver API 调用范围，并结合 cu-bridge 文档在沐曦环境验证编译与行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/welford.cu",
+      "line_start": 5,
+      "line_end": 5,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "examples/imagenet/main_amp.py",
+      "line_start": 151,
+      "line_end": 323,
+      "evidence": "scaler = torch.amp.GradScaler(\"cuda\")",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 175,
+      "line_end": 828,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ],
+      "count": 31
+    },
+    {
+      "rule_id": "MXR-PYTORCH-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch JIT 原生扩展",
+      "relative_path": "setup.py",
+      "line_start": 818,
+      "line_end": 818,
+      "evidence": "_nccl_version_getter = load(",
+      "message": "项目使用 torch.utils.cpp_extension.load 在运行时编译扩展，执行环境必须具备完整工具链。",
+      "recommendation": "请复核 JIT 源码、缓存、编译参数与依赖，并在 MXMACA 环境验证首次和重复加载。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "tests/L0/run_fused_layer_norm/test_fused_layer_norm.py",
+      "line_start": 500,
+      "line_end": 543,
+      "evidence": "with torch.amp.autocast(\"cuda\", dtype=dtype):",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "tests/L0/run_mlp/test_mlp.py",
+      "line_start": 79,
+      "line_end": 79,
+      "evidence": "with torch.cuda.amp.autocast_mode.autocast(enabled=enable_autocast):",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "rule_id": "MXR-PYTORCH-003",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "识别 PyTorch 自动混合精度用法",
+      "relative_path": "tests/L0/run_optimizers/test_adam.py",
+      "line_start": 66,
+      "line_end": 193,
+      "evidence": "scaler = torch.amp.GradScaler(\"cuda\", enabled=True)",
+      "message": "项目使用 PyTorch 自动混合精度，目标环境的半精度算子支持与缩放行为需要结合 MXMACA 版本验证。",
+      "recommendation": "请复核混合精度路径与缩放器行为，并依据 MXMACA 性能指南在沐曦设备验证精度与性能。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 12
+    },
+    {
+      "rule_id": "MXR-PYTORCH-002",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch JIT 原生扩展",
+      "relative_path": "tests/distributed/synced_batchnorm/single_gpu_unit_test.py",
+      "line_start": 13,
+      "line_end": 13,
+      "evidence": "syncbn = load(name=\"syncbn\", sources=[\"../../csrc/syncbn.cpp\", \"../../csrc/welford.cu\"])",
+      "message": "项目使用 torch.utils.cpp_extension.load 在运行时编译扩展，执行环境必须具备完整工具链。",
+      "recommendation": "请复核 JIT 源码、缓存、编译参数与依赖，并在 MXMACA 环境验证首次和重复加载。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ],
+      "count": 1
+    }
+  ],
+  "migration_checklist": [
+    {
+      "rule_id": "MXR-PTX-001",
+      "title": "检测内联 PTX 汇编",
+      "action": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "affected_files": [
+        "apex/contrib/csrc/group_norm/group_norm_nhwc.h",
+        "apex/contrib/csrc/group_norm/group_norm_nhwc_bwd_one_pass_kernel.cuh",
+        "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+        "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+        "apex/contrib/csrc/layer_norm/ln_utils.cuh",
+        "apex/contrib/csrc/peer_memory/peer_memory_cuda.cu",
+        "apex/contrib/csrc/transducer/philox.cuh"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-WARP-001",
+      "title": "检测硬编码 32 线程束假设",
+      "action": "请复核 lane 计算与掩码宽度，改用运行时查询的线程束宽度，并在沐曦环境用最小用例比对结果。",
+      "affected_files": [
+        "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+        "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+        "apex/contrib/csrc/xentropy/xentropy_kernel.cu",
+        "csrc/welford.cu"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-TOOLCHAIN-001",
+      "title": "检测直接 nvcc 工具调用",
+      "action": "请复核调用点，按 cu-bridge 当前版本配置对应工具链，并在沐曦环境验证构建。",
+      "affected_files": [
+        "setup.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-005",
+      "title": "检测 apex 依赖或导入",
+      "action": "请复核 apex 版本、算子覆盖与混合精度路径，并在沐曦环境验证导入与核心功能。",
+      "affected_files": [
+        "apex/contrib/bottleneck/bottleneck.py",
+        "apex/contrib/clip_grad/clip_grad.py",
+        "apex/contrib/conv_bias_relu/conv_bias_relu.py",
+        "apex/contrib/layer_norm/layer_norm.py",
+        "apex/contrib/nccl_allocator/nccl_allocator.py",
+        "apex/contrib/openfold_triton/__init__.py",
+        "apex/contrib/openfold_triton/layer_norm.py",
+        "apex/contrib/openfold_triton/mha.py",
+        "apex/contrib/optimizers/distributed_fused_adam.py",
+        "apex/contrib/optimizers/distributed_fused_lamb.py",
+        "apex/contrib/optimizers/fp16_optimizer.py",
+        "apex/contrib/optimizers/fused_adam.py",
+        "apex/contrib/optimizers/fused_lamb.py",
+        "apex/contrib/optimizers/fused_sgd.py",
+        "apex/contrib/torchsched/backend.py",
+        "apex/contrib/torchsched/inductor/__init__.py",
+        "apex/contrib/torchsched/inductor/event.py",
+        "apex/contrib/torchsched/inductor/graph.py",
+        "apex/contrib/torchsched/inductor/scheduler.py",
+        "apex/contrib/torchsched/inductor/wrapper.py",
+        "apex/contrib/torchsched/passes/__init__.py",
+        "apex/contrib/torchsched/passes/pre_grad_passes.py",
+        "apex/distributed_testing/__init__.py",
+        "apex/distributed_testing/distributed_test_base.py",
+        "apex/fused_dense/fused_dense.py",
+        "apex/mlp/mlp.py",
+        "apex/normalization/fused_layer_norm.py",
+        "apex/optimizers/fused_adagrad.py",
+        "apex/optimizers/fused_adam.py",
+        "apex/optimizers/fused_lamb.py",
+        "apex/optimizers/fused_mixed_precision_lamb.py",
+        "apex/optimizers/fused_novograd.py",
+        "apex/optimizers/fused_sgd.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-COMM-002",
+      "title": "检测 torch.distributed NCCL 通信后端",
+      "action": "请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。",
+      "affected_files": [
+        "apex/contrib/bottleneck/halo_exchangers.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "action": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "affected_files": [
+        "apex/contrib/csrc/bottleneck/bottleneck.cpp",
+        "apex/contrib/csrc/conv_bias_relu/conv_bias_relu.cpp",
+        "apex/contrib/csrc/cudnn_gbn/norm_sample.cpp",
+        "apex/contrib/csrc/cudnn_gbn/norm_sample.h",
+        "apex/contrib/csrc/groupbn/batch_norm.h",
+        "apex/contrib/csrc/groupbn/batch_norm_add_relu.h",
+        "csrc/fused_dense_cuda.cu",
+        "csrc/megatron/fused_weight_gradient_dense_16bit_prec_cuda.cu",
+        "csrc/megatron/fused_weight_gradient_dense_cuda.cu",
+        "csrc/mlp_cuda.cu"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "action": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "affected_files": [
+        "apex/contrib/csrc/group_norm/group_norm_nhwc_bwd_one_pass_kernel.cuh",
+        "apex/contrib/csrc/group_norm/group_norm_nhwc_fwd_one_pass_kernel.cuh",
+        "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+        "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+        "apex/contrib/csrc/layer_norm/ln_bwd_kernels.cuh",
+        "apex/contrib/csrc/layer_norm/ln_fwd_kernels.cuh",
+        "apex/contrib/csrc/peer_memory/peer_memory_cuda.cu"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "title": "检测 CUDA warp 同步内建函数",
+      "action": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "affected_files": [
+        "apex/contrib/csrc/group_norm_v2/gn_cuda_kernel.cuh",
+        "apex/contrib/csrc/groupbn/nhwc_batch_norm_kernel.h",
+        "apex/contrib/csrc/layer_norm/ln_utils.cuh",
+        "apex/contrib/csrc/transducer/transducer_joint_kernel.cu",
+        "csrc/megatron/generic_scaled_masked_softmax.h",
+        "csrc/megatron/scaled_masked_softmax.h",
+        "csrc/megatron/scaled_upper_triang_masked_softmax.h",
+        "csrc/type_shim.h",
+        "csrc/welford.cu"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-COMM-001",
+      "title": "检测 NCCL 环境变量覆盖",
+      "action": "请复核通信后端、环境变量和拓扑配置，并在沐曦多卡环境进行针对性验证。",
+      "affected_files": [
+        "apex/contrib/nccl_allocator/nccl_allocator.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-TOOL-001",
+      "title": "检测直接 nvidia-smi 调用",
+      "action": "请复核诊断逻辑并提供可替换工具入口，再在沐曦服务器验证设备信息采集。",
+      "affected_files": [
+        "apex/contrib/sparsity/permutation_search_kernels/permutation_utilities.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-BUILD-001",
+      "title": "检测 TORCH_CUDA_ARCH_LIST 覆盖",
+      "action": "请复核 PyTorch 扩展的架构选择方式，移除不适用假设，并在 MXMACA 环境验证构建。",
+      "affected_files": [
+        "setup.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-ARCH-001",
+      "title": "检测 CUDA gencode 参数",
+      "action": "请复核目标架构参数，依据 MXMACA 工具链要求调整，并在沐曦设备验证生成物。",
+      "affected_files": [
+        "setup.py"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-ARCH-002",
+      "title": "检测硬编码 sm 或 compute 架构",
+      "action": "请复核架构列表是否可配置，并在 MXMACA 工具链上验证编译参数和运行结果。",
+      "affected_files": [
+        "setup.py"
+      ],
+      "completed": false
+    }
+  ],
+  "analysis_warnings": [
+    {
+      "code": "PATH_CONTEXT_DEMOTION",
+      "relative_path": null,
+      "message": "示例路径上的 MXR-COMM-002（4 个文件）；MXR-DEPENDENCY-005（11 个文件） 已封顶为提示，不参与静态状态判定；文件仍被扫描，结论可逐条复核。"
+    },
+    {
+      "code": "PATH_CONTEXT_DEMOTION",
+      "relative_path": null,
+      "message": "测试/夹具路径上的 MXR-COMM-002（9 个文件）；MXR-DEPENDENCY-005（38 个文件） 已封顶为提示，不参与静态状态判定；文件仍被扫描，结论可逐条复核。"
+    }
+  ],
+  "static_status": "blocked",
+  "verification_status": "not-run"
+}
