@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.1-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -76,7 +76,7 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | React 单页界面 | 可用 | Vitest + TypeScript 严格模式 |
 | 批量评估（`mxready-scan-batch`） | 可用 | CLI 回归 |
 | MCP 工具（`mxready-mcp`，需 `.[mcp]`） | 可用 | 后端测试 + 实际 stdio 握手 |
-| 真机沐曦 GPU 验证 | 设计完成，未在真机跑通 | 报告 `verification_status` 恒为 `not-run` |
+| 真机沐曦 GPU 验证 | 已完成一次脱敏验证（MetaX C500，`pytorch/extension-cpp` @ `1c325b2`） | runner `inspect` 五项环境检查与单卡 smoke 全部 `passed`；其他项目仍需各自验证 |
 
 工程状态：`ruff check`、`ruff format --check`、`mypy`、契约校验与 `pytest` 用例全绿（当前 490 余条），
 分支覆盖率 89%（门槛 80%）；CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS。
@@ -102,10 +102,10 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 
 | 平台 | 安装包 | 完整解压后，在包目录中执行 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-0.3.0-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
-| Linux | `mxready-0.3.0-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
-| macOS（Apple Silicon / Intel） | `mxready-0.3.0-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
-| 已有 Python 环境 | `mxready-0.3.0-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
+| Windows 10/11 | `mxready-0.3.1-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
+| Linux | `mxready-0.3.1-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
+| macOS（Apple Silicon / Intel） | `mxready-0.3.1-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
+| 已有 Python 环境 | `mxready-0.3.1-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
 
 启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。
 安装器在解压目录创建 `.venv/`，数据库保存在系统用户数据目录，升级替换程序时可保留历史报告。
@@ -445,7 +445,7 @@ npm run build
 ## MVP 路线图
 
 1. 用三个公开 CUDA 扩展项目生成可复现报告并校正规则精度；
-2. 申请沐曦远程服务器，完成至少一次相同提交的脱敏验证；
+2. 在更多公开项目上完成相同提交的脱敏真机验证（已完成 `pytorch/extension-cpp` @ `1c325b2`）；
 3. 选择一个上游项目提交小范围、可评审的迁移 PR；
 4. 根据真实适配反馈扩充规则与最小验证模板。
 

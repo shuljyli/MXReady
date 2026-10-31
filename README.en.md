@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.1-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -63,10 +63,10 @@ Release bundles need no Node.js, no PyTorch and no GPU driver. All platforms req
 
 | Platform | Artifact | After extracting, run |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-0.3.0-windows.zip` | PowerShell: `.\install.ps1`, then `.\start.ps1` |
-| Linux | `mxready-0.3.0-linux.zip` | `bash install.sh`, then `bash start.sh` |
-| macOS (Apple Silicon / Intel) | `mxready-0.3.0-macos.zip` | `bash install.sh`, then `bash start.sh` |
-| Existing Python environment | `mxready-0.3.0-py3-none-any.whl` | in a dedicated venv: `python -m pip install <wheel>`, then `mxready-serve` |
+| Windows 10/11 | `mxready-0.3.1-windows.zip` | PowerShell: `.\install.ps1`, then `.\start.ps1` |
+| Linux | `mxready-0.3.1-linux.zip` | `bash install.sh`, then `bash start.sh` |
+| macOS (Apple Silicon / Intel) | `mxready-0.3.1-macos.zip` | `bash install.sh`, then `bash start.sh` |
+| Existing Python environment | `mxready-0.3.1-py3-none-any.whl` | in a dedicated venv: `python -m pip install <wheel>`, then `mxready-serve` |
 
 Open <http://127.0.0.1:8000> after starting; press `Ctrl+C` in the terminal to stop.
 The installer creates a `.venv/` next to itself and keeps the database in the OS user-data
@@ -125,7 +125,7 @@ prefilter yields an identical finding set. The output has no timestamps so two r
 | Windows / Linux / macOS installers and UI wheel | Available | Release workflow installs and starts on all three OSes |
 | React single-page UI | Available | Vitest + TypeScript strict mode |
 | Batch assessment (`mxready-scan-batch`) | Available | CLI regression |
-| Real MetaX GPU verification | Designed, not yet run on hardware | Report `verification_status` stays `not-run` |
+| Real MetaX GPU verification | One redacted run completed (MetaX C500, `pytorch/extension-cpp` @ `1c325b2`) | Runner `inspect` checks and a single-GPU smoke all `passed`; every other project still needs its own run |
 
 ## Known limitations
 
@@ -176,7 +176,7 @@ prefilter yields an identical finding set. The output has no timestamps so two r
 ## Roadmap
 
 1. Generate reproducible reports on three public CUDA extension projects and calibrate rule precision;
-2. Obtain a MetaX remote server and complete at least one redacted verification of the same commit;
+2. Complete redacted on-hardware verification for more projects (done for `pytorch/extension-cpp` @ `1c325b2`);
 3. Submit a small, reviewable migration pull request upstream;
 4. Extend the rule set and the minimal verification template based on real adaptation feedback.
 

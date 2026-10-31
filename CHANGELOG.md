@@ -3,7 +3,16 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与
 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [0.3.1] - 2026-10-31
+
+补丁版本：补全发布验收与安全边界，新增可选 MCP 接口与七份本地化 README。0.x 阶段对外契约仍可能调整，
+接口与报告字段在 1.0 之前不承诺向后兼容。
+
+沐曦真机验证已完成——在 MetaX C500（Kernel Mode Driver 3.8.30、MACA 3.3.0.15）上以
+PyTorch 2.8.0+metax3.3.0.2 / Python 3.10.10 对 `pytorch/extension-cpp` 的提交
+`1c325b202ae5e11de3cefb9a65be28f47949edd4` 执行 runner：`inspect` 五项环境检查与单卡
+smoke 全部 `passed`。该结果只覆盖上述提交与该服务器环境，静态检查结论仍不代表项目已兼容
+MXMACA；正式版本将在后续发布。
 
 ### Added
 
@@ -248,7 +257,8 @@
 - Web 扫描路径永不执行被扫描仓库中的代码。
 - 仓库地址主机白名单、受限 Git 获取、只读索引与上传结果严格校验。
 
-[Unreleased]: https://github.com/shuljyli/MXReady/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/shuljyli/MXReady/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/shuljyli/MXReady/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/shuljyli/MXReady/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/shuljyli/MXReady/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/shuljyli/MXReady/compare/v0.1.0...v0.2.0
