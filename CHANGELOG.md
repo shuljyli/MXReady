@@ -9,6 +9,11 @@
 
 - 发布安装冒烟保留候选 ZIP 摘要、命令/退出码、日志及结果，检查系统默认用户数据路径和报告重启持久化；
   发布矩阵增加缺依赖失败检查及无包索引安装，明确进程故障、旧库升级与真机验收门槛。
+- 可选 `mxready-mcp`：把扫描、报告与规则查询暴露为 4 个 MCP 工具（`scan_repository` /
+  `get_report` / `list_rules` / `explain_rule`），供支持 Model Context Protocol 的编码 Agent
+  在改代码前取得可核验的迁移事实，而不是凭模型记忆猜测 CUDA 与 MXMACA 的差异。`mcp` 单独放在
+  可选依赖组（`.[mcp]`），核心运行时依赖仍是 4 个；stdio 传输下日志强制写 stderr，stdout 只承载
+  协议消息——这条边界由实际握手验证，不靠约定。
 
 ### Fixed
 

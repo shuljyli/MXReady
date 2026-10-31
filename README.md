@@ -20,6 +20,7 @@ MXReady 是一个面向 Python、PyTorch CUDA 扩展项目的**迁移准备度�
 - 输出 JSON、Markdown、SVG 徽章与标准库远程验证包；
 - 明确区分静态状态与真机验证状态；
 - 提供只读本地目录 CLI，便于离线回归和生成示例报告；
+- 可选 `mxready-mcp`：把扫描、报告与规则查询暴露为 4 个 MCP 工具，供支持 Model Context Protocol 的编码 Agent 调用；
 - React 单页界面与 FastAPI 服务可打包为同一个部署单元。
 
 MVP 不包含私有仓库、自动修改源码、远程 GPU 服务器的 Docker 编排、云 GPU 调度、用户系统或百分比"兼容分数"。
@@ -53,6 +54,7 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | 三平台安装 ZIP 与含网页的 wheel/sdist | 可用 | 发布工作流在 Windows / Linux / macOS 实际安装并启动 |
 | React 单页界面 | 可用 | Vitest + TypeScript 严格模式 |
 | 批量评估（`mxready-scan-batch`） | 可用 | CLI 回归 |
+| MCP 工具（`mxready-mcp`，需 `.[mcp]`） | 可用 | 后端测试 + 实际 stdio 握手 |
 | 真机沐曦 GPU 验证 | 设计完成，未在真机跑通 | 报告 `verification_status` 恒为 `not-run` |
 
 工程状态：`ruff check`、`ruff format --check`、`mypy`、契约校验与 477 条 `pytest` 用例全绿，
@@ -323,6 +325,31 @@ mxready-scan-batch repos.txt --output data/batch
 `batch-summary.csv`（UTF-8 BOM，Excel 可直接打开）逐仓记录提交、状态、三档计数、
 主要规则与报告文件；`batch-summary.md` 生成带链接的汇总表，适合直接贴进评估结论。
 退出码：`0` 全部成功且无阻塞，`2` 成功但存在阻塞仓库，`1` 存在扫描失败。
+
+## MCP（供编码 Agent 调用）
+
+`mxready-mcp` 把同一套扫描管线暴露为 Model Context Protocol 工具。它的用途是让编码 Agent
+在动手改代码前拿到可核验的迁移事实，而不是凭模型记忆猜测 CUDA 与 MXMACA 的差异。
+
+它依赖可选的 `mcp` 包，不在核心运行时依赖内：
+
+```bash
+python -m pip install -e ".[mcp]"
+mxready-mcp
+```
+
+默认使用 stdio 传输；日志固定写 stderr，stdout 只承载协议消息。暴露的工具：
+
+| 工具 | 作用 |
+| --- | --- |
+| `scan_repository` | 扫描公开仓库，在超时内返回按严重度排序的发现（含 file:line、证据与建议） |
+| `get_report` | 按 `scan_id` 重新取回已完成的报告 |
+| `list_rules` | 列出内置规则，可按 `category` / `severity` 过滤 |
+| `explain_rule` | 返回单条规则的判据、建议与一手引用 |
+
+边界与 CLI 完全一致：仅接受公开 GitHub / Gitee 仓库、不执行被扫描代码、结果绑定到具体提交。
+静态结论仍然不是真机验证结论——`verification_status` 保持 `not-run`，除非上传了同提交的
+沐曦 GPU 验证结果。
 
 ## 状态含义
 

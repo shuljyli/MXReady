@@ -46,6 +46,11 @@ dev = [
 load = [
   "locust>=2.32,<3",
 ]
+# Optional Model Context Protocol front end (`mxready-mcp`). Kept out of the
+# core dependencies so the runtime stays at four packages.
+mcp = [
+  "mcp>=1.2,<2",
+]
 
 [project.urls]
 Homepage = "https://github.com/shuljyli/MXReady"
@@ -60,6 +65,7 @@ mxready-scan = "mxready.cli.scan_repository:main"
 mxready-scan-public = "mxready.cli.generate_public_report:main"
 mxready-scan-batch = "mxready.cli.scan_batch:main"
 mxready-runner = "mxready_runner.cli:main"
+mxready-mcp = "mxready.mcp.server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
