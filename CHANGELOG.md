@@ -3,6 +3,12 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与
 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Changed
+
+- 同步中英文 README：明确 Web、本地目录和批量 CLI 的输入边界，补充英文批量扫描与 MCP 用法，避免覆盖率数字随测试变化而过期。
+
 ## [0.3.1] - 2026-10-31
 
 补丁版本：补全发布验收与安全边界，新增可选 MCP 接口与七份本地化 README。0.x 阶段对外契约仍可能调整，

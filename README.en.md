@@ -102,8 +102,7 @@ npm run build
 ```
 
 CI runs the gate on Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS, plus `pip-audit`, a Docker
-build-and-serve check, shell syntax checks and the frontend suite. Branch coverage is currently
-90% against an 80% threshold.
+build-and-serve check, shell syntax checks and the frontend suite. The branch coverage threshold is 80%.
 
 ### Rule engine benchmark
 
@@ -125,7 +124,44 @@ prefilter yields an identical finding set. The output has no timestamps so two r
 | Windows / Linux / macOS installers and UI wheel | Available | Release workflow installs and starts on all three OSes |
 | React single-page UI | Available | Vitest + TypeScript strict mode |
 | Batch assessment (`mxready-scan-batch`) | Available | CLI regression |
+| MCP tools (`mxready-mcp`, requires `.[mcp]`) | Available | Backend tests and stdio handshake |
 | Real MetaX GPU verification | One redacted run completed (MetaX C500, `pytorch/extension-cpp` @ `1c325b2`) | Runner `inspect` checks and a single-GPU smoke all `passed`; every other project still needs its own run |
+
+## Scan inputs and batch assessment
+
+The web UI accepts one public repository URL per scan. Use `mxready-scan` for a local source
+directory, or `mxready-scan-batch` for multiple public repositories. The web UI does not accept
+batch manifests or source ZIP uploads. The verification runner's `result.json` is a hardware
+verification result, not source code for scanning.
+
+For batch scans, create a UTF-8 manifest with one HTTPS repository URL per line, optionally
+followed by a branch, tag or 40-character commit. Lines starting with `#` are comments:
+
+```text
+https://github.com/pytorch/extension-cpp 1c325b202ae5e11de3cefb9a65be28f47949edd4
+```
+
+```bash
+mxready-scan-batch repos.txt --output data/batch
+# URLs can also be supplied directly alongside manifest paths.
+```
+
+The CLI writes per-repository reports and `batch-summary.csv` / `batch-summary.md`. Exit status
+`0` means all scans succeeded without blockers, `2` means at least one successful scan has a
+blocker, and `1` means at least one scan failed.
+
+## MCP for coding agents
+
+From a source checkout, install the optional dependency and start the stdio server:
+
+```bash
+python -m pip install -e ".[mcp]"
+mxready-mcp
+```
+
+The server exposes `scan_repository`, `get_report`, `list_rules` and `explain_rule`. It uses the
+same read-only scan boundaries as the CLI; logs go to stderr and stdout carries protocol messages.
+Static findings remain separate from hardware verification for the same commit.
 
 ## Known limitations
 
