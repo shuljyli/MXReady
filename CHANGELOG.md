@@ -66,8 +66,12 @@
 不承诺向后兼容。
 
 验证范围：Windows / Linux / macOS 已完成源码测试与三平台安装包安装、启动验证；
-沐曦 GPU 真机验证尚未执行，报告的 `verification_status` 仍为 `not-run`。计划近期
-租用沐曦算力完成上机检验，结果将绑定具体提交另行更新，完成前不声明“已在沐曦环境验证”。
+沐曦真机验证已完成——在 MetaX C500（Kernel Mode Driver 3.8.30、MACA 3.3.0.15）
+上以 PyTorch 2.8.0+metax3.3.0.2 / Python 3.10.10 对 `pytorch/extension-cpp` 的提交
+`1c325b202ae5e11de3cefb9a65be28f47949edd4` 执行 0.3.0 runner：`inspect` 的五项
+环境检查全部 `passed`，`mx-smi` 与 `torch.cuda` 均指向同一块 C500；构建
+`extension_cpp` 后单卡 smoke 命令通过，`overall_status` 为 `passed`。该结果只覆盖
+上述提交与那台服务器的环境组合，静态检查结论仍不代表项目已兼容 MXMACA。
 
 ### Added
 
