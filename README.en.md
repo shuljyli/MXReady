@@ -5,13 +5,19 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
-[中文](README.md) | **English**
+[中文](README.md) | **English** | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Português](README.pt-BR.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Русский](README.ru.md)
 
-MXReady is a **migration-readiness checker** for Python / PyTorch CUDA extension projects moving to
-MetaX MXMACA. Before a migration starts, it applies explainable static rules to locate CUDA
-toolchain assumptions, architecture flags, native dependencies and build-configuration risks worth
-reviewing, then produces a report pinned to a specific Git commit plus an optional remote
-verification bundle.
+You have PyTorch code running on NVIDIA GPUs and you want to move it to a MetaX GPU. You do not
+know yet what will break.
+
+MXReady reads the code without running it, and lists the places likely to cause trouble: where it
+calls NVIDIA's compiler directly, where it assumes 32 threads to a group (MetaX uses 64), where it
+inlines NVIDIA-only assembly, where it depends on something that does not exist on the new card.
+Every finding tells you which file, which line, why it matters, and what to change.
+
+It does not rewrite your code, and it does not produce a "compatibility percentage" — the number of
+rules a project hits says nothing about whether it will work. A clean static check only means
+nothing obvious was found; the real answer comes from running the same commit on a MetaX machine.
 
 > MXReady is a community prototype, not an official MetaX compatibility certification. A passing
 > static check does **not** mean a project already works on MXMACA; the final answer still has to come
@@ -21,11 +27,13 @@ verification bundle.
 
 - Accepts public HTTPS repositories on GitHub and Gitee, optionally at a branch, tag or 40-character commit;
 - Indexes Python, C/C++, CUDA, CMake, Shell, TOML and YAML text files;
-- Ships **30 first-batch rules** (`MXR-*`); every finding carries file path, line numbers, evidence,
+- Ships **35 rules** (`MXR-*`); every finding carries file path, line numbers, the matched snippet,
   a recommendation and a primary-source reference;
 - Exports JSON, Markdown, an SVG badge and a standard-library-only remote verification bundle;
 - Keeps the static status strictly separate from the hardware verification status;
 - Provides a read-only CLI for local directories, useful for offline regression and example reports;
+- Optional `mxready-mcp`: exposes scanning, reports and rule lookup as four Model Context Protocol
+  tools for coding agents;
 - Packages the React single-page UI and the FastAPI service as one deployable unit.
 
 Out of scope for this release: private repositories, automatic source rewriting, remote GPU

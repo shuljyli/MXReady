@@ -5,23 +5,27 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
-**中文** | [English](README.en.md)
+**中文** | [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Português](README.pt-BR.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Русский](README.ru.md)
 
-MXReady 是一个面向 Python、PyTorch CUDA 扩展项目的**迁移准备度体检工具**。在把项目迁移到沐曦 MXMACA 之前，它用可解释的静态规则定位 CUDA 工具链、架构参数、原生依赖和构建配置中值得复核的迁移风险，并生成固定到具体 Git 提交的报告与远程验证包。
+你要把一段跑在 NVIDIA 显卡上的 PyTorch 代码搬到沐曦 GPU 上，但不知道会踩哪些坑。
+
+MXReady 先把代码读一遍（只读，不运行），把可能出问题的地方列出来：哪里直接调了 NVIDIA 的编译器、哪里按“32 个线程一组”写死了（沐曦是 64）、哪里内联了 NVIDIA 专有的汇编、哪里依赖了跑不起来的库。每条都会说清楚是哪个文件、第几行、为什么有问题、建议怎么改。
+
+它不替你改代码，也不给“兼容性百分比”这种数字——命中几条规则推不出兼容概率。静态检查通过只代表没发现明显问题，真正的结论要在沐曦的机器上跑出来。
 
 > MXReady 是社区原型，不是沐曦官方兼容性认证。静态检查通过不等于项目已经兼容 MXMACA；最终结论仍需要在相同提交和受控的沐曦 GPU 环境中验证。
 
-## 当前能力
+## 它能做什么
 
-- 接收 GitHub、Gitee 的公开 HTTPS 仓库，以及可选的分支、标签或 40 位提交；
-- 扫描 Python、C/C++、CUDA、CMake、Shell、TOML、YAML 等受支持文本文件；
-- 提供 **35 条首批规则**（`MXR-*`），每条结果包含文件、行号、证据、建议和权威参考；
-- 测试、示例、文档路径与 Python 文档字符串中的命中封顶为提示：仍出现在报告里，但不参与阻塞判定；
-- 输出 JSON、Markdown、SVG 徽章与标准库远程验证包；
-- 明确区分静态状态与真机验证状态；
-- 提供只读本地目录 CLI，便于离线回归和生成示例报告；
+- 接收 GitHub、Gitee 的公开 HTTPS 仓库，可以指定分支、标签或 40 位提交；
+- 扫描 Python、C/C++、CUDA、CMake、Shell、TOML、YAML 等文本文件；
+- 内置 **35 条规则**（`MXR-*`），每条结果都带文件、行号、命中的代码、建议和权威参考；
+- 测试、示例和文档里出现的命中只算提示：仍然列进报告，但不会让整个项目被判成阻塞；
+- 输出 JSON、Markdown、SVG 徽章，以及一个只依赖标准库的远程验证包；
+- 静态结论和真机验证结论分开显示，不混在一起；
+- 提供只读的本地目录 CLI，便于离线回归和生成示例报告；
 - 可选 `mxready-mcp`：把扫描、报告与规则查询暴露为 4 个 MCP 工具，供支持 Model Context Protocol 的编码 Agent 调用；
-- React 单页界面与 FastAPI 服务可打包为同一个部署单元。
+- React 单页界面与 FastAPI 服务可以打包成同一个部署单元。
 
 MVP 不包含私有仓库、自动修改源码、远程 GPU 服务器的 Docker 编排、云 GPU 调度、用户系统或百分比"兼容分数"。
 
