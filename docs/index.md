@@ -27,6 +27,7 @@
 | [runner.md](runner.md) | 远程验证 runner 的命令白名单、确认流程与结果格式 |
 | [security.md](security.md) | 威胁模型与安全边界 |
 | [frontend-redesign.md](frontend-redesign.md) | 前端设计与交互决策记录 |
+| [frontend-feature-gap-analysis.md](frontend-feature-gap-analysis.md) | 后端/前端缺口、MCP 接入展示、已实施 P0/P1 功能与实际验收结果 |
 | [design/](design/) | 设计稿与视觉资产 |
 
 ## 一页内的技术事实

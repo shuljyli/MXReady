@@ -9,13 +9,13 @@ type ViewState =
   | { kind: "scanning"; job: ScanJob }
   | { kind: "report-loading"; job: ScanJob }
   | { kind: "report"; report: ScanReport }
-  | { kind: "error"; code: string; message: string; scanId?: string };
+  | { kind: "error"; code: string; message: string; scanId?: string; job?: ScanJob };
 
 function fromJob(job: ScanJob): ViewState {
   if (job.status === "completed") return { kind: "report-loading", job };
   if (job.status === "failed") {
     return {
-      kind: "error", code: job.failure_code ?? "SCAN_FAILED",
+      kind: "error", code: job.failure_code ?? "SCAN_FAILED", scanId: job.id, job,
       message: job.failure_message ?? "扫描未能完成。",
     };
   }
@@ -41,7 +41,13 @@ export function useScan(initialJob: ScanJob | undefined, pollIntervalMs: number)
   const [view, setView] = useState<ViewState>(() => initialJob ? fromJob(initialJob) : fromUrl());
 
   useEffect(() => {
-    const restore = () => setView(fromUrl());
+    const restore = () => setView((current) => {
+      const restored = fromUrl();
+      const currentId = current.kind === "scanning" || current.kind === "report-loading"
+        ? current.job.id : current.kind === "report" ? current.report.scan_id
+          : current.kind === "restoring" || current.kind === "error" ? current.scanId : undefined;
+      return restored.kind === "restoring" && restored.scanId === currentId ? current : restored;
+    });
     window.addEventListener("popstate", restore);
     return () => window.removeEventListener("popstate", restore);
   }, []);
@@ -100,6 +106,7 @@ export function useScan(initialJob: ScanJob | undefined, pollIntervalMs: number)
   return {
     view,
     reset: () => setView({ kind: "idle" }),
+    open: (scanId: string) => setView({ kind: "restoring", scanId }),
     onCreated: (job: ScanJob) => setView(fromJob(job)),
     onUpdated: (report: ScanReport) => setView({ kind: "report", report }),
     retry: () => {

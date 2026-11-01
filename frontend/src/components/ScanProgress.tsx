@@ -1,5 +1,6 @@
 import type { ScanJob, ScanStatus } from "../api/types";
 import { Icon } from "./Icon";
+import { TaskDetails } from "./TaskDetails";
 
 type ScanProgressProps = {
   job: ScanJob;
@@ -65,6 +66,7 @@ export function ScanProgress({ job }: ScanProgressProps) {
       <p className="progress-note">
         仅下载受限大小的源码并做静态匹配，不执行安装脚本、构建命令或项目代码。
       </p>
+      <TaskDetails job={job} />
     </section>
   );
 }

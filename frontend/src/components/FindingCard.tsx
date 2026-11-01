@@ -1,10 +1,13 @@
 import { useId, useState } from "react";
 
 import type { Finding } from "../api/types";
+import { referenceUrl, toolExample } from "../lib/integration";
+import { CopyButton } from "./CopyButton";
 import { Icon } from "./Icon";
 
 type FindingCardProps = {
   finding: Finding;
+  onOpenRule?: (id: string, version: number) => void;
 };
 
 const severityLabels = {
@@ -20,7 +23,7 @@ function lineLabel(finding: Finding) {
   return `${finding.relative_path}:${finding.line_start}-${finding.line_end}`;
 }
 
-export function FindingCard({ finding }: FindingCardProps) {
+export function FindingCard({ finding, onOpenRule }: FindingCardProps) {
   const [expanded, setExpanded] = useState(true);
   const contentId = useId();
   const toggleLabel = `${expanded ? "收起" : "展开"}详情`;
@@ -61,6 +64,11 @@ export function FindingCard({ finding }: FindingCardProps) {
 
       {expanded ? (
         <div className="finding-body" id={contentId}>
+          <div className="finding-metadata">
+            <span>分类：{finding.category} · 规则 v{finding.rule_version}</span>
+            {finding.count > 1 ? <span>同规则在此文件聚合命中 {finding.count} 次</span> : null}
+          </div>
+          {finding.count > 1 ? <p className="muted">行号覆盖聚合范围，仅保留一段证据，不表示范围内每一行均命中。</p> : null}
           <p className="finding-message">{finding.message}</p>
           <pre className="evidence-block">
             <code>{finding.evidence}</code>
@@ -75,18 +83,24 @@ export function FindingCard({ finding }: FindingCardProps) {
             <div className="finding-references">
               <span>依据</span>
               {finding.references.map((reference) => (
-                <a
-                  href={reference.url}
+                referenceUrl(reference.url) ? <a
+                  href={referenceUrl(reference.url)}
                   key={reference.url}
                   rel="noreferrer"
                   target="_blank"
                 >
                   {reference.title}
                   <span aria-hidden="true">↗</span>
-                </a>
+                </a> : <span key={reference.url}>{reference.title}（无有效 HTTPS 链接）</span>
               ))}
             </div>
           ) : null}
+          <div className="inline-actions">
+            {onOpenRule ? <button className="text-button compact-button" type="button"
+              onClick={() => onOpenRule(finding.rule_id, finding.rule_version)}>查看当前规则 {finding.rule_id}</button> : null}
+            <CopyButton label={"复制 " + finding.rule_id + " 解释参数"}
+              text={toolExample("explain_rule", { rule_id: finding.rule_id })} />
+          </div>
         </div>
       ) : null}
     </article>
