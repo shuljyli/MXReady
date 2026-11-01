@@ -1,10 +1,6 @@
 export type * from "./generated";
 
-// Minimal shape of GET /api/rules; the frontend only uses the rule count.
-export type RuleCatalog = {
-  version: string;
-  rules: { id: string }[];
-};
+export type ServiceHealth = { status: string; version: string };
 
 export type ApiErrorBody = {
   error: {

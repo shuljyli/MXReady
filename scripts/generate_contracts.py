@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from mxready.models import ScanJob, ScanReport, VerificationRun
+from mxready.scanning.rule_loader import RuleCatalog
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -42,7 +43,7 @@ def typescript_type(schema: dict[str, Any]) -> str:
 
 def artifacts() -> dict[Path, str]:
     definitions: dict[str, Any] = {}
-    for model in (ScanJob, ScanReport):
+    for model in (ScanJob, ScanReport, RuleCatalog):
         schema = model.model_json_schema(mode="serialization")
         definitions.update(schema.pop("$defs", {}))
         definitions[model.__name__] = schema

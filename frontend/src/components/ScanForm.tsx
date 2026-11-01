@@ -6,6 +6,8 @@ import { Icon } from "./Icon";
 
 type ScanFormProps = {
   onCreated: (job: ScanJob) => void;
+  initialRepository?: string;
+  initialRef?: string;
 };
 
 type VisibleError = {
@@ -31,9 +33,9 @@ function normalizeError(error: unknown): VisibleError {
   };
 }
 
-export function ScanForm({ onCreated }: ScanFormProps) {
-  const [repoUrl, setRepoUrl] = useState("");
-  const [requestedRef, setRequestedRef] = useState("");
+export function ScanForm({ onCreated, initialRepository = "", initialRef = "" }: ScanFormProps) {
+  const [repoUrl, setRepoUrl] = useState(initialRepository);
+  const [requestedRef, setRequestedRef] = useState(initialRef);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<VisibleError | null>(null);
 

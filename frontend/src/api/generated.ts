@@ -38,6 +38,35 @@ export type RepositorySnapshot = {
   commit: string;
 };
 
+export type RuleCatalog = {
+  version: string;
+  rules: Array<RuleDefinition>;
+  extra_version: string | null;
+};
+
+export type RuleDefinition = {
+  id: string;
+  version: number;
+  title: string;
+  category: string;
+  severity: Severity;
+  file_globs: Array<string>;
+  patterns: Array<RulePattern>;
+  message: string;
+  recommendation: string;
+  references: Array<SourceReference>;
+  updated: string | null;
+  confidence: "documented" | "needs-review";
+};
+
+export type RulePattern = {
+  type: "regex" | "dependency" | "fact";
+  expression: string | null;
+  flags: Array<string>;
+  name: string | null;
+  equals: boolean | string | null;
+};
+
 export type ScanJob = {
   id: string;
   repo_url: string;

@@ -3,6 +3,7 @@ import { type FormEvent, useState } from "react";
 import { MxReadyApiError, uploadVerification } from "../api/client";
 import type { ScanReport, VerificationStatus } from "../api/types";
 import { Icon } from "./Icon";
+import { CodeSnippet } from "./CodeSnippet";
 
 type VerificationPanelProps = {
   report: ScanReport;
@@ -107,6 +108,7 @@ export function VerificationPanel({
       </div>
       <p className="verification-detail">{status.detail}</p>
       <p className="verification-reminder">审阅命令后，在沐曦主机运行。</p>
+      <p className="verification-detail">默认包只做环境检查，不包含项目命令；“已验证”不等于完整项目功能或性能认证。</p>
 
       <div className="verification-actions">
         <a
@@ -161,10 +163,13 @@ export function VerificationPanel({
             <span>02</span>
             <div>
               <strong>在远程服务器运行</strong>
-              <code>
-                python -m mxready_runner inspect --manifest mxready.yml --output
-                result.json
-              </code>
+              <p>inspect 只运行固定环境检查，不运行项目命令。</p>
+              <CodeSnippet label="复制环境检查命令"
+                text="python -m mxready_runner inspect --manifest mxready.yml --output result.json" />
+              <p>需要验证项目时，先审阅并修改 project-commands.example.json，把实际命令填入 mxready.yml 的 project_commands。默认该列表为空。</p>
+              <CodeSnippet label="复制项目验证命令"
+                text="python -m mxready_runner run --manifest mxready.yml --output result.json" />
+              <p>run 执行项目命令前，需在 runner 中精确输入 yes。网页不会执行这些命令。</p>
             </div>
           </li>
           <li>

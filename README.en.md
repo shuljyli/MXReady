@@ -36,6 +36,11 @@ nothing obvious was found; the real answer comes from running the same commit on
   tools for coding agents;
 - Packages the React single-page UI and the FastAPI service as one deployable unit.
 
+The web workspace includes scanning, a complete rule browser, MCP setup and CLI guidance. Generate
+and copy stdio configuration from the MCP page, or copy a commit-pinned agent handoff from a report.
+MCP and Web must explicitly share the same local data directory to read each other's reports.
+Reports also offer priority-file navigation, combined filters, full metadata, sharing and refresh.
+
 Out of scope for this release: private repositories, automatic source rewriting, remote GPU
 orchestration, cloud GPU scheduling, user accounts, and any percentage "compatibility score".
 

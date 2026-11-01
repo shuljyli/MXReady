@@ -7,9 +7,14 @@ import {
 } from "react";
 
 import type { ScanReport, Severity, StaticStatus } from "../api/types";
+import { getReport } from "../api/client";
+import { agentHandoff, reportUrl } from "../lib/integration";
+import { CopyButton } from "./CopyButton";
 import { FindingCard } from "./FindingCard";
 import { Icon } from "./Icon";
 import { VerificationPanel } from "./VerificationPanel";
+import { ReportDetails } from "./ReportDetails";
+import { ReportExports } from "./ReportExports";
 
 type FindingFilter = "all" | Severity;
 
@@ -17,6 +22,9 @@ type ReportViewProps = {
   report: ScanReport;
   onReset: () => void;
   onUpdated?: (report: ScanReport) => void;
+  onRescan?: (report: ScanReport) => void;
+  onMcp?: () => void;
+  onOpenRule?: (id: string, version: number) => void;
 };
 
 const staticCopy: Record<
@@ -64,18 +72,62 @@ export function ReportView({
   report,
   onReset,
   onUpdated = () => undefined,
+  onRescan,
+  onMcp,
+  onOpenRule,
 }: ReportViewProps) {
   const [filter, setFilter] = useState<FindingFilter>("all");
+  const [category, setCategory] = useState("");
+  const [rule, setRule] = useState("");
+  const [file, setFile] = useState("");
+  const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+  const refreshRequest = useRef<AbortController | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const findingsHeading = useRef<HTMLHeadingElement>(null);
   const visibleFindings = useMemo(
-    () =>
-      filter === "all"
-        ? report.findings
-        : report.findings.filter((finding) => finding.severity === filter),
-    [filter, report.findings],
+    () => report.findings.filter((finding) => (filter === "all" || finding.severity === filter)
+      && (!category || finding.category === category) && (!rule || finding.rule_id === rule)
+      && (!file || finding.relative_path === file)
+      && `${finding.title} ${finding.rule_id} ${finding.relative_path} ${finding.message}`
+        .toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())),
+    [filter, category, rule, file, search, report.findings],
   );
   const status = staticCopy[report.static_status];
-  const downloadBase = `/api/scans/${report.scan_id}`;
+  const categories = [...new Set(report.findings.map((finding) => finding.category))].sort();
+  const ruleIds = [...new Set(report.findings.map((finding) => finding.rule_id))].sort();
+  const files = [...new Set(report.findings.map((finding) => finding.relative_path))].sort();
+
+  useEffect(() => {
+    setRefreshing(false);
+    return () => refreshRequest.current?.abort();
+  }, [report]);
+
+  async function refresh() {
+    refreshRequest.current?.abort();
+    const controller = new AbortController();
+    refreshRequest.current = controller;
+    setRefreshing(true); setRefreshError(null);
+    try {
+      const updated = await getReport(report.scan_id, controller.signal);
+      if (!controller.signal.aborted) onUpdated(updated);
+    } catch (error) {
+      if (!controller.signal.aborted) setRefreshError(error instanceof Error ? error.message : "刷新失败，请重试。");
+    } finally {
+      if (!controller.signal.aborted) setRefreshing(false);
+    }
+  }
+
+  function clearFilters() {
+    setFilter("all"); setCategory(""); setRule(""); setFile(""); setSearch("");
+  }
+  function showFile(path: string) {
+    clearFilters(); setFile(path); findingsHeading.current?.focus();
+  }
+  function showRule(id: string) {
+    clearFilters(); setRule(id); findingsHeading.current?.focus();
+  }
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -169,6 +221,15 @@ export function ReportView({
         <button className="secondary-button" onClick={onReset} type="button">新建体检</button>
       </header>
 
+      <div className="report-actions">
+        <CopyButton label="复制报告链接" text={reportUrl(report.scan_id)} />
+        <button className="secondary-button compact-button" type="button" onClick={refresh} disabled={refreshing}>{refreshing ? "正在刷新…" : "刷新报告"}</button>
+        {onRescan ? <button className="secondary-button compact-button" type="button" onClick={() => onRescan(report)}>同仓库重新扫描</button> : null}
+        {onMcp ? <button className="secondary-button compact-button" type="button" onClick={onMcp}>交给 Agent 继续分析</button> : null}
+        <CopyButton label="复制 Agent 交接内容" text={agentHandoff(report)} />
+      </div>
+      {refreshError ? <p role="alert">{refreshError}</p> : null}
+
       <div className="status-grid">
         <section className={"status-card report-status-" + report.static_status} aria-label="静态检查">
           <span className="panel-icon"><Icon name="file" /></span>
@@ -193,6 +254,15 @@ export function ReportView({
         </dl>
       </section>
 
+      <section className="report-section priority-files" aria-label="优先复核文件">
+        <h2>优先复核文件</h2><p className="muted">优先列出存在阻塞项的文件；没有阻塞项时列出警告文件。数量按聚合后的发现统计。</p>
+        {report.summary.top_blockers.length ? <ol>{report.summary.top_blockers.map((path) => <li key={path}>
+          <button type="button" className="text-button compact-button" aria-label={"优先复核 " + path}
+            onClick={() => showFile(path)}>{path}</button>
+        </li>)}</ol> : <p>暂无优先复核文件</p>}
+      </section>
+      <ReportDetails report={report} />
+
       <div className="report-layout">
         <div className="report-main">
           {report.analysis_warnings.length ? (
@@ -210,7 +280,7 @@ export function ReportView({
 
           <section className="report-section findings-section">
             <div className="section-heading">
-              <h2>源码发现</h2>
+              <h2 ref={findingsHeading} tabIndex={-1}>源码发现</h2>
               <div aria-label="按严重级别筛选" className="finding-filters"
                 onKeyDown={handleFilterKeyDown} role="group">
                 {filterOptions.map((option) => (
@@ -222,9 +292,24 @@ export function ReportView({
                 ))}
               </div>
             </div>
+            <div className="filter-grid">
+              <label className="field">搜索发现<input type="search" value={search} placeholder="标题、规则、文件或消息"
+                onChange={(event) => setSearch(event.target.value)} /></label>
+              <label className="field">发现分类<select value={category} onChange={(event) => setCategory(event.target.value)}>
+                <option value="">全部分类</option>{categories.map((value) => <option key={value}>{value}</option>)}
+              </select></label>
+              <label className="field">发现规则<select value={rule} onChange={(event) => setRule(event.target.value)}>
+                <option value="">全部规则</option>{ruleIds.map((value) => <option key={value}>{value}</option>)}
+              </select></label>
+              <label className="field">发现文件<select value={file} onChange={(event) => setFile(event.target.value)}>
+                <option value="">全部文件</option>{files.map((value) => <option key={value}>{value}</option>)}
+              </select></label>
+            </div>
+            <div className="filter-summary"><p role="status">显示 {visibleFindings.length} / {report.summary.total_count} 条发现</p>
+              <button type="button" className="text-button compact-button" onClick={clearFilters}>清除筛选</button></div>
             {visibleFindings.length ? (
               <div className="finding-list">{visibleFindings.map((finding, index) => (
-                <FindingCard finding={finding}
+                <FindingCard finding={finding} onOpenRule={onOpenRule}
                   key={finding.rule_id + "-" + finding.relative_path + "-" + finding.line_start + "-" + index} />
               ))}</div>
             ) : (
@@ -242,7 +327,13 @@ export function ReportView({
               <ol className="checklist">{report.migration_checklist.map((item, index) => (
                 <li key={item.rule_id + "-" + index}>
                   <span>{String(index + 1).padStart(2, "0")}</span>
-                  <div><strong>{item.title}</strong><p>{item.action}</p><small>{item.affected_files.join(" · ")}</small></div>
+                  <div><strong>{item.title}</strong><p>{item.action}</p>
+                    <small>{item.rule_id} · {item.completed ? "已完成（记录状态）" : "待处理（只读）"}</small>
+                    <button className="text-button compact-button" type="button" onClick={() => showRule(item.rule_id)}>查看此规则的发现</button>
+                    <details><summary>受影响文件（{item.affected_files.length}）</summary><ul>{item.affected_files.map((path) => <li key={path}>
+                      <button type="button" className="text-button compact-button" onClick={() => showFile(path)}>{path}</button>
+                    </li>)}</ul></details>
+                  </div>
                 </li>
               ))}</ol>
             ) : <p className="section-empty">没有从静态结果生成迁移动作。</p>}
@@ -250,15 +341,7 @@ export function ReportView({
         </div>
 
         <aside className="report-tools" aria-label="报告工具">
-          <section className="report-section export-section">
-            <div className="section-heading"><h2>导出报告</h2></div>
-            <div className="download-grid">
-              <a aria-label="JSON" href={downloadBase + "/report.json"}><Icon name="file" /><span>JSON</span></a>
-              <a aria-label="Markdown" href={downloadBase + "/report.md"}><Icon name="file" /><span>Markdown</span></a>
-              <a aria-label="Badge" href={downloadBase + "/badge.svg"}><Icon name="shield" /><span>Badge</span></a>
-            </div>
-            <p>绑定当前提交；项目更新后请重新扫描。</p>
-          </section>
+          <ReportExports report={report} />
           <VerificationPanel report={report} onUpdated={onUpdated} />
         </aside>
       </div>

@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import {
   createScan,
   getReport,
+  getHealth,
   getRules,
   getScan,
   MxReadyApiError,
@@ -98,6 +99,12 @@ it("returns the parsed rules catalog", async () => {
     version: "1",
     rules: [{ id: "MXR-TEST-001" }],
   });
+});
+
+it("reads Web health through the normal bounded request client", async () => {
+  const mock = stubFetch(jsonResponse({ status: "ok", version: "0.3.1" }));
+  await expect(getHealth()).resolves.toEqual({ status: "ok", version: "0.3.1" });
+  expect(mock.mock.calls[0][0]).toBe("/api/health");
 });
 
 it("uploads the verification file as the raw request body", async () => {

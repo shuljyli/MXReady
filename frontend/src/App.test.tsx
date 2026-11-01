@@ -1,9 +1,9 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { getReport, getRules, getScan, MxReadyApiError } from "./api/client";
-import type { ScanReport } from "./api/types";
+import { createScan, getHealth, getReport, getRules, getScan, MxReadyApiError } from "./api/client";
+import type { ScanJob, ScanReport } from "./api/types";
 import { App } from "./App";
 
 vi.mock("./api/client", async (importOriginal) => {
@@ -13,6 +13,8 @@ vi.mock("./api/client", async (importOriginal) => {
     getScan: vi.fn(),
     getReport: vi.fn(),
     getRules: vi.fn(),
+    getHealth: vi.fn(),
+    createScan: vi.fn(),
   };
 });
 
@@ -61,13 +63,15 @@ const completedReport = {
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/");
+  vi.mocked(getHealth).mockResolvedValue({ status: "ok", version: "0.3.1" });
   vi.mocked(getRules).mockResolvedValue({
     version: "2",
-    rules: [
-      { id: "MXR-TEST-001" },
-      { id: "MXR-TEST-002" },
-      { id: "MXR-TEST-003" },
-    ],
+    extra_version: null,
+    rules: ["MXR-TEST-001", "MXR-TEST-002", "MXR-TEST-003"].map((id) => ({
+      id, version: 1, title: id, category: "build", severity: "warning",
+      file_globs: ["*.py"], patterns: [], message: "复核构建", recommendation: "检查工具链",
+      references: [], updated: null, confidence: "documented",
+    })),
   });
 });
 
@@ -245,15 +249,75 @@ it("shows a skeleton while the completed report is loading", async () => {
 it("shows the rule count loaded from the rules API", async () => {
   render(<App />);
 
-  expect(await screen.findByText("规则集 v1 · 3 项")).toBeInTheDocument();
+  expect(await screen.findByText("规则集 v2 · 3 项")).toBeInTheDocument();
 });
 
 it("keeps the form usable when the rules catalog is unavailable", async () => {
   vi.mocked(getRules).mockRejectedValue(new Error("offline"));
   render(<App />);
   expect(await screen.findByLabelText("公开仓库地址")).toBeEnabled();
-  expect(screen.getByText("规则集 v1")).toBeInTheDocument();
+  expect(await screen.findByText("规则集暂不可用")).toBeInTheDocument();
   expect(screen.queryByText(/规则集 v1 ·/)).not.toBeInTheDocument();
+});
+
+it("keeps the active scan across MCP navigation and browser history", async () => {
+  vi.mocked(getScan).mockResolvedValue({ ...queuedJob, status: "completed" });
+  vi.mocked(getReport).mockResolvedValue(completedReport);
+  render(<App initialJob={queuedJob} pollIntervalMs={1} />);
+  await userEvent.click(screen.getByRole("link", { name: "MCP 接入" }));
+  expect(screen.getByRole("heading", { name: "MCP 接入" })).toHaveFocus();
+  expect(window.location.search).toContain("page=mcp");
+  expect(window.location.search).toContain(queuedJob.id);
+  await userEvent.click(screen.getByRole("link", { name: "源码体检" }));
+  expect(await screen.findByText("静态检查已通过")).toBeInTheDocument();
+  window.history.replaceState(null, "", `/?page=mcp&scan=${queuedJob.id}`);
+  await act(async () => { window.dispatchEvent(new PopStateEvent("popstate")); });
+  expect(screen.getByRole("heading", { name: "MCP 接入" })).toBeInTheDocument();
+});
+
+it("opens an existing scan by id and preserves interrupted-task identity", async () => {
+  vi.mocked(getScan).mockResolvedValue({ ...queuedJob, status: "failed",
+    failure_code: "SCAN_INTERRUPTED", failure_message: "执行租约已过期。" });
+  render(<App />);
+  await userEvent.click(screen.getByText("打开已有扫描"));
+  await userEvent.type(screen.getByLabelText("扫描 ID"), "invalid");
+  await userEvent.click(screen.getByRole("button", { name: "打开扫描" }));
+  expect(screen.getByRole("alert")).toHaveTextContent("请输入完整的扫描 UUID");
+  expect(getScan).not.toHaveBeenCalled();
+  await userEvent.clear(screen.getByLabelText("扫描 ID"));
+  await userEvent.type(screen.getByLabelText("扫描 ID"), queuedJob.id);
+  await userEvent.click(screen.getByRole("button", { name: "打开扫描" }));
+  expect(await screen.findByText(/原任务不会自动重放/)).toBeInTheDocument();
+  expect(new URL(window.location.href).searchParams.get("scan")).toBe(queuedJob.id);
+  await userEvent.click(screen.getByText("任务详情"));
+  expect(screen.getByText(queuedJob.id)).toBeVisible();
+  expect(screen.queryByRole("button", { name: "继续查看扫描" })).not.toBeInTheDocument();
+});
+
+it("prefills a pinned rescan and waits for an explicit submission", async () => {
+  vi.mocked(getReport).mockResolvedValue(completedReport);
+  render(<App initialJob={{ ...queuedJob, status: "completed" }} />);
+  await userEvent.click(await screen.findByRole("button", { name: "同仓库重新扫描" }));
+  expect(screen.getByLabelText("公开仓库地址")).toHaveValue(completedReport.repository.url);
+  expect(screen.getByLabelText("分支、标签或提交（可选）")).toHaveValue(completedReport.repository.commit);
+  expect(createScan).not.toHaveBeenCalled();
+});
+
+it("finishes a scan in the background without stealing MCP page focus", async () => {
+  const user = userEvent.setup();
+  let finish!: (job: ScanJob) => void;
+  vi.mocked(getScan).mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+  vi.mocked(getReport).mockResolvedValue(completedReport);
+  render(<App initialJob={queuedJob} pollIntervalMs={1} />);
+  await user.click(screen.getByRole("link", { name: "MCP 接入" }));
+  await waitFor(() => expect(getScan).toHaveBeenCalledOnce());
+  expect(vi.mocked(getScan).mock.calls[0][1]?.aborted).toBe(false);
+  await act(async () => { finish({ ...queuedJob, status: "completed" }); });
+  expect(screen.getByRole("heading", { name: "MCP 接入" })).toHaveFocus();
+  expect(screen.queryByText("静态检查已通过")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("link", { name: "源码体检" }));
+  expect(screen.getByText("静态检查已通过")).toBeInTheDocument();
+  expect(getScan).toHaveBeenCalledOnce();
 });
 
 it("provides a keyboard skip link to the workspace", async () => {

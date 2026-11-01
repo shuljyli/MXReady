@@ -1,4 +1,4 @@
-import type { ApiErrorBody, RuleCatalog, ScanJob, ScanReport } from "./types";
+import type { ApiErrorBody, RuleCatalog, ScanJob, ScanReport, ServiceHealth } from "./types";
 
 export class MxReadyApiError extends Error {
   readonly code: string;
@@ -84,8 +84,12 @@ export function getScan(id: string, signal?: AbortSignal): Promise<ScanJob> {
   return request<ScanJob>(`/api/scans/${encodeURIComponent(id)}`, { signal });
 }
 
-export function getRules(): Promise<RuleCatalog> {
-  return request<RuleCatalog>("/api/rules");
+export function getRules(signal?: AbortSignal): Promise<RuleCatalog> {
+  return request<RuleCatalog>("/api/rules", { signal });
+}
+
+export function getHealth(signal?: AbortSignal): Promise<ServiceHealth> {
+  return request<ServiceHealth>("/api/health", { signal });
 }
 
 export function getReport(id: string, signal?: AbortSignal): Promise<ScanReport> {
