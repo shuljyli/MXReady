@@ -14,6 +14,7 @@ from mxready.api.middleware import (
     RateLimitMiddleware,
     RequestBodyLimitMiddleware,
 )
+from mxready.api.workspace import router as workspace_router
 from mxready.config import Settings
 from mxready.errors import MxReadyError
 from mxready.logging_setup import setup_logging
@@ -30,6 +31,8 @@ _ERROR_STATUS_CODES = {
     "UNSUPPORTED_REPOSITORY_HOST": 400,
     "INVALID_GIT_REF": 400,
     "SCAN_NOT_FOUND": 404,
+    "VERIFICATION_NOT_FOUND": 404,
+    "CHECKLIST_ITEM_NOT_FOUND": 404,
     "SCAN_NOT_COMPLETED": 409,
     "VERIFICATION_COMMIT_MISMATCH": 409,
     "UPLOAD_TOO_LARGE": 413,
@@ -94,6 +97,7 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
         max_bytes=resolved.max_request_bytes,
     )
     app.include_router(scans_router, prefix="/api")
+    app.include_router(workspace_router, prefix="/api")
     app.include_router(rules_router, prefix="/api")
 
     @app.get("/api/health")

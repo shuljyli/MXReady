@@ -7,7 +7,7 @@ import {
 } from "react";
 
 import type { ScanReport, Severity, StaticStatus } from "../api/types";
-import { getReport } from "../api/client";
+import { getReport, updateChecklist } from "../api/client";
 import { agentHandoff, reportUrl } from "../lib/integration";
 import { CopyButton } from "./CopyButton";
 import { FindingCard } from "./FindingCard";
@@ -15,13 +15,16 @@ import { Icon } from "./Icon";
 import { VerificationPanel } from "./VerificationPanel";
 import { ReportDetails } from "./ReportDetails";
 import { ReportExports } from "./ReportExports";
+import { Pagination } from "./Pagination";
+import { VerificationHistory } from "./VerificationHistory";
+import { ReportComparison } from "./ReportComparison";
 
 type FindingFilter = "all" | Severity;
 
 type ReportViewProps = {
   report: ScanReport;
   onReset: () => void;
-  onUpdated?: (report: ScanReport) => void;
+  onUpdated?: (report: ScanReport, source?: "verification" | "checklist") => void;
   onRescan?: (report: ScanReport) => void;
   onMcp?: () => void;
   onOpenRule?: (id: string, version: number) => void;
@@ -68,6 +71,15 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function savedFilters(scanId: string): Record<string, string> {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(`mxready:filters:${scanId}`) ?? "{}");
+    if (!value || typeof value !== "object") return {};
+    return Object.fromEntries(Object.entries(value).filter(([key, text]) =>
+      ["filter", "category", "rule", "file", "search"].includes(key) && typeof text === "string" && text.length <= 1024)) as Record<string, string>;
+  } catch { return {}; }
+}
+
 export function ReportView({
   report,
   onReset,
@@ -76,11 +88,22 @@ export function ReportView({
   onMcp,
   onOpenRule,
 }: ReportViewProps) {
-  const [filter, setFilter] = useState<FindingFilter>("all");
-  const [category, setCategory] = useState("");
-  const [rule, setRule] = useState("");
-  const [file, setFile] = useState("");
-  const [search, setSearch] = useState("");
+  const [saved] = useState(() => savedFilters(report.scan_id));
+  const [filter, setFilter] = useState<FindingFilter>(["blocker", "warning", "info"].includes(saved.filter) ? saved.filter as FindingFilter : "all");
+  const [category, setCategory] = useState(saved.category ?? "");
+  const [rule, setRule] = useState(saved.rule ?? "");
+  const [file, setFile] = useState(saved.file ?? "");
+  const [search, setSearch] = useState(saved.search ?? "");
+  const [offset, setOffset] = useState(0);
+  const [savingItem, setSavingItem] = useState<string | null>(null);
+  const [savingCompleted, setSavingCompleted] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const checklistRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => checklistRequest.current?.abort(), [report.scan_id]);
+  useEffect(() => {
+    setOffset(0);
+    try { sessionStorage.setItem(`mxready:filters:${report.scan_id}`, JSON.stringify({ filter, category, rule, file, search })); } catch { /* Storage may be disabled. */ }
+  }, [filter, category, rule, file, search, report.scan_id]);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const refreshRequest = useRef<AbortController | null>(null);
@@ -98,6 +121,18 @@ export function ReportView({
   const categories = [...new Set(report.findings.map((finding) => finding.category))].sort();
   const ruleIds = [...new Set(report.findings.map((finding) => finding.rule_id))].sort();
   const files = [...new Set(report.findings.map((finding) => finding.relative_path))].sort();
+  const pageOffset = Math.min(offset, Math.max(0, Math.ceil(visibleFindings.length / 50) - 1) * 50);
+
+  async function saveItem(ruleId: string, completed: boolean) {
+    if (savingItem) return;
+    const controller = new AbortController(); checklistRequest.current = controller;
+    refreshRequest.current?.abort(); setRefreshing(false); setSavingItem(ruleId); setSavingCompleted(completed); setSaveError("");
+    try {
+      const updated = await updateChecklist(report.scan_id, ruleId, completed, controller.signal);
+      if (!controller.signal.aborted) { refreshRequest.current?.abort(); onUpdated(updated, "checklist"); }
+    } catch (err) { if (!controller.signal.aborted) setSaveError(err instanceof Error ? err.message : "保存清单失败"); }
+    finally { if (!controller.signal.aborted) setSavingItem(null); }
+  }
 
   useEffect(() => {
     setRefreshing(false);
@@ -262,6 +297,7 @@ export function ReportView({
         </li>)}</ol> : <p>暂无优先复核文件</p>}
       </section>
       <ReportDetails report={report} />
+      <ReportComparison report={report} />
 
       <div className="report-layout">
         <div className="report-main">
@@ -308,7 +344,7 @@ export function ReportView({
             <div className="filter-summary"><p role="status">显示 {visibleFindings.length} / {report.summary.total_count} 条发现</p>
               <button type="button" className="text-button compact-button" onClick={clearFilters}>清除筛选</button></div>
             {visibleFindings.length ? (
-              <div className="finding-list">{visibleFindings.map((finding, index) => (
+              <div className="finding-list">{visibleFindings.slice(pageOffset, pageOffset + 50).map((finding, index) => (
                 <FindingCard finding={finding} onOpenRule={onOpenRule}
                   key={finding.rule_id + "-" + finding.relative_path + "-" + finding.line_start + "-" + index} />
               ))}</div>
@@ -319,16 +355,23 @@ export function ReportView({
                 <p>这不代表已经完成 MXMACA 真机兼容验证。</p>
               </div>
             )}
+            {visibleFindings.length > 50 ? <Pagination label="发现" offset={pageOffset} limit={50} total={visibleFindings.length}
+              onChange={(value) => { setOffset(value); findingsHeading.current?.focus(); }} /> : null}
           </section>
 
           <section className="report-section checklist-section">
             <div className="section-heading"><h2>迁移清单</h2></div>
+            <p className="muted">勾选仅记录人工处理进度，不改变静态结论或真机验证状态。</p>
+            {saveError ? <p role="alert">{saveError}</p> : null}
             {report.migration_checklist.length ? (
               <ol className="checklist">{report.migration_checklist.map((item, index) => (
                 <li key={item.rule_id + "-" + index}>
                   <span>{String(index + 1).padStart(2, "0")}</span>
                   <div><strong>{item.title}</strong><p>{item.action}</p>
-                    <small>{item.rule_id} · {item.completed ? "已完成（记录状态）" : "待处理（只读）"}</small>
+                    <label className="checklist-toggle"><input type="checkbox" checked={savingItem === item.rule_id ? savingCompleted : item.completed} disabled={savingItem !== null}
+                      aria-label={"标记已处理：" + item.title} onChange={(event) => void saveItem(item.rule_id, event.target.checked)} />
+                      {savingItem === item.rule_id ? "正在保存…" : item.completed ? "已处理（人工记录）" : "待处理"}</label>
+                    <small>{item.rule_id}</small>
                     <button className="text-button compact-button" type="button" onClick={() => showRule(item.rule_id)}>查看此规则的发现</button>
                     <details><summary>受影响文件（{item.affected_files.length}）</summary><ul>{item.affected_files.map((path) => <li key={path}>
                       <button type="button" className="text-button compact-button" onClick={() => showFile(path)}>{path}</button>
@@ -342,7 +385,8 @@ export function ReportView({
 
         <aside className="report-tools" aria-label="报告工具">
           <ReportExports report={report} />
-          <VerificationPanel report={report} onUpdated={onUpdated} />
+          <VerificationPanel report={report} onUpdated={(value) => onUpdated(value, "verification")} />
+          <VerificationHistory report={report} />
         </aside>
       </div>
 

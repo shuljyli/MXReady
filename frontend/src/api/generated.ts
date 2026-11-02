@@ -80,6 +80,13 @@ export type ScanJob = {
   failure_message: string | null;
 };
 
+export type ScanPage = {
+  items: Array<ScanJob>;
+  total: number;
+  limit: number;
+  offset: number;
+};
+
 export type ScanReport = {
   schema_version: "1.0";
   scan_id: string;
@@ -117,4 +124,42 @@ export type SourceReference = {
 
 export type StaticStatus = "passed" | "warnings" | "blocked" | "failed";
 
+export type VerificationDetail = {
+  summary: VerificationSummary;
+  checks: Array<VerificationOutput>;
+  commands: Array<VerificationOutput>;
+};
+
+export type VerificationOutput = {
+  id: string;
+  status: string;
+  return_code: number | null;
+  duration_ms: number;
+  stdout: string;
+  stderr: string;
+};
+
+export type VerificationPage = {
+  items: Array<VerificationSummary>;
+  total: number;
+  limit: number;
+  offset: number;
+};
+
 export type VerificationStatus = "not-run" | "verified" | "failed" | "stale";
+
+export type VerificationSummary = {
+  id: number;
+  uploaded_at: string | null;
+  started_at: string;
+  finished_at: string;
+  expires_at: string;
+  status: VerificationStatus;
+  overall_status: string;
+  repository_commit: string;
+  environment_fingerprint: string;
+  runner_version: string;
+  check_count: number;
+  command_count: number;
+  is_latest: boolean;
+};

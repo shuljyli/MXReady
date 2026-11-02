@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { MxReadyApiError, uploadVerification } from "../api/client";
 import type { ScanReport, VerificationStatus } from "../api/types";
@@ -59,6 +59,8 @@ export function VerificationPanel({
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const activeUpload = useRef<AbortController | null>(null);
+  useEffect(() => () => activeUpload.current?.abort(), [report.scan_id]);
   const status = statusCopy[report.verification_status];
   const bundleUrl = `/api/scans/${report.scan_id}/verification-bundle`;
 
@@ -86,13 +88,15 @@ export function VerificationPanel({
 
     setError(null);
     setUploading(true);
+    const controller = new AbortController();
+    activeUpload.current = controller;
     try {
-      onUpdated(await uploadVerification(report.scan_id, file));
-      setFile(null);
+      const updated = await uploadVerification(report.scan_id, file, controller.signal);
+      if (!controller.signal.aborted) { onUpdated(updated); setFile(null); }
     } catch (caught) {
-      setError(uploadError(caught));
+      if (!controller.signal.aborted) setError(uploadError(caught));
     } finally {
-      setUploading(false);
+      if (!controller.signal.aborted) setUploading(false);
     }
   }
 

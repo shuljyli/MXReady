@@ -258,3 +258,19 @@ python -m ruff format --check src scripts tests packaging
 ```
 
 最后必须运行全量质量门，避免规则相互影响。
+
+## 固定提交的真实源码片段回归
+
+`tests/fixtures/corpus/reviewed.json` 记录 `pytorch/extension-cpp`、`NVIDIA/apex`、`NVIDIA/cuda-samples`
+的固定提交、源文件 Git blob、原始行号和最小代码片段。每个片段标注预期规则/级别、禁止误报的规则和复核说明。
+回归不联网、不导入或执行这些代码：
+
+```bash
+python scripts/evaluate_rule_corpus.py --output data/corpus-results.json
+python -m pytest tests/backend/test_rule_corpus.py
+```
+
+输出分别列出已标注范围内的误报、漏报、级别变化和未标注命中，前三类导致非零退出码。
+目前的 4 个片段用于检查 CUDA 头文件、内联 PTX 和 `warpSize` 相似反例，是小规模原始规则信号基线，
+不覆盖完整项目、构建配置、路径上下文或迁移结果，不能据此计算产品准确率或兼容百分比。
+扩充时必须核对固定提交原文并补充复核说明；不要把扫描器自己的输出直接当作正确标签。

@@ -12,6 +12,9 @@ def installer(tmp_path, monkeypatch):
     root = Path(__file__).resolve().parents[2]
     script = tmp_path / "install.py"
     shutil.copy2(root / "packaging" / "install.py", script)
+    shutil.copy2(
+        root / "packaging" / "runtime-constraints.txt", tmp_path / "runtime-constraints.txt"
+    )
     wheel = tmp_path / "packages" / "mxready-0.1.0-py3-none-any.whl"
     wheel.parent.mkdir()
     wheel.write_bytes(b"test wheel")
@@ -44,6 +47,7 @@ def test_offline_install_uses_local_wheels_without_shell(tmp_path, monkeypatch):
     assert command[-1] == str(wheel)
     assert run.call_args.kwargs["env"]["PYTHONIOENCODING"] == "utf-8"
     assert "--no-index" in command
+    assert command[command.index("--constraint") + 1] == str(tmp_path / "runtime-constraints.txt")
     assert command[command.index("--find-links") + 1] == str(wheel.parent)
     assert run.call_args.kwargs["check"] is True
     assert run.call_args.kwargs["timeout"] == 600

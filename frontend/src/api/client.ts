@@ -1,4 +1,4 @@
-import type { ApiErrorBody, RuleCatalog, ScanJob, ScanReport, ServiceHealth } from "./types";
+import type { ApiErrorBody, RuleCatalog, ScanJob, ScanReport, ServiceHealth, ScanPage, VerificationPage, VerificationDetail } from "./types";
 
 export class MxReadyApiError extends Error {
   readonly code: string;
@@ -84,6 +84,26 @@ export function getScan(id: string, signal?: AbortSignal): Promise<ScanJob> {
   return request<ScanJob>(`/api/scans/${encodeURIComponent(id)}`, { signal });
 }
 
+export function listScans(options: { q: string; status: string; offset: number }, signal?: AbortSignal) {
+  const params = new URLSearchParams({ q: options.q, offset: String(options.offset), limit: "20" });
+  if (options.status) params.set("status", options.status);
+  return request<ScanPage>(`/api/scans?${params}`, { signal });
+}
+
+export function listVerifications(scanId: string, offset: number, signal?: AbortSignal) {
+  return request<VerificationPage>(`/api/scans/${encodeURIComponent(scanId)}/verification-runs?offset=${offset}&limit=10`, { signal });
+}
+
+export function getVerification(scanId: string, id: number, signal?: AbortSignal) {
+  return request<VerificationDetail>(`/api/scans/${encodeURIComponent(scanId)}/verification-runs/${id}`, { signal });
+}
+
+export function updateChecklist(scanId: string, ruleId: string, completed: boolean, signal?: AbortSignal) {
+  return request<ScanReport>(`/api/scans/${encodeURIComponent(scanId)}/checklist/${encodeURIComponent(ruleId)}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ completed }), signal,
+  });
+}
+
 export function getRules(signal?: AbortSignal): Promise<RuleCatalog> {
   return request<RuleCatalog>("/api/rules", { signal });
 }
@@ -102,6 +122,7 @@ export function getReport(id: string, signal?: AbortSignal): Promise<ScanReport>
 export function uploadVerification(
   scanId: string,
   file: File,
+  signal?: AbortSignal,
 ): Promise<ScanReport> {
   return request<ScanReport>(
     `/api/scans/${encodeURIComponent(scanId)}/verification-runs`,
@@ -109,6 +130,7 @@ export function uploadVerification(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: file,
+      signal,
     },
   );
 }

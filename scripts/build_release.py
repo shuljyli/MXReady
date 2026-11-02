@@ -2,12 +2,15 @@
 
 import argparse
 import hashlib
+import json
+import platform as host_platform
 import shutil
 import subprocess
 import sys
 import tempfile
 import tomllib
 import zipfile
+from importlib.metadata import distributions
 from pathlib import Path
 
 PLATFORMS = ("windows", "linux", "macos")
@@ -39,6 +42,7 @@ def build_archives(root: Path, wheel: Path, output: Path, version: str) -> list[
             "install.py": root / "packaging" / "install.py",
             "INSTALL.md": root / "docs" / "installation.md",
             "LICENSE": root / "LICENSE",
+            "runtime-constraints.txt": root / "packaging" / "runtime-constraints.txt",
         }
         files.update({path.name: path for path in templates.iterdir() if path.is_file()})
         with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
@@ -95,6 +99,25 @@ def main(argv: list[str] | None = None) -> int:
                     if f"mxready/resources/frontend/{relative}" not in wheel.namelist():
                         raise ValueError(f"Frontend asset missing from wheel: {relative}")
         build_archives(root, wheels[0], output, version)
+        revision = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=False
+        )
+        provenance = {
+            "version": version,
+            "commit": revision.stdout.strip() if revision.returncode == 0 else None,
+            "python": sys.version,
+            "platform": host_platform.platform(),
+            "runtime_constraints_sha256": hashlib.sha256(
+                (root / "packaging/runtime-constraints.txt").read_bytes()
+            ).hexdigest(),
+            "frontend_lock_sha256": hashlib.sha256(
+                (root / "frontend/package-lock.json").read_bytes()
+            ).hexdigest(),
+            "build_dependencies": {item.metadata["Name"]: item.version for item in distributions()},
+        }
+        (output / "build-provenance.json").write_text(
+            json.dumps(provenance, indent=2), encoding="utf-8"
+        )
         checksums = "".join(
             f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n"
             for path in sorted(output.iterdir())

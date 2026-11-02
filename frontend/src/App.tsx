@@ -13,12 +13,14 @@ import { RuleCatalogView } from "./components/RuleCatalogView";
 import { ScanForm } from "./components/ScanForm";
 import { ScanProgress } from "./components/ScanProgress";
 import { TaskDetails } from "./components/TaskDetails";
+import { ScanHistory } from "./components/ScanHistory";
 import { useScan } from "./hooks/useScan";
 import { useWorkspacePage, workspaceHref, type WorkspacePage } from "./hooks/useWorkspacePage";
 
 const chipIllustration = new URL("./assets/mx-chip.webp", import.meta.url).href;
 const pages: Array<{ page: WorkspacePage; label: string; icon: "scan" | "file" | "chip" }> = [
   { page: "scan", label: "源码体检", icon: "scan" },
+  { page: "history", label: "扫描历史", icon: "file" },
   { page: "rules", label: "规则库", icon: "file" },
   { page: "mcp", label: "MCP 接入", icon: "chip" },
   { page: "cli", label: "命令行使用", icon: "file" },
@@ -101,6 +103,7 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
             : catalogError ?? "正在加载规则集…"}</span>
         </header>
         <main id="main-content" tabIndex={-1}>
+          {page === "history" ? <ErrorBoundary label="扫描历史"><ScanHistory onOpen={(id) => { open(id); navigate("scan"); }} /></ErrorBoundary> : null}
           {page === "rules" ? <ErrorBoundary label="规则库"><RuleCatalogView catalog={catalog}
             loading={catalogLoading} error={catalogError} onRetry={() => setCatalogAttempt((value) => value + 1)}
             selectedRule={ruleId} historicalVersion={ruleVersion} /></ErrorBoundary> : null}

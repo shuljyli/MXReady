@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime
 from pathlib import Path
+from threading import Event
 from typing import Any
 from uuid import uuid4
 
@@ -164,6 +165,7 @@ def test_server_exposes_the_documented_tools() -> None:
     assert {tool.name for tool in tools} == {
         "scan_repository",
         "get_report",
+        "get_scan",
         "list_rules",
         "explain_rule",
     }
@@ -212,3 +214,90 @@ def test_explain_rule_reports_unknown_identifiers(monkeypatch: pytest.MonkeyPatc
     payload = asyncio.run(_call(server, "explain_rule", {"rule_id": "MXR-NOPE-999"}))
 
     assert payload["error"]["code"] == "RULE_NOT_FOUND"
+
+
+def test_scan_wait_does_not_block_other_mcp_requests(monkeypatch):
+    release = Event()
+    runtime = _FakeRuntime(load_rule_catalog(_RULES_DIR))
+
+    def wait_for_scan(*args):
+        release.wait(1)
+        raise MxReadyError("SCAN_TIMEOUT", "fixture timeout")
+
+    runtime.scan_and_wait = wait_for_scan
+    monkeypatch.setattr(mcp_server, "_runtime", lambda: runtime)
+
+    async def check():
+        server = build_server()
+        task = asyncio.create_task(
+            _call(server, "scan_repository", {"repo_url": "https://github.com/example/project"})
+        )
+        try:
+            await asyncio.sleep(0.01)
+            assert not task.done(), "scan blocked the event loop until it finished"
+            rules = await _call(server, "list_rules", {})
+            assert rules["total"] > 0
+        finally:
+            release.set()
+            await task
+
+    asyncio.run(check())
+
+
+def test_mcp_pagination_reaches_all_findings_and_binds_cursor(monkeypatch):
+    report = _report(
+        [_finding(f"MXR-TEST-{i:03d}", Severity.WARNING, f"{i:04d}.cu", 1) for i in range(520)]
+    )
+
+    class Runtime:
+        def get_report(self, scan_id):
+            return report
+
+    monkeypatch.setattr(mcp_server, "_runtime", lambda: Runtime())
+    server = build_server()
+    first = asyncio.run(
+        _call(server, "get_report", {"scan_id": str(report.scan_id), "max_findings": 500})
+    )
+    assert first["next_cursor"]
+    second = asyncio.run(
+        _call(
+            server, "get_report", {"scan_id": str(report.scan_id), "cursor": first["next_cursor"]}
+        )
+    )
+    assert second["returned_findings"] == 20
+    assert second["next_cursor"] is None
+    assert not set(f["file"] for f in first["findings"]) & set(
+        f["file"] for f in second["findings"]
+    )
+    invalid = asyncio.run(
+        _call(server, "get_report", {"scan_id": str(uuid4()), "cursor": first["next_cursor"]})
+    )
+    assert invalid["error"]["code"] == "INVALID_CURSOR"
+
+
+@pytest.mark.parametrize("cursor", ["not-base64", "[]", "e30=", "a" * 4097])
+def test_malformed_cursor_is_rejected(cursor):
+    with pytest.raises(MxReadyError) as error:
+        mcp_server._page_options(str(uuid4()), cursor, None, None)
+    assert error.value.code == "INVALID_CURSOR"
+
+
+def test_report_filters_and_cursor_cannot_change_query():
+    report = _report(
+        [
+            _finding("MXR-TEST-001", Severity.WARNING, "a.cu", 1),
+            _finding("MXR-TEST-002", Severity.WARNING, "a.cu", 2),
+            _finding("MXR-TEST-003", Severity.BLOCKER, "b.cu", 1),
+        ]
+    )
+    first = _report_payload(report, 1, severity="warning", file="a.cu")
+    assert first["matched_findings"] == 2 and first["total_findings"] == 3
+    assert mcp_server._page_options(str(report.scan_id), first["next_cursor"], None, None) == (
+        1,
+        "warning",
+        "a.cu",
+    )
+    with pytest.raises(MxReadyError):
+        mcp_server._page_options(str(report.scan_id), first["next_cursor"], "blocker", None)
+    with pytest.raises(MxReadyError):
+        mcp_server._page_options(str(report.scan_id), None, "unknown", None)

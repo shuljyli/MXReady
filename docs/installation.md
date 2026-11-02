@@ -25,9 +25,9 @@ Windows、Linux 和 macOS 包共享相同应用代码，区别是安装与启动
 ## 获取与校验
 
 维护者执行下文的构建命令后，在源码根目录的 `dist/` 获得三个 ZIP、通用 wheel、源码包及
-`SHA256SUMS.txt`。发布到 GitHub 后可从
+`SHA256SUMS.txt` 和 `build-provenance.json`。发布到 GitHub 后可从
 [Releases](https://github.com/shuljyli/MXReady/releases) 获取；若版本没有附件，应先自行构建。
-CI 的 `Release packages` 工作流也提供打包产物下载，工作流不会自动创建公开 Release。
+CI 的 `Release packages` 工作流也提供打包产物下载；手动运行不创建公开 Release，`v*` 标签通过安装矩阵后才发布附件。
 
 校验下载文件（把占位的文件名替换为实际 ZIP 名称）：
 
@@ -142,11 +142,15 @@ Windows 将上面的 `python3` 改为 `py -3`、`.venv/bin/` 改为 `.venv\Scrip
 wheel 已包含网页、规则与验证 schema，无需重新构建网页。
 普通 `python -m build` 从开发源码构建的包可能不含网页，完整分发请使用发布脚本。
 
+ZIP 安装器使用包内 `runtime-constraints.txt` 固定核心运行依赖版本。直接安装 wheel 仍按其声明的版本范围解析；
+需要与 ZIP 一致时，从相同发布 ZIP 取出该文件，给 pip 增加 `--constraint runtime-constraints.txt`。
+约束不包含可选 MCP 或开发依赖，也不代表所有 CPU/Python 组合均已验证。
+
 如需离线安装，先在**相同操作系统、CPU 架构与 Python 版本**的联网机器上解压对应 ZIP，
 进入解压目录，下载依赖 wheel：
 
 ```bash
-python3 -m pip download --only-binary=:all: --dest packages ./packages/mxready-0.3.1-py3-none-any.whl
+python3 -m pip download --only-binary=:all: --constraint runtime-constraints.txt --dest packages ./packages/mxready-0.3.1-py3-none-any.whl
 ```
 
 Windows 使用 `py -3 -m pip download`。将整个目录复制到离线机器，执行
@@ -173,6 +177,7 @@ make release
 ```text
 packaging/                 受版本管理的安装模板
   install.py               共享安装逻辑
+  runtime-constraints.txt   发布 ZIP 的核心运行依赖版本
   windows/                 PowerShell 安装、启动脚本
   unix/                    Bash 安装、启动脚本
 scripts/build_release.py   构建编排，不放业务逻辑
@@ -185,9 +190,10 @@ dist/                      本地生成，Git 忽略
   mxready-0.3.1-py3-none-any.whl
   mxready-0.3.1.tar.gz
   SHA256SUMS.txt
+  build-provenance.json
 ```
 
-ZIP 内仅保留 `packages/`、安装/启动入口、共享安装器、安装说明、许可证和 wheel 摘要。
+ZIP 内仅保留 `packages/`、安装/启动入口、共享安装器、依赖约束、安装说明、许可证和 wheel 摘要。
 `.venv/` 安装时生成；用户数据库不放入发布包。不要提交 `dist/`、`build/`、下载依赖或虚拟环境。
 源码目录中的 `src/mxready/resources/` 只保留受维护的规则与 schema；网页资源仅在临时打包目录中合并。
 
@@ -197,6 +203,10 @@ ZIP 内仅保留 `packages/`、安装/启动入口、共享安装器、安装说
 
 维护者的证据留存命令和逐项发布门槛见 [发布验收](release-acceptance.md)。
 安装矩阵保留每组的在线和 `--no-index` 检查日志；后者不等于操作系统已断网。
+
+`build-provenance.json` 记录 Git 提交、构建 Python/平台、已安装构建依赖版本和前端锁文件/运行约束的 SHA-256，
+并纳入 `SHA256SUMS.txt`。从没有 Git 元数据的源码 ZIP 构建时提交为 null；该记录不保证构建字节完全一致，
+也不能替代各平台安装日志。更新依赖约束后必须重新执行安装验收。
 
 服务器的 systemd、Docker、代理和备份方案见源码中的 `docs/deployment.md`；
 完整安全约束见 `docs/security.md`；硬件验证流程见 `docs/runner.md`。

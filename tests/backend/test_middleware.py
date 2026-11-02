@@ -25,6 +25,7 @@ def _echo_app(middleware):
         routes=[
             Route("/api/scans", ok, methods=["POST"]),
             Route("/scans/1/verification-runs", ok, methods=["POST"]),
+            Route("/api/scans/1/checklist/MXR-TEST-001", ok, methods=["PATCH", "GET"]),
             Route("/ping", ok, methods=["POST"]),
         ]
     )
@@ -49,6 +50,16 @@ def test_rate_limit_ignores_non_write_endpoints() -> None:
     with TestClient(app) as client:
         for _ in range(3):
             assert client.post("/ping").status_code == 200
+
+
+def test_checklist_updates_share_the_write_rate_limit() -> None:
+    app = _echo_app(lambda target: RateLimitMiddleware(target, limit=1))
+    path = "/api/scans/1/checklist/MXR-TEST-001"
+    with TestClient(app) as client:
+        assert client.patch(path, json={"completed": True}).status_code == 200
+        assert client.patch(path, json={"completed": False}).status_code == 429
+        assert client.post("/api/scans").status_code == 429
+        assert client.get(path).status_code == 200
 
 
 def test_sliding_window_limiter_sweeps_expired_ip_buckets(monkeypatch) -> None:

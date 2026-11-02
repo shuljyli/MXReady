@@ -13,7 +13,10 @@ Two constraints shape the implementation:
 
 from __future__ import annotations
 
+import asyncio
 import atexit
+import base64
+import json
 import logging
 import sys
 from threading import Lock
@@ -157,16 +160,44 @@ def _finding_payload(finding: Finding) -> dict[str, Any]:
     }
 
 
-def _report_payload(report: ScanReport, max_findings: int) -> dict[str, Any]:
+def _report_payload(
+    report: ScanReport,
+    max_findings: int,
+    *,
+    offset: int = 0,
+    severity: str | None = None,
+    file: str | None = None,
+) -> dict[str, Any]:
     ordered = sorted(
         report.findings,
         key=lambda finding: (
             _SEVERITY_ORDER.get(str(finding.severity), len(_SEVERITY_ORDER)),
             finding.relative_path,
             finding.line_start,
+            finding.rule_id,
         ),
     )
-    selected = ordered[:max_findings]
+    ordered = [
+        item
+        for item in ordered
+        if (not severity or item.severity == severity) and (not file or item.relative_path == file)
+    ]
+    selected = ordered[offset : offset + max_findings]
+    next_offset = offset + len(selected)
+    cursor = (
+        base64.urlsafe_b64encode(
+            json.dumps(
+                {
+                    "scan_id": str(report.scan_id),
+                    "offset": next_offset,
+                    "severity": severity,
+                    "file": file,
+                }
+            ).encode()
+        ).decode()
+        if next_offset < len(ordered)
+        else None
+    )
     return {
         "scan_id": str(report.scan_id),
         "repository": {
@@ -183,12 +214,48 @@ def _report_payload(report: ScanReport, max_findings: int) -> dict[str, Any]:
         "findings": [_finding_payload(item) for item in selected],
         "returned_findings": len(selected),
         "total_findings": len(report.findings),
+        "matched_findings": len(ordered),
+        "next_cursor": cursor,
         "findings_truncated": len(report.findings) > len(selected),
         "migration_checklist": [
             item.model_dump(mode="json") for item in report.migration_checklist
         ],
         "analysis_warnings": [item.model_dump(mode="json") for item in report.analysis_warnings],
     }
+
+
+def _page_options(
+    scan_id: str, cursor: str | None, severity: str | None, file: str | None
+) -> tuple[int, str | None, str | None]:
+    offset = 0
+    if cursor:
+        try:
+            if len(cursor) > 4096:
+                raise ValueError("cursor too long")
+            page = json.loads(base64.b64decode(cursor, altchars=b"-_", validate=True))
+            if set(page) != {"scan_id", "offset", "severity", "file"} or page["scan_id"] != scan_id:
+                raise ValueError("cursor belongs to a different query")
+            offset = page["offset"]
+            if type(offset) is not int or not 0 <= offset <= 10_000:
+                raise ValueError("invalid offset")
+            if severity is not None and severity != page["severity"]:
+                raise ValueError("severity changed")
+            if file is not None and file != page["file"]:
+                raise ValueError("file changed")
+            severity, file = page["severity"], page["file"]
+            if severity is not None and not isinstance(severity, str):
+                raise ValueError("invalid severity")
+            if file is not None and (not isinstance(file, str) or len(file) > 1024):
+                raise ValueError("invalid file")
+        except (ValueError, TypeError, KeyError) as error:
+            raise MxReadyError(
+                "INVALID_CURSOR", "Use next_cursor from the same report query."
+            ) from error
+    if severity is not None and severity not in _SEVERITY_ORDER:
+        raise MxReadyError("INVALID_FILTER", "severity must be blocker, warning or info.")
+    if file is not None and len(file) > 1024:
+        raise MxReadyError("INVALID_FILTER", "file filter is too long.")
+    return offset, severity, file
 
 
 def _error_payload(error: Exception) -> dict[str, Any]:
@@ -227,7 +294,7 @@ def build_server() -> FastMCP:
     server._mcp_server.version = __version__
 
     @server.tool()
-    def scan_repository(
+    async def scan_repository(
         repo_url: str,
         ref: str | None = None,
         timeout_seconds: int = _DEFAULT_TIMEOUT_SECONDS,
@@ -245,31 +312,53 @@ def build_server() -> FastMCP:
             max_findings: Maximum findings returned, ordered by severity.
         """
         try:
-            report = _runtime().scan_and_wait(
-                repo_url,
-                ref,
-                _bounded_timeout(timeout_seconds),
-            )
+
+            def scan() -> ScanReport:
+                return _runtime().scan_and_wait(repo_url, ref, _bounded_timeout(timeout_seconds))
+
+            report = await asyncio.to_thread(scan)
             return _report_payload(report, _bounded_findings(max_findings))
         except (MxReadyError, OSError, ValueError) as error:
             return _error_payload(error)
 
     @server.tool()
-    def get_report(scan_id: str, max_findings: int = 50) -> dict[str, Any]:
+    async def get_report(
+        scan_id: str,
+        max_findings: int = 50,
+        cursor: str | None = None,
+        severity: str | None = None,
+        file: str | None = None,
+    ) -> dict[str, Any]:
         """Return a previously completed MXReady report by scan id.
 
         Args:
             scan_id: UUID returned by scan_repository.
             max_findings: Maximum findings returned, ordered by severity.
+            cursor: Opaque next_cursor returned by the preceding page of this query.
+            severity: Optional blocker, warning or info filter.
+            file: Optional exact repository-relative file path filter.
         """
         try:
-            report = _runtime().get_report(UUID(scan_id))
-            return _report_payload(report, _bounded_findings(max_findings))
+            normalized_id = str(UUID(scan_id))
+            offset, severity, file = _page_options(normalized_id, cursor, severity, file)
+            report = await asyncio.to_thread(lambda: _runtime().get_report(UUID(normalized_id)))
+            return _report_payload(
+                report, _bounded_findings(max_findings), offset=offset, severity=severity, file=file
+            )
         except (MxReadyError, ValueError) as error:
             return _error_payload(error)
 
     @server.tool()
-    def list_rules(
+    async def get_scan(scan_id: str) -> dict[str, Any]:
+        """Read scan progress or failure after a scan timeout; never creates a new scan."""
+        try:
+            job = await asyncio.to_thread(lambda: _runtime()._service.get_scan(UUID(scan_id)))
+            return job.model_dump(mode="json")
+        except (MxReadyError, ValueError) as error:
+            return _error_payload(error)
+
+    @server.tool()
+    async def list_rules(
         category: str | None = None,
         severity: str | None = None,
     ) -> dict[str, Any]:
@@ -279,7 +368,7 @@ def build_server() -> FastMCP:
             category: Case-insensitive category filter, for example "toolchain".
             severity: One of "blocker", "warning", or "info".
         """
-        catalog = _runtime().catalog
+        catalog = await asyncio.to_thread(lambda: _runtime().catalog)
         rules = catalog.rules
         if category:
             rules = [rule for rule in rules if rule.category.casefold() == category.casefold()]
@@ -301,13 +390,14 @@ def build_server() -> FastMCP:
         }
 
     @server.tool()
-    def explain_rule(rule_id: str) -> dict[str, Any]:
+    async def explain_rule(rule_id: str) -> dict[str, Any]:
         """Return one rule with its rationale, recommendation, and sources.
 
         Args:
             rule_id: Exact rule identifier, for example "MXR-WARP-001".
         """
-        for rule in _runtime().catalog.rules:
+        catalog = await asyncio.to_thread(lambda: _runtime().catalog)
+        for rule in catalog.rules:
             if rule.id == rule_id:
                 return {
                     "id": rule.id,
