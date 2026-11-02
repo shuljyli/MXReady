@@ -78,6 +78,7 @@ it("uploads one JSON result and returns the updated report", async () => {
   expect(uploadVerification).toHaveBeenCalledWith(
     staticPassedFixture.scan_id,
     file,
+    expect.any(AbortSignal),
   );
   expect(onUpdated).toHaveBeenCalledWith(verified);
 });

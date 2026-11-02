@@ -457,3 +457,19 @@ main > *, .workspace, .scan-workspace, .report-main, .report-tools { min-width: 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+/* History, evidence and bounded report lists share the existing workspace scale. */
+.history-list { display: grid; gap: 14px; min-width: 0; }
+.history-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px; border: 1px solid var(--border, #dce4e1); border-radius: 12px; background: #fff; }
+.history-item > div { min-width: 0; overflow-wrap: anywhere; }
+.history-item small, .verification-records small { display: block; color: #5e6f68; overflow-wrap: anywhere; }
+.pagination { display: flex; gap: 12px; align-items: center; justify-content: center; margin: 18px 0; flex-wrap: wrap; }
+.comparison-form { display: flex; gap: 12px; align-items: end; margin-top: 16px; flex-wrap: wrap; }
+.comparison-form .field { flex: 1; min-width: 180px; }
+.report-comparison, .verification-history { min-width: 0; overflow-wrap: anywhere; }
+.verification-history pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 280px; overflow: auto; background: #f4f7f5; padding: 10px; }
+.verification-history summary, .report-comparison > summary { cursor: pointer; font-weight: 650; }
+.verification-records { padding-left: 18px; }
+.verification-records li { margin: 14px 0; }
+.checklist-toggle { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.checklist-toggle input { width: 18px; height: 18px; accent-color: #21785b; }
+@media (max-width: 600px) { .history-item { align-items: flex-start; flex-direction: column; } }

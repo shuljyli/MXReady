@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from mxready.errors import MxReadyError
 from mxready.models import (
     ScanJob,
+    ScanPage,
     ScanReport,
     ScanStatus,
     VerificationRun,
@@ -37,6 +38,22 @@ _MIGRATIONS: list[str] = [
     "ALTER TABLE scan_jobs ADD COLUMN lease_expires_at TEXT",
     "CREATE INDEX IF NOT EXISTS scan_jobs_status_created ON scan_jobs(status, created_at)",
     "CREATE INDEX IF NOT EXISTS scan_jobs_updated ON scan_jobs(updated_at)",
+    """CREATE TABLE verification_runs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        scan_id TEXT NOT NULL REFERENCES scan_jobs(id) ON DELETE CASCADE,
+        uploaded_at TEXT,
+        verification_json TEXT NOT NULL
+    )""",
+    "CREATE INDEX verification_runs_scan ON verification_runs(scan_id, id DESC)",
+    """INSERT INTO verification_runs(scan_id, uploaded_at, verification_json)
+        SELECT id, NULL, verification_json FROM scan_jobs
+        WHERE verification_json IS NOT NULL""",
+    """CREATE TABLE checklist_progress (
+        scan_id TEXT NOT NULL REFERENCES scan_jobs(id) ON DELETE CASCADE,
+        rule_id TEXT NOT NULL,
+        completed INTEGER NOT NULL CHECK(completed IN (0, 1)),
+        PRIMARY KEY (scan_id, rule_id)
+    )""",
 ]
 
 
@@ -130,6 +147,32 @@ class SQLiteStore:
         if row is None:
             return None
         return self._job_from_row(row)
+
+    def list_jobs(
+        self,
+        *,
+        query: str = "",
+        status: ScanStatus | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> ScanPage:
+        # instr treats %, _ and quote characters literally; all values are bound.
+        where = "instr(lower(repo_url), lower(?)) > 0 AND (? IS NULL OR status = ?)"
+        parameters = (query, status, status)
+        with self._connect() as connection:
+            connection.execute("BEGIN")
+            total = connection.execute(
+                f"SELECT COUNT(*) FROM scan_jobs WHERE {where}", parameters
+            ).fetchone()[0]
+            rows = connection.execute(
+                "SELECT id, repo_url, requested_ref, resolved_commit, status, stage_message, "
+                "created_at, updated_at, failure_code, failure_message FROM scan_jobs "
+                f"WHERE {where} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?",
+                (*parameters, limit, offset),
+            ).fetchall()
+        return ScanPage(
+            items=[self._job_from_row(row) for row in rows], total=total, limit=limit, offset=offset
+        )
 
     def update_job(
         self,
@@ -332,9 +375,30 @@ class SQLiteStore:
                 "SELECT report_json FROM scan_jobs WHERE id = ?",
                 (str(scan_id),),
             ).fetchone()
+            progress = connection.execute(
+                "SELECT rule_id, completed FROM checklist_progress WHERE scan_id = ?",
+                (str(scan_id),),
+            ).fetchall()
         if row is None or row["report_json"] is None:
             return None
-        return ScanReport.model_validate_json(row["report_json"])
+        report = ScanReport.model_validate_json(row["report_json"])
+        saved = {item["rule_id"]: bool(item["completed"]) for item in progress}
+        return report.model_copy(
+            update={
+                "migration_checklist": [
+                    item.model_copy(update={"completed": saved.get(item.rule_id, item.completed)})
+                    for item in report.migration_checklist
+                ]
+            }
+        )
+
+    def set_checklist_item(self, scan_id: UUID, rule_id: str, completed: bool) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO checklist_progress(scan_id, rule_id, completed) VALUES (?, ?, ?) "
+                "ON CONFLICT(scan_id, rule_id) DO UPDATE SET completed = excluded.completed",
+                (str(scan_id), rule_id, int(completed)),
+            )
 
     def save_verification(self, scan_id: UUID, run: VerificationRun) -> None:
         with self._connect() as connection:
@@ -370,7 +434,62 @@ class SQLiteStore:
                     str(scan_id),
                 ),
             )
-        self._ensure_updated(cursor.rowcount, scan_id)
+            self._ensure_updated(cursor.rowcount, scan_id)
+            connection.execute(
+                "INSERT INTO verification_runs(scan_id, uploaded_at, verification_json) "
+                "VALUES (?, ?, ?)",
+                (str(scan_id), datetime.now(UTC).isoformat(), run.model_dump_json()),
+            )
+
+    def verification_history(
+        self,
+        scan_id: UUID,
+        *,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> tuple[list[tuple[int, datetime | None, VerificationRun]], int, int | None]:
+        with self._connect() as connection:
+            connection.execute("BEGIN")
+            count, latest = connection.execute(
+                "SELECT COUNT(*), MAX(id) FROM verification_runs WHERE scan_id = ?",
+                (str(scan_id),),
+            ).fetchone()
+            rows = connection.execute(
+                "SELECT * FROM verification_runs WHERE scan_id = ? ORDER BY id DESC "
+                "LIMIT ? OFFSET ?",
+                (str(scan_id), limit, offset),
+            ).fetchall()
+        return (
+            [
+                (
+                    row["id"],
+                    datetime.fromisoformat(row["uploaded_at"]) if row["uploaded_at"] else None,
+                    VerificationRun.model_validate_json(row["verification_json"]),
+                )
+                for row in rows
+            ],
+            count,
+            latest,
+        )
+
+    def verification_detail(
+        self,
+        scan_id: UUID,
+        run_id: int,
+    ) -> tuple[datetime | None, VerificationRun, bool] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT *, id = (SELECT MAX(id) FROM verification_runs WHERE scan_id = ?) "
+                "AS is_latest FROM verification_runs WHERE scan_id = ? AND id = ?",
+                (str(scan_id), str(scan_id), run_id),
+            ).fetchone()
+        if row is None:
+            return None
+        return (
+            datetime.fromisoformat(row["uploaded_at"]) if row["uploaded_at"] else None,
+            VerificationRun.model_validate_json(row["verification_json"]),
+            bool(row["is_latest"]),
+        )
 
     def get_verification(self, scan_id: UUID) -> VerificationRun | None:
         with self._connect() as connection:

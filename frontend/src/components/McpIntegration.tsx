@@ -38,8 +38,11 @@ export function McpIntegration({ report }: { report?: ScanReport }) {
       args: { repo_url: report?.repository.url ?? "https://github.com/pytorch/extension-cpp",
         ref: report?.repository.commit ?? null, timeout_seconds: 300, max_findings: 20 } },
     { name: "get_report", description: "按扫描 ID 读取同一数据库里的已完成报告。",
-      parameters: "scan_id 必填；max_findings 默认 50（1–500）。",
+      parameters: "scan_id 必填；max_findings 默认 50（1–500）；cursor 使用上页 next_cursor，直到为 null；severity 和 file 支持按级别及精确文件路径筛选。",
       args: { scan_id: report?.scan_id ?? "请替换为实际扫描 UUID", max_findings: 50 } },
+    { name: "get_scan", description: "超时后查询原任务的进度或失败原因，不会新建任务。",
+      parameters: "scan_id 必填；扫描等待超时或客户端取消请求不会取消后台任务。",
+      args: { scan_id: report?.scan_id ?? "请替换为实际扫描 UUID" } },
     { name: "list_rules", description: "列出当前规则，可按分类和默认严重级别过滤。",
       parameters: "category、severity 默认 null；过滤不区分大小写；级别为 blocker / warning / info。",
       args: { category: null, severity: "blocker" } },
@@ -53,7 +56,7 @@ export function McpIntegration({ report }: { report?: ScanReport }) {
     <section className="report-section prose">
       <span className="status-label">stdio 接入方式</span>
       <h2>让 Agent 使用 MXReady</h2>
-      <p>MCP 是模型上下文协议（Model Context Protocol）。支持该协议的编码 Agent 可调用下列四个工具。静态结果与真机验证分开，不提供兼容率。</p>
+      <p>MCP 是模型上下文协议（Model Context Protocol）。支持该协议的编码 Agent 可调用下列五个工具。静态结果与真机验证分开，不提供兼容率。</p>
       <p>这里提供安装和配置说明。网页无法检测本机 MCP 依赖或客户端连接状态；Web 服务正常也不代表 MCP 已连接。</p>
     </section>
 
@@ -97,7 +100,7 @@ export function McpIntegration({ report }: { report?: ScanReport }) {
     </section>
 
     <section className="report-section prose" aria-label="MCP 工具目录">
-      <h2>3. 四个可用工具</h2>
+      <h2>3. 五个可用工具</h2>
       <p>以下示例是工具名与参数说明，供客户端调用时参考，并非通用协议报文。</p>
       <div className="tool-list">{tools.map((tool) => <article className="tool-card" key={tool.name}>
         <h3>{tool.name}</h3><p>{tool.description}</p><p className="muted">{tool.parameters}</p>
@@ -111,7 +114,7 @@ export function McpIntegration({ report }: { report?: ScanReport }) {
       <dl className="detail-list">
         <div><dt>找不到 mcp 模块</dt><dd>确认在配置指定的 Python 环境中安装了可选依赖。</dd></div>
         <div><dt>SCAN_NOT_FOUND</dt><dd>核对扫描 ID，以及两端实际使用的数据目录是否相同。</dd></div>
-        <div><dt>SCAN_TIMEOUT</dt><dd>等待超时不会取消扫描。保留错误中的扫描 ID，稍后使用 get_report 查询。</dd></div>
+        <div><dt>SCAN_TIMEOUT</dt><dd>等待超时不会取消扫描。保留错误中的扫描 ID，用 get_scan 查看进度或失败原因，完成后用 get_report 分页读取。</dd></div>
         <div><dt>SCAN_NOT_COMPLETED</dt><dd>报告尚未完成，稍后重查；失败或中断任务需要新建扫描。</dd></div>
       </dl>
       <p>现有服务仅提供 stdio MCP，不提供网页 HTTP/SSE 连接地址。MCP 不运行仓库代码；真机执行继续使用人工审阅的 runner。</p>

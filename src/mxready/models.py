@@ -67,6 +67,13 @@ class ScanJob(StrictModel):
     failure_message: str | None = None
 
 
+class ScanPage(StrictModel):
+    items: list[ScanJob]
+    total: int
+    limit: int
+    offset: int
+
+
 class SourceReference(StrictModel):
     title: str
     url: str
@@ -217,6 +224,44 @@ class VerificationRun(StrictModel):
         ):
             raise ValueError("passed results cannot contain failed commands")
         return self
+
+
+class VerificationSummary(StrictModel):
+    id: int
+    uploaded_at: datetime | None
+    started_at: datetime
+    finished_at: datetime
+    expires_at: datetime
+    status: VerificationStatus
+    overall_status: str
+    repository_commit: str
+    environment_fingerprint: str
+    runner_version: str
+    check_count: int
+    command_count: int
+    is_latest: bool
+
+
+class VerificationPage(StrictModel):
+    items: list[VerificationSummary]
+    total: int
+    limit: int
+    offset: int
+
+
+class VerificationOutput(StrictModel):
+    id: str
+    status: str
+    return_code: int | None
+    duration_ms: int
+    stdout: str
+    stderr: str
+
+
+class VerificationDetail(StrictModel):
+    summary: VerificationSummary
+    checks: list[VerificationOutput]
+    commands: list[VerificationOutput]
 
 
 def _validate_result_command(value: list[str]) -> list[str]:

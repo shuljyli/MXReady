@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "scope": "Small source excerpts only. Evaluates labeled raw rule signals, not complete projects or statistical accuracy. Additional matches remain unreviewed.",
+  "cases": [
+    {
+      "id": "pytorch-cuda-headers",
+      "repository": "https://github.com/pytorch/extension-cpp",
+      "commit": "1c325b202ae5e11de3cefb9a65be28f47949edd4",
+      "path": "extension_cpp/extension_cpp/csrc/cuda/muladd.cu",
+      "source_blob_sha": "769513b10de9ab6c45a12572159dc1d94e49943b",
+      "source_lines": [
+        5,
+        6
+      ],
+      "excerpt": "#include <cuda.h>\n#include <cuda_runtime.h>\n",
+      "expected": [
+        {
+          "rule_id": "MXR-HEADER-001",
+          "severity": "info"
+        },
+        {
+          "rule_id": "MXR-HEADER-002",
+          "severity": "info"
+        }
+      ],
+      "forbidden": [
+        "MXR-PTX-001",
+        "MXR-WARP-001"
+      ],
+      "review_note": "CUDA headers register dependencies; they do not establish incompatibility."
+    },
+    {
+      "id": "apex-inline-ptx",
+      "repository": "https://github.com/NVIDIA/apex",
+      "commit": "575968bc1f9127ccd61003a681472a83af4ff1a1",
+      "path": "apex/contrib/csrc/group_norm/group_norm_nhwc.h",
+      "source_blob_sha": "6b718c637595e3dd05a16a3344738c9ebd380363",
+      "source_lines": [
+        40
+      ],
+      "excerpt": "  asm volatile(\"red.release.gpu.global.add.s32 [%0], %1;\" ::\"l\"(barrier), \"r\"(step));\n",
+      "expected": [
+        {
+          "rule_id": "MXR-PTX-001",
+          "severity": "blocker"
+        }
+      ],
+      "forbidden": [],
+      "review_note": "Literal NVIDIA inline PTX requires manual target-specific review."
+    },
+    {
+      "id": "cuda-runtime-header",
+      "repository": "https://github.com/NVIDIA/cuda-samples",
+      "commit": "5443602d89ed99aede2e4b7bf329daddeadb320e",
+      "path": "cpp/1_Utilities/deviceQuery/deviceQuery.cpp",
+      "source_blob_sha": "4d7da97bbf58e0154f14eba31f2e59811af348fb",
+      "source_lines": [
+        33
+      ],
+      "excerpt": "#include <cuda_runtime.h>\n",
+      "expected": [
+        {
+          "rule_id": "MXR-HEADER-001",
+          "severity": "info"
+        }
+      ],
+      "forbidden": [
+        "MXR-WARP-001"
+      ],
+      "review_note": "Runtime header is an informational dependency."
+    },
+    {
+      "id": "cuda-queried-warp-size",
+      "repository": "https://github.com/NVIDIA/cuda-samples",
+      "commit": "5443602d89ed99aede2e4b7bf329daddeadb320e",
+      "path": "cpp/1_Utilities/deviceQuery/deviceQuery.cpp",
+      "source_blob_sha": "4d7da97bbf58e0154f14eba31f2e59811af348fb",
+      "source_lines": [
+        191
+      ],
+      "excerpt": "        printf(\"  Warp size:                                     %d\\n\", deviceProp.warpSize);\n",
+      "expected": [],
+      "forbidden": [
+        "MXR-WARP-001"
+      ],
+      "review_note": "Printing queried warp width does not hard-code a 32-thread arithmetic assumption."
+    }
+  ]
+}

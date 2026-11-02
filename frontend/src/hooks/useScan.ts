@@ -108,7 +108,12 @@ export function useScan(initialJob: ScanJob | undefined, pollIntervalMs: number)
     reset: () => setView({ kind: "idle" }),
     open: (scanId: string) => setView({ kind: "restoring", scanId }),
     onCreated: (job: ScanJob) => setView(fromJob(job)),
-    onUpdated: (report: ScanReport) => setView({ kind: "report", report }),
+    onUpdated: (report: ScanReport, source?: "verification" | "checklist") => setView((current) =>
+      current.kind === "report" && current.report.scan_id === report.scan_id
+        ? { kind: "report", report: source === "verification"
+          ? { ...current.report, verification_status: report.verification_status }
+          : source === "checklist" ? { ...current.report, migration_checklist: report.migration_checklist }
+          : report } : current),
     retry: () => {
       if (view.kind === "error" && view.scanId) {
         setView({ kind: "restoring", scanId: view.scanId });

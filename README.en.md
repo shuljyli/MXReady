@@ -32,9 +32,15 @@ nothing obvious was found; the real answer comes from running the same commit on
 - Exports JSON, Markdown, an SVG badge and a standard-library-only remote verification bundle;
 - Keeps the static status strictly separate from the hardware verification status;
 - Provides a read-only CLI for local directories, useful for offline regression and example reports;
-- Optional `mxready-mcp`: exposes scanning, reports and rule lookup as four Model Context Protocol
+- Optional `mxready-mcp`: exposes scanning, task status, reports and rule lookup as five Model Context Protocol
   tools for coding agents;
 - Packages the React single-page UI and the FastAPI service as one deployable unit.
+
+The workspace includes searchable scan history, paginated findings with session filter restoration,
+saved manual checklist progress, and comparisons between reports from the same repository.
+Verification history separates environment checks from project commands and shows execution times,
+expiry, environment fingerprints and redacted output. Shared deployments expose the same history
+to all users with access; they do not provide per-user data isolation.
 
 The web workspace includes scanning, a complete rule browser, MCP setup and CLI guidance. Generate
 and copy stdio configuration from the MCP page, or copy a commit-pinned agent handoff from a report.
@@ -164,7 +170,7 @@ python -m pip install -e ".[mcp]"
 mxready-mcp
 ```
 
-The server exposes `scan_repository`, `get_report`, `list_rules` and `explain_rule`. It uses the
+The server exposes `scan_repository`, `get_scan`, `get_report`, `list_rules` and `explain_rule`. It uses the
 same read-only scan boundaries as the CLI; logs go to stderr and stdout carries protocol messages.
 Static findings remain separate from hardware verification for the same commit.
 

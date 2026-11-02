@@ -50,7 +50,7 @@ class _SlidingWindowLimiter:
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """按客户端 IP 限制写操作频率（创建扫描 / 上传验证结果）。"""
+    """按客户端 IP 限制写操作频率（创建扫描 / 上传验证 / 保存清单）。"""
 
     def __init__(self, app, *, limit: int, window_seconds: float = 60.0) -> None:
         super().__init__(app)
@@ -58,8 +58,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request, call_next):
         path = request.url.path.rstrip("/")
-        is_write = request.method == "POST" and (
-            path == "/api/scans" or path.endswith("/verification-runs")
+        is_write = (
+            request.method == "POST"
+            and (path == "/api/scans" or path.endswith("/verification-runs"))
+        ) or (
+            request.method == "PATCH" and path.startswith("/api/scans/") and "/checklist/" in path
         )
         if is_write:
             client_ip = request.client.host if request.client else "unknown"

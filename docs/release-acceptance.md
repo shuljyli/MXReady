@@ -7,7 +7,9 @@
 
 从确定的完整提交构建一次，将提交、构建命令/日志、版本、OS/架构、Python/Node 版本与
 `SHA256SUMS.txt` 一并归档。后续六组安装测试和最终分发使用同一批产物。
-依赖目前未锁定；同时保留安装后的 `pip freeze` 和离线 wheel 摘要，不能仅靠源码提交重现依赖。
+发布 ZIP 的核心运行依赖由 `packaging/runtime-constraints.txt` 固定，构建同时输出 `build-provenance.json`，记录提交、平台、构建依赖及约束/前端锁文件摘要。
+直接安装 wheel 的版本范围和可选 MCP 依赖没有锁定；仍需保留安装后的 `pip freeze` 和离线 wheel 摘要。
+依赖版本固定不代表所有构建字节完全一致，也不替代实际平台安装验收。
 更换产物后重新验收受影响项目。`--candidate-commit` 是声明的来源，必须由构建记录支持。
 
 ## 安装证据脚本
@@ -17,7 +19,7 @@
 ```bash
 python scripts/smoke_release.py --dist dist \
   --candidate-commit <完整提交> --evidence-dir dist/evidence-online
-python -m pip download --only-binary=:all: --dest dist/wheelhouse \
+python -m pip download --only-binary=:all: --constraint packaging/runtime-constraints.txt --dest dist/wheelhouse \
   dist/mxready-0.3.1-py3-none-any.whl
 python scripts/smoke_release.py --dist dist --wheelhouse dist/wheelhouse \
   --candidate-commit <完整提交> --evidence-dir dist/evidence-offline

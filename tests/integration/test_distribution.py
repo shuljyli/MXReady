@@ -44,7 +44,13 @@ def test_release_archives_contain_ui_and_platform_installers(tmp_path):
         prefix = archive.stem + "/"
         with zipfile.ZipFile(archive) as bundle:
             names = {name.removeprefix(prefix) for name in bundle.namelist()}
-            assert {"install.py", "INSTALL.md", "LICENSE", "WHEEL.sha256"} <= names
+            assert {
+                "install.py",
+                "INSTALL.md",
+                "LICENSE",
+                "WHEEL.sha256",
+                "runtime-constraints.txt",
+            } <= names
             extension = "ps1" if "windows" in archive.stem else "sh"
             assert {f"install.{extension}", f"start.{extension}"} <= names
             assert not any(".venv" in name or "mxready.db" in name for name in names)

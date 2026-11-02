@@ -28,6 +28,8 @@ MXReady 提供 HTTP API 供前端与自动化脚本调用。本文档覆盖全�
 | 400 | `INVALID_GIT_REF` | ref 参数格式不安全或超长 |
 | 400 | `INVALID_REQUEST` | 请求体或路径参数校验失败 |
 | 404 | `SCAN_NOT_FOUND` | 扫描任务不存在 |
+| 404 | `VERIFICATION_NOT_FOUND` | 该扫描下不存在指定验证记录 |
+| 404 | `CHECKLIST_ITEM_NOT_FOUND` | 报告中不存在指定清单项 |
 | 409 | `SCAN_NOT_COMPLETED` | 扫描尚未完成，报告不可用 |
 | 409 | `VERIFICATION_COMMIT_MISMATCH` | 验证结果的提交与报告不一致 |
 | 413 | `REQUEST_TOO_LARGE` | 请求体超过全局上限（`MXREADY_MAX_REQUEST_BYTES`） |
@@ -103,6 +105,23 @@ curl -s -X POST http://127.0.0.1:8000/api/scans \
 ```
 
 ## 4. 查询扫描任务
+
+### `GET /api/scans`
+
+列出当前服务数据库中的任务，按创建时间和 ID 倒序排列。此接口没有用户隔离；共享部署的访问控制应由反向代理提供。
+
+| 查询参数 | 默认值 | 约束 |
+| --- | --- | --- |
+| `q` | 空字符串 | 仓库 URL 子串，不区分 ASCII 大小写；最长 200 字符；`%`、`_` 按字面搜索 |
+| `status` | 无 | `queued` / `cloning` / `indexing` / `analyzing` / `completed` / `failed` |
+| `limit` | 20 | 1–50 |
+| `offset` | 0 | 0–1,000,000 |
+
+响应为 `{ "items": [ScanJob], "total": 42, "limit": 20, "offset": 0 }`，不附带完整报告。新增任务期间翻页可能出现位置移动，可重新查询首页。
+
+```bash
+curl -s 'http://127.0.0.1:8000/api/scans?q=extension&status=completed&limit=20&offset=0'
+```
 
 ### `GET /api/scans/{scan_id}`
 
@@ -184,9 +203,37 @@ curl -s -X POST \
 - `checks` 必须包含 `mx-smi` 与 `pytorch-device`；
 - `started_at` 不得晚于服务器时间 10 分钟以上，结果有效期 30 天。
 
-成功返回 `200`，`verification_status` 更新为 `verified` / `failed` / `stale`。
+成功返回 `200` 和更新后的完整报告，`verification_status` 为 `verified` / `failed` / `stale`。
+每次成功上传追加一条历史记录，当前报告仍采用最后上传的一次结果，不按执行时间重排。旧库迁移只能保留升级时已有的最后一次验证，不能找回被覆盖的记录。
 
-## 8. 防护行为说明（部署时）
+### `GET /api/scans/{scan_id}/verification-runs`
+
+分页查询验证摘要；`limit` 默认 10、范围 1–50，`offset` 默认 0、范围 0–1,000,000。响应包含 `items`、`total`、`limit`、`offset`，按上传记录 ID 倒序排列。
+
+每条摘要包含 `id`、`uploaded_at`、`started_at`、`finished_at`、`expires_at`、`status`、`overall_status`、`repository_commit`、`environment_fingerprint`、`runner_version`、`check_count`、`command_count` 和 `is_latest`。
+`status` 在读取时推导，`expires_at` 为执行结束后 30 天；`overall_status` 保留原始执行结果。旧库没有独立上传时间，迁移记录的 `uploaded_at` 为 null。
+
+### `GET /api/scans/{scan_id}/verification-runs/{run_id}`
+
+返回 `{ "summary": VerificationSummary, "checks": [...], "commands": [...] }`。
+检查项与项目命令分开展示，每项含 `id`、`status`、`return_code`、`duration_ms`、`stdout`、`stderr`；不返回命令参数。
+日志再次脱敏并限制每流 16 KiB。记录 ID 必须属于路径中的扫描，否则返回 404；没有项目命令不代表项目功能已验证。
+
+## 8. 保存人工整改清单
+
+### `PATCH /api/scans/{scan_id}/checklist/{rule_id}`
+
+```bash
+curl -s -X PATCH \
+  http://127.0.0.1:8000/api/scans/2f9a1c1e-0000-0000-0000-000000000000/checklist/MXR-WARP-001 \
+  -H "Content-Type: application/json" -d '{"completed": true}'
+```
+
+`completed` 必须是 JSON 布尔值。只接受该报告已有的清单项，成功返回完整报告。
+人工进度独立持久化，后续验证上传不会清空；重复设置同一值是幂等的，同一项并发修改以最后写入为准。
+该操作不重新执行扫描，也不改变静态风险或硬件验证结论。新扫描拥有独立清单。
+
+## 9. 防护行为说明（部署时）
 
 - 限流：`MXREADY_RATE_LIMIT_ENABLED=true` 时，按客户端 IP 限制写操作频率（默认每 IP 每分钟 20 次，`MXREADY_RATE_LIMIT_PER_MINUTE` 可调），超限返回 `429 RATE_LIMITED`；
 - 请求体上限：`MXREADY_MAX_REQUEST_BYTES` 全局限制（默认 1 MiB），验证结果上传走端点自身的 1 MiB 校验（错误码 `UPLOAD_TOO_LARGE`）；

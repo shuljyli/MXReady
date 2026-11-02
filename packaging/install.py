@@ -39,6 +39,8 @@ def main(argv: list[str] | None = None) -> int:
         "install",
         "--disable-pip-version-check",
         "--only-binary=:all:",
+        "--constraint",
+        str(root / "runtime-constraints.txt"),
     ]
     if args.offline:
         command += ["--no-index", "--find-links", str(root / "packages")]

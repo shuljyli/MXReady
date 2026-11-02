@@ -22,7 +22,7 @@ export function agentHandoff(report: ScanReport) {
     `工具版本：${report.tool_version}；报告规则集版本：${report.ruleset_version}`,
     "Web 与 MCP 使用同一本地数据目录时，可按以下工具名和参数读取报告（非协议报文）：",
     toolExample("get_report", { scan_id: report.scan_id, max_findings: 50 }),
-    "检查 findings_truncated、returned_findings 和 total_findings，默认返回可能不完整。",
+    "检查 findings_truncated、returned_findings、matched_findings 和 total_findings；将 next_cursor 传给下一次 get_report 的 cursor，直到 next_cursor 为 null。超时后可用 get_scan 查询原任务。",
     "若 MCP 与 Web 不共享数据库，请固定到上述完整提交重新扫描：",
     toolExample("scan_repository", {
       repo_url: report.repository.url, ref: report.repository.commit,
