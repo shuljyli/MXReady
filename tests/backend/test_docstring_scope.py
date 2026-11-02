@@ -13,6 +13,8 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
 
+import pytest
+
 from mxready.models import Severity, StaticStatus
 from mxready.scanning.analyzer import ScanAnalyzer
 from mxready.scanning.python_source import docstring_spans, is_inside_docstring
@@ -108,7 +110,10 @@ class C:
 
     spans = docstring_spans(source)
 
-    assert spans == ((1, 1), (5, 5), (8, 8))
+    expected = ('"""module doc"""', '"""class doc"""', '"""method doc"""')
+    assert spans == tuple(
+        (source.index(value), source.index(value) + len(value)) for value in expected
+    )
 
 
 def test_docstring_spans_ignore_plain_strings_and_assignments() -> None:
@@ -123,3 +128,28 @@ def test_is_inside_docstring_requires_full_containment() -> None:
     assert is_inside_docstring(spans, 12, 14)
     assert not is_inside_docstring(spans, 19, 21)
     assert not is_inside_docstring(spans, 9, 12)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        '"""构建说明"""; import os; os.system("nvcc main.cu")\n',
+        'def build():\n    """说明"""; os.system("nvcc main.cu")\n',
+        '"""多行说明\n结束"""; os.system("nvcc main.cu")\n',
+    ],
+)
+def test_executable_code_on_a_docstring_line_remains_blocked(tmp_path: Path, source: str) -> None:
+    _write(tmp_path, "build.py", source)
+
+    report = _scan(tmp_path)
+
+    assert _finding(report, "MXR-TOOLCHAIN-001").severity is Severity.BLOCKER
+    assert report.static_status is StaticStatus.BLOCKED
+
+
+def test_control_flow_string_is_not_a_docstring(tmp_path: Path) -> None:
+    _write(tmp_path, "build.py", "if True:\n    'os.system(\"nvcc main.cu\")'\n")
+
+    report = _scan(tmp_path)
+
+    assert _finding(report, "MXR-TOOLCHAIN-001").severity is Severity.BLOCKER

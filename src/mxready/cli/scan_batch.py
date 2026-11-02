@@ -122,6 +122,7 @@ def scan_batch(
                 output_dir=output_dir,
                 work_dir=work_dir,
                 requested_ref=entry.requested_ref,
+                pin_output_to_commit=True,
             )
             outcome = BatchOutcome(
                 display=f"{identity.owner}/{identity.name}",

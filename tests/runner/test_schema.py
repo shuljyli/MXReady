@@ -4,7 +4,38 @@ import json
 
 import pytest
 
+from mxready_runner.contracts import DEFAULT_CHECKS
 from mxready_runner.schema import ManifestError, load_manifest
+
+
+@pytest.mark.parametrize(
+    "check",
+    [
+        {"id": "custom", "command": ["python", "--version"], "timeout_seconds": 10},
+        {"id": "python-version", "command": ["python", "-V"], "timeout_seconds": 10},
+        {"id": "mx-smi", "command": ["mx-smi"], "timeout_seconds": 21},
+    ],
+)
+def test_environment_checks_must_match_the_fixed_contract(tmp_path, check) -> None:
+    manifest = _manifest(command=["python", "-m", "pytest"])
+    manifest["checks"] = [check]
+    path = tmp_path / "mxready.yml"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ManifestError, match="environment check"):
+        load_manifest(path)
+
+
+def test_manifest_accepts_all_default_environment_checks(tmp_path) -> None:
+    manifest = _manifest(command=["python", "-m", "pytest"])
+    manifest["checks"] = [
+        {"id": check.id, "command": check.command, "timeout_seconds": check.timeout_seconds}
+        for check in DEFAULT_CHECKS
+    ]
+    path = tmp_path / "mxready.yml"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    assert load_manifest(path).checks == list(DEFAULT_CHECKS)
 
 
 @pytest.mark.parametrize(
