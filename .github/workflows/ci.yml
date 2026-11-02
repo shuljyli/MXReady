@@ -10,6 +10,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  mcp:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[dev,mcp]"
+      - run: python -c "import mcp"
+      - run: python -m pytest tests/backend/test_mcp_server.py tests/integration/test_mcp_stdio.py -v
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: python -m pip install -c packaging/runtime-constraints.txt -e .
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm run build && npm run test:e2e
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failures
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
   python:
     strategy:
       fail-fast: false
@@ -45,7 +85,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python -m pip install --upgrade "setuptools>=83" -e . pip-audit
+      - run: python -m pip install --upgrade -c packaging/runtime-constraints.txt "setuptools>=83" -e . pip-audit
       - run: python -m pip_audit
 
   docker:

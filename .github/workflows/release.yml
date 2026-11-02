@@ -21,7 +21,7 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: python -m pip install -e ".[dev]"
+      - run: python -m pip install -c packaging/runtime-constraints.txt -e ".[dev]"
       - run: python -m ruff check src scripts tests packaging
       - run: python -m ruff format --check src scripts tests packaging
       - run: python -m mypy
@@ -64,6 +64,7 @@ jobs:
         run: >-
           python -c "import glob,subprocess,sys;
           subprocess.run([sys.executable,'-m','pip','download','--only-binary=:all:',
+          '--constraint','packaging/runtime-constraints.txt',
           '--dest','wheelhouse',*glob.glob('dist/*.whl')],check=True)"
       - name: Check missing dependencies and install without a package index
         run: >-
@@ -118,7 +119,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          assets=(dist/*.zip dist/*.whl dist/*.tar.gz dist/SHA256SUMS.txt)
+          assets=(dist/*.zip dist/*.whl dist/*.tar.gz dist/SHA256SUMS.txt dist/build-provenance.json)
           # 重跑同一 tag 时改为覆盖附件，避免"Release 已存在"直接失败。
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release edit "$TAG" --notes-file dist/RELEASE_NOTES.md
