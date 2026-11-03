@@ -29,6 +29,7 @@ def generate_public_report(
     output_dir: Path,
     work_dir: Path,
     requested_ref: str | None = None,
+    pin_output_to_commit: bool = False,
     git_client: GitClient | None = None,
     archive_client: GitHubArchiveClient | None = None,
 ) -> ScanReport:
@@ -74,11 +75,12 @@ def generate_public_report(
             stage_callback=lambda status: None,
         )
 
-    (output_dir / f"{label}.json").write_text(
+    stem = f"{label}-{commit[:12]}" if pin_output_to_commit else label
+    (output_dir / f"{stem}.json").write_text(
         report.model_dump_json(indent=2) + "\n",
         encoding="utf-8",
     )
-    (output_dir / f"{label}.md").write_text(
+    (output_dir / f"{stem}.md").write_text(
         render_markdown(report),
         encoding="utf-8",
     )

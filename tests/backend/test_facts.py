@@ -3,6 +3,8 @@ from __future__ import annotations
 import warnings
 from pathlib import Path
 
+import pytest
+
 from mxready.scanning.facts import extract_project_facts
 from mxready.scanning.indexer import build_file_index
 
@@ -318,3 +320,50 @@ def test_python_fact_parsing_does_not_emit_repository_syntax_warnings(
         extract_project_facts(build_file_index(tmp_path))
 
     assert caught == []
+
+
+@pytest.mark.parametrize("option", ["install_requires", "setup_requires", "tests_require"])
+def test_setup_cfg_dependency_lists_and_extras_are_extracted(tmp_path: Path, option: str) -> None:
+    (tmp_path / "setup.cfg").write_text(
+        f"[options]\n{option} =\n    torch>=2\n    Flash_Attn[dev]>=2; python_version>='3.11'\n"
+        "[options.extras_require]\ngpu =\n    tensorrt==10\n"
+        "[metadata]\ndescription = apex\n",
+        encoding="utf-8",
+    )
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    assert facts.dependencies == frozenset({"torch", "flash-attn", "tensorrt"})
+    assert facts.locations["dependency:flash-attn"][0].line == 4
+    assert facts.locations["dependency:tensorrt"][0].line == 7
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "[metadata]\ndescription = flash-attn\n[options]\ninstall_requires = torch\n",
+        "[options]\ninstall_requires = file: requirements.txt\n",
+        "[options]\ninstall_requires = attr: module.dependencies\n",
+        "[options\ninstall_requires = flash-attn\n",
+    ],
+)
+def test_setup_cfg_ignores_non_dependencies_dynamic_values_and_invalid_config(
+    tmp_path: Path, source: str
+) -> None:
+    (tmp_path / "setup.cfg").write_text(source, encoding="utf-8")
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    assert "flash-attn" not in facts.dependencies
+    assert "file" not in facts.dependencies
+    assert "attr" not in facts.dependencies
+
+
+def test_setup_cfg_single_line_dependency_list_is_extracted(tmp_path: Path) -> None:
+    (tmp_path / "setup.cfg").write_text(
+        "[options]\ninstall_requires = torch>=2; flash-attn>=2\n", encoding="utf-8"
+    )
+
+    facts = extract_project_facts(build_file_index(tmp_path))
+
+    assert facts.dependencies == frozenset({"torch", "flash-attn"})

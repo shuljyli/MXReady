@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import ast
+import configparser
 import re
+import shlex
 import tomllib
 import warnings
 from bisect import bisect_right
@@ -10,6 +12,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 
 from mxready.scanning.indexer import FileIndex, IndexedFile
+from mxready.scanning.path_context import is_demoted
 
 _DEPENDENCY_NAME = re.compile(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)")
 _KNOWN_FLAGS = {
@@ -116,6 +119,8 @@ def extract_project_facts(index: FileIndex) -> ProjectFacts:
 
         if lower_name == "pyproject.toml":
             _extract_pyproject(indexed_file, collector)
+        if lower_name == "setup.cfg":
+            _extract_setup_cfg(indexed_file, collector)
         if lower_name.startswith("requirements") and lower_name.endswith(".txt"):
             _extract_requirements(indexed_file, collector)
         if lower_name.endswith(".py"):
@@ -147,6 +152,11 @@ def _may_reference_toolchain(name: str, lower_name: str) -> bool:
 
 
 def _detect_cu_bridge(indexed_file: IndexedFile, collector: _FactCollector) -> None:
+    if is_demoted(indexed_file.relative_path) or indexed_file.relative_path.casefold().endswith(
+        ".py"
+    ):
+        # Python integration is recognized from command calls by the AST visitor below.
+        return
     lines = indexed_file.text.splitlines()
     for line_number, line in enumerate(lines, start=1):
         if _CU_BRIDGE_MARKERS.search(_strip_shell_comment(line)):
@@ -155,6 +165,28 @@ def _detect_cu_bridge(indexed_file: IndexedFile, collector: _FactCollector) -> N
                 _location(lines, indexed_file.relative_path, line_number),
             )
             return
+
+
+def _extract_setup_cfg(indexed_file: IndexedFile, collector: _FactCollector) -> None:
+    parser = configparser.ConfigParser(interpolation=None, inline_comment_prefixes=("#",))
+    try:
+        parser.read_string(indexed_file.text)
+    except configparser.Error:
+        return
+
+    searcher = _LineSearch(indexed_file)
+    values = [parser.get("options", name, fallback="") for name in _SETUP_REQUIRE_KEYWORDS]
+    if parser.has_section("options.extras_require"):
+        values.extend(value for _, value in parser.items("options.extras_require"))
+    for value in values:
+        if value.strip().startswith(("file:", "attr:")):
+            continue
+        # setuptools splits multiline lists by lines, single-line lists by semicolons.
+        specifications = value.splitlines() if "\n" in value else value.split(";")
+        for specification in specifications:
+            specification = specification.strip()
+            if specification and not specification.startswith("#"):
+                collector.add_dependency(specification, searcher.locate(specification))
 
 
 def _extract_pyproject(indexed_file: IndexedFile, collector: _FactCollector) -> None:
@@ -314,6 +346,21 @@ class _PythonFactVisitor(ast.NodeVisitor):
     def visit_Call(self, node: ast.Call) -> None:
         function_name = self._resolve_name(node.func)
         location = self._location(node.lineno)
+        if (
+            not is_demoted(self.indexed_file.relative_path)
+            and function_name
+            in {
+                "subprocess.run",
+                "subprocess.Popen",
+                "subprocess.call",
+                "subprocess.check_call",
+                "subprocess.check_output",
+                "os.system",
+            }
+            and node.args
+            and _is_cu_bridge_command(node.args[0])
+        ):
+            self.collector.set_flag("uses_cu_bridge_toolchain", location)
         if function_name == "torch.utils.cpp_extension.CUDAExtension":
             self.collector.set_flag("uses_torch_cuda_extension", location)
         elif function_name == "torch.utils.cpp_extension.CppExtension":
@@ -382,6 +429,26 @@ def _string_list_elements(node: ast.expr) -> Iterator[tuple[str, int]]:
         for element in node.elts:
             if isinstance(element, ast.Constant) and isinstance(element.value, str):
                 yield element.value, element.lineno
+
+
+def _is_cu_bridge_command(node: ast.expr) -> bool:
+    if isinstance(node, (ast.List, ast.Tuple)):
+        if not node.elts or not isinstance(node.elts[0], ast.Constant):
+            return False
+        executable = node.elts[0].value
+    elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+        try:
+            arguments = shlex.split(node.value)
+        except ValueError:
+            return False
+        executable = arguments[0] if arguments else ""
+    else:
+        return False
+    return isinstance(executable, str) and executable.rsplit("/", 1)[-1] in {
+        "make_maca",
+        "cmake_maca",
+        "cucc",
+    }
 
 
 def _extract_cmake(indexed_file: IndexedFile, collector: _FactCollector) -> None:

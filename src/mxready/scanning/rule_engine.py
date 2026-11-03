@@ -67,6 +67,8 @@ _DOCSTRING_NOTE = (
 class _RuleMatch:
     location: SourceLocation
     line_end: int
+    offset_start: int | None = None
+    offset_end: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,9 +161,9 @@ def evaluate_rules(
     files_by_path = {item.relative_path: item for item in index.files}
     docstring_cache: dict[str, tuple[tuple[int, int], ...]] = {}
 
-    def docstring_hit(relative_path: str, line_start: int, line_end: int) -> bool:
+    def docstring_hit(relative_path: str, offset_start: int | None, offset_end: int | None) -> bool:
         """命中是否完整落在 Python 文档字符串内；按文件惰性解析并缓存。"""
-        if not relative_path.endswith(".py"):
+        if not relative_path.endswith(".py") or offset_start is None or offset_end is None:
             return False
         indexed = files_by_path.get(relative_path)
         if indexed is None:
@@ -170,7 +172,7 @@ def evaluate_rules(
         if spans is None:
             spans = docstring_spans(indexed.text)
             docstring_cache[relative_path] = spans
-        return is_inside_docstring(spans, line_start, line_end)
+        return is_inside_docstring(spans, offset_start, offset_end)
 
     def check_budget() -> None:
         if time.monotonic() >= deadline:
@@ -193,8 +195,8 @@ def evaluate_rules(
                 message = rule.message
                 if severity is not Severity.INFO and docstring_hit(
                     match.location.relative_path,
-                    match.location.line,
-                    match.line_end,
+                    match.offset_start,
+                    match.offset_end,
                 ):
                     severity = Severity.INFO
                     message = f"{message}{_DOCSTRING_NOTE}"
@@ -301,6 +303,8 @@ def _evaluate_regex(
                     ),
                 ),
                 line_end=line_end,
+                offset_start=regex_match.start(),
+                offset_end=regex_match.end(),
             )
 
 

@@ -187,6 +187,7 @@ def _validate_manifest(document: Any) -> Manifest:
         raise ManifestError("runner version is invalid")
 
     checks = _validate_command_list(document["checks"], "checks")
+    _validate_environment_checks(checks)
     project_commands = _validate_command_list(
         document["project_commands"],
         "project_commands",
@@ -210,6 +211,21 @@ def _validate_command_list(value: Any, field_name: str) -> list[CommandSpec]:
     if not isinstance(value, list) or len(value) > 64:
         raise ManifestError(f"{field_name} must be a bounded list")
     return [_validate_command(item) for item in value]
+
+
+def _validate_environment_checks(checks: list[CommandSpec]) -> None:
+    # contracts imports CommandSpec from this module; resolve it after module initialization.
+    from mxready_runner.contracts import DEFAULT_CHECKS
+
+    allowed = {check.id: check for check in DEFAULT_CHECKS}
+    for check in checks:
+        expected = allowed.get(check.id)
+        if (
+            expected is None
+            or check.command != expected.command
+            or check.timeout_seconds > expected.timeout_seconds
+        ):
+            raise ManifestError("environment checks must match the fixed runner contract")
 
 
 def _validate_command(value: Any) -> CommandSpec:

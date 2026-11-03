@@ -192,3 +192,42 @@ def test_cu_bridge_markers_cover_documented_entry_points(
     report = _scan(tmp_path)
 
     assert "MXR-TOOLCHAIN-002" in {item.rule_id for item in report.findings}, text
+
+
+@pytest.mark.parametrize(
+    ("name", "text"),
+    [
+        ("tests/build.sh", "make_maca\n"),
+        ("docs/build.sh", "make_maca\n"),
+        ("tests/test_notes.py", '"""TODO: support make_maca."""\n'),
+        ("build.py", '"""TODO: support make_maca."""\n'),
+        ("build.py", 'print("TODO: support cu-bridge")\n'),
+    ],
+)
+def test_non_delivery_or_descriptive_markers_do_not_downgrade_builds(
+    tmp_path: Path, name: str, text: str
+) -> None:
+    _write(tmp_path, "Makefile", _NVIDIA_MAKEFILE)
+    _write(tmp_path, name, text)
+
+    report = _scan(tmp_path)
+
+    assert _severities(report, "MXR-TOOLCHAIN-001")["Makefile"] is Severity.BLOCKER
+    assert report.static_status is StaticStatus.BLOCKED
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        'import subprocess\nsubprocess.run(["make_maca", "all"], check=True)\n',
+        'from subprocess import run as launch\nlaunch(["/opt/maca/bin/cucc", "a.cu"])\n',
+        'import os\nos.system("cmake_maca build")\n',
+    ],
+)
+def test_python_toolchain_command_calls_remain_valid_evidence(tmp_path: Path, source: str) -> None:
+    _write(tmp_path, "Makefile", _NVIDIA_MAKEFILE)
+    _write(tmp_path, "build.py", source)
+
+    report = _scan(tmp_path)
+
+    assert _severities(report, "MXR-TOOLCHAIN-001")["Makefile"] is Severity.WARNING

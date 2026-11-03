@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -96,6 +97,7 @@ def _fake_scan_one(
         output_dir: Path,
         work_dir: Path,
         requested_ref: str | None,
+        pin_output_to_commit: bool = False,
     ):
         name = repository_url.rsplit("/", 1)[-1]
         if name in failures:
@@ -278,3 +280,30 @@ def test_cli_reports_empty_or_invalid_sources_without_traceback(tmp_path: Path, 
     captured = capsys.readouterr()
     assert "MXReady batch error" in captured.err
     assert "Traceback" not in captured.err
+
+
+def test_batch_writes_each_commit_and_csv_points_to_real_reports(
+    tmp_path: Path, monkeypatch
+) -> None:
+    class FixtureGitClient:
+        def clone(self, identity, requested_ref, destination):
+            destination.mkdir(parents=True)
+            (destination / "module.py").write_text("print(1)\n", encoding="utf-8")
+            return ("a" if requested_ref == "main" else "b") * 40
+
+    monkeypatch.setattr("mxready.cli.generate_public_report.GitClient", FixtureGitClient)
+    output = tmp_path / "reports"
+    entries = [
+        BatchEntry("https://github.com/example/project", ref, i)
+        for i, ref in enumerate(("main", "dev"), 1)
+    ]
+
+    outcomes = scan_batch(entries, output_dir=output, work_dir=tmp_path / "work")
+
+    rows = list(csv.DictReader(io.StringIO(render_batch_csv(outcomes))))
+    for row in rows:
+        markdown = output / row["report"]
+        assert markdown.is_file()
+        payload = json.loads(markdown.with_suffix(".json").read_text(encoding="utf-8"))
+        assert payload["repository"]["commit"] == row["commit"]
+    assert len(list(output.glob("*.json"))) == 2

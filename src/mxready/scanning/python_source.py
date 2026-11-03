@@ -1,4 +1,4 @@
-"""识别 Python 文档字符串占用的行区间。
+"""识别 Python 文档字符串占用的精确字符区间。
 
 静态规则按词法匹配，分不清"可执行代码"与"文档里对代码的描述"。本仓库自身就有
 反例：`scanning/toolchain.py` 的模块文档字符串写了
@@ -18,36 +18,50 @@
 from __future__ import annotations
 
 import ast
+import re
 
 
 def docstring_spans(text: str) -> tuple[tuple[int, int], ...]:
-    """返回文档字符串占用的闭区间行号（1-based），供命中行范围比对。"""
+    """返回半开字符偏移区间，与正则 match.span() 使用同一坐标。"""
     try:
         tree = ast.parse(text)
     except (SyntaxError, ValueError):
         return ()
 
+    line_starts = [0, *(match.end() for match in re.finditer(r"\r\n?|\n", text))]
+
+    def offset(row: int, byte_column: int) -> int:
+        start = line_starts[row - 1]
+        end = line_starts[row] if row < len(line_starts) else len(text)
+        # AST columns count UTF-8 bytes; regex offsets count Unicode characters.
+        return start + len(text[start:end].encode("utf-8")[:byte_column].decode("utf-8"))
+
     spans: list[tuple[int, int]] = []
     for node in ast.walk(tree):
-        body = getattr(node, "body", None)
-        if not isinstance(body, list) or not body:
+        if not isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
-        first = body[0]
+        if not node.body:
+            continue
+        first = node.body[0]
         if not isinstance(first, ast.Expr):
             continue
         value = first.value
         if not isinstance(value, ast.Constant) or not isinstance(value.value, str):
             continue
-        start = first.lineno
-        end = getattr(first, "end_lineno", None) or start
-        spans.append((start, end))
+        if value.end_lineno is not None and value.end_col_offset is not None:
+            spans.append(
+                (
+                    offset(value.lineno, value.col_offset),
+                    offset(value.end_lineno, value.end_col_offset),
+                )
+            )
     return tuple(spans)
 
 
 def is_inside_docstring(
     spans: tuple[tuple[int, int], ...],
-    line_start: int,
-    line_end: int,
+    offset_start: int,
+    offset_end: int,
 ) -> bool:
-    """命中行范围必须**完整**落在文档字符串内才豁免。"""
-    return any(start <= line_start and line_end <= end for start, end in spans)
+    """只有命中的字符范围完整落在文档字符串内才豁免。"""
+    return any(start <= offset_start and offset_end <= end for start, end in spans)
