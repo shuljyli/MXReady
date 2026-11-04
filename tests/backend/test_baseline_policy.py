@@ -67,7 +67,7 @@ def test_cli_baseline_keeps_full_report_and_changes_only_exit_policy(tmp_path):
     baseline = tmp_path / "before" / ("project-" + "a" * 12 + ".json")
     args[-1] = str(tmp_path / "after")
     assert main([*args, "--baseline", str(baseline), "--fail-on", "new-blockers"]) == 0
-    current = json.loads((tmp_path / "after" / baseline.name).read_text())
+    current = json.loads((tmp_path / "after" / baseline.name).read_text(encoding="utf-8"))
     assert current["summary"]["blocker_count"] > 0
     assert current["static_status"] == "blocked"
     assert main([*args, "--fail-on", "new-blockers"]) == 1
