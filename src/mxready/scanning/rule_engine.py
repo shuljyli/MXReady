@@ -153,7 +153,7 @@ def evaluate_rules(
     enable_prefilter: bool = True,
 ) -> list[Finding]:
     """Evaluate trusted rule data deterministically against a static index."""
-    findings: dict[tuple[str, str, int, str], Finding] = {}
+    findings: dict[tuple[str, str, int, str, int | None, int | None], Finding] = {}
     if max_findings < 1 or timeout_seconds <= 0:
         raise ValueError("Rule evaluation budgets must be positive")
     deadline = time.monotonic() + timeout_seconds
@@ -219,6 +219,8 @@ def evaluate_rules(
                     finding.relative_path,
                     finding.line_start,
                     finding.evidence,
+                    match.offset_start,
+                    match.offset_end,
                 )
                 findings.setdefault(key, finding)
                 if len(findings) > max_findings:

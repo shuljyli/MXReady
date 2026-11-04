@@ -354,8 +354,7 @@ mxready-scan-batch repos.txt --output data/batch
 主要规则与报告文件；`batch-summary.md` 生成带链接的汇总表，适合直接贴进评估结论。
 退出码：`0` 全部成功且无阻塞，`2` 成功但存在阻塞仓库，`1` 存在扫描失败。
 
-输入方式请按场景选择：Web 界面一次提交一个公开仓库 URL；本地目录使用 `mxready-scan`；
-多个公开仓库使用上述批量 CLI。批量清单不是源码压缩包，Web 界面也不提供批量清单或源码 ZIP 上传。
+输入方式请按场景选择：Web 支持单仓和每批最多 10 个公开仓库 URL，提供进度、失败项新建重试与汇总 JSON；本地目录使用 `mxready-scan`，大型清单使用上述批量 CLI。Web 批量在文本框逐行输入，不上传清单文件或源码 ZIP。
 验证 runner 生成的 `result.json` 是真机验证结果，不是待扫描的源码输入。
 
 ## MCP（供编码 Agent 调用）
@@ -466,3 +465,5 @@ npm run build
 ## 许可证
 
 本项目采用 [Apache License 2.0](LICENSE) 许可证。欢迎在遵守许可证条款的前提下使用、修改和分发。
+
+完整命中、扫描范围、报告差异、runner 版本核对与 SARIF/CI 接入见 [报告工作流](docs/report-workflow.md)。

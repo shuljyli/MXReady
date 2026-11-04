@@ -51,6 +51,7 @@ def test_generate_public_report_clones_with_limits_and_writes_pinned_outputs(
     assert {path.name for path in (tmp_path / "reports").iterdir()} == {
         "pytorch-extension-cpp.json",
         "pytorch-extension-cpp.md",
+        "pytorch-extension-cpp.sarif",
     }
     payload = json.loads(
         (tmp_path / "reports" / "pytorch-extension-cpp.json").read_text(encoding="utf-8")

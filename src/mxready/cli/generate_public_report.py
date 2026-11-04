@@ -12,6 +12,7 @@ from mxready.config import Settings
 from mxready.errors import MxReadyError
 from mxready.models import ScanReport, StaticStatus
 from mxready.reporting.markdown import render_markdown
+from mxready.reporting.sarif import render_sarif
 from mxready.reporting.terminal import render_terminal_summary
 from mxready.repository.git_client import GitClient
 from mxready.repository.github_archive import GitHubArchiveClient
@@ -84,6 +85,7 @@ def generate_public_report(
         render_markdown(report),
         encoding="utf-8",
     )
+    (output_dir / f"{stem}.sarif").write_text(render_sarif(report), encoding="utf-8")
     return report
 
 

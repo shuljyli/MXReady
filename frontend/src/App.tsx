@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { getHealth, getRules } from "./api/client";
 import type { RuleCatalog, ScanJob, ScanReport, ServiceHealth } from "./api/types";
+import { BatchScans } from "./components/BatchScans";
 import { CliGuide } from "./components/CliGuide";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Icon } from "./components/Icon";
@@ -20,6 +21,7 @@ import { useWorkspacePage, workspaceHref, type WorkspacePage } from "./hooks/use
 const chipIllustration = new URL("./assets/mx-chip.webp", import.meta.url).href;
 const pages: Array<{ page: WorkspacePage; label: string; icon: "scan" | "file" | "chip" }> = [
   { page: "scan", label: "源码体检", icon: "scan" },
+  { page: "batch", label: "批量扫描", icon: "scan" },
   { page: "history", label: "扫描历史", icon: "file" },
   { page: "rules", label: "规则库", icon: "file" },
   { page: "mcp", label: "MCP 接入", icon: "chip" },
@@ -103,6 +105,7 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
             : catalogError ?? "正在加载规则集…"}</span>
         </header>
         <main id="main-content" tabIndex={-1}>
+          <div hidden={page !== "batch"}><ErrorBoundary label="批量扫描"><BatchScans onOpen={id => { open(id); navigate("scan"); }} /></ErrorBoundary></div>
           {page === "history" ? <ErrorBoundary label="扫描历史"><ScanHistory onOpen={(id) => { open(id); navigate("scan"); }} /></ErrorBoundary> : null}
           {page === "rules" ? <ErrorBoundary label="规则库"><RuleCatalogView catalog={catalog}
             loading={catalogLoading} error={catalogError} onRetry={() => setCatalogAttempt((value) => value + 1)}

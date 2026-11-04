@@ -46,3 +46,11 @@ it("keeps location and severity metadata in the always-visible header", () => {
   expect(screen.getByText("MXR-TOOLCHAIN-001")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "直接调用 nvcc" })).toBeInTheDocument();
 });
+
+it("expands individual evidence and links the exact commit", async () => {
+  render(<FindingCard repository={blockedReportFixture.repository} finding={{ ...finding, count: 2,
+    occurrences: [{ line_start: 12, line_end: 12, evidence: "first" }, { line_start: 28, line_end: 28, evidence: "second" }] }} />);
+  await userEvent.click(screen.getByText("命中位置与证据（2）"));
+  expect(screen.getByText("second")).toBeVisible();
+  expect(screen.getByRole("link", { name: /setup.py:28-28/ })).toHaveAttribute("href", `https://github.com/example/project/blob/${blockedReportFixture.repository.commit}/setup.py#L28`);
+});

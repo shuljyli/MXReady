@@ -12,6 +12,7 @@ export function ReportExports({ report }: { report: ScanReport }) {
     <div className="download-grid">
       <a aria-label="JSON" href={base + "/report.json"}><Icon name="file" /><span>JSON</span></a>
       <a aria-label="Markdown" href={base + "/report.md"}><Icon name="file" /><span>Markdown</span></a>
+      <a aria-label="SARIF" href={base + "/report.sarif"}><Icon name="file" /><span>SARIF</span></a>
       <a aria-label="Badge" href={base + "/badge.svg"}><Icon name="shield" /><span>Badge</span></a>
     </div>
     <p>绑定当前提交；项目更新后请重新扫描。</p>

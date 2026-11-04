@@ -55,6 +55,7 @@ const completedReport = {
     top_blockers: [],
   },
   findings: [],
+  coverage: null,
   migration_checklist: [],
   analysis_warnings: [],
   static_status: "passed",

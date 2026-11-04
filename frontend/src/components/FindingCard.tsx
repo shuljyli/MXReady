@@ -2,11 +2,13 @@ import { useId, useState } from "react";
 
 import type { Finding } from "../api/types";
 import { referenceUrl, toolExample } from "../lib/integration";
+import { RemediationGuide } from "./RemediationGuide";
 import { CopyButton } from "./CopyButton";
 import { Icon } from "./Icon";
 
 type FindingCardProps = {
   finding: Finding;
+  repository?: { url: string; commit: string };
   onOpenRule?: (id: string, version: number) => void;
 };
 
@@ -23,7 +25,14 @@ function lineLabel(finding: Finding) {
   return `${finding.relative_path}:${finding.line_start}-${finding.line_end}`;
 }
 
-export function FindingCard({ finding, onOpenRule }: FindingCardProps) {
+export function FindingCard({ finding, onOpenRule, repository }: FindingCardProps) {
+  const occurrences = finding.occurrences?.length ? finding.occurrences : [finding];
+  const sourceUrl = (line: number) => {
+    if (!repository || !/^[0-9a-f]{40}$/.test(repository.commit)) return undefined;
+    const base = referenceUrl(repository.url);
+    if (!base) return undefined;
+    return `${base.replace(/\.git$/, "").replace(/\/$/, "")}/blob/${repository.commit}/${finding.relative_path.split("/").map(encodeURIComponent).join("/")}#L${line}`;
+  };
   const [expanded, setExpanded] = useState(true);
   const contentId = useId();
   const toggleLabel = `${expanded ? "收起" : "展开"}详情`;
@@ -68,17 +77,21 @@ export function FindingCard({ finding, onOpenRule }: FindingCardProps) {
             <span>分类：{finding.category} · 规则 v{finding.rule_version}</span>
             {finding.count > 1 ? <span>同规则在此文件聚合命中 {finding.count} 次</span> : null}
           </div>
-          {finding.count > 1 ? <p className="muted">行号覆盖聚合范围，仅保留一段证据，不表示范围内每一行均命中。</p> : null}
+          {finding.count > 1 && !finding.occurrences?.length ? <p className="muted">行号覆盖聚合范围，仅保留一段证据，不表示范围内每一行均命中。</p> : null}
           <p className="finding-message">{finding.message}</p>
-          <pre className="evidence-block">
-            <code>{finding.evidence}</code>
-          </pre>
+          <details open={occurrences.length === 1}><summary>命中位置与证据（{occurrences.length}）</summary>
+          {occurrences.map((occurrence, index) => <div key={index}>
+            <p>{sourceUrl(occurrence.line_start) ? <a href={sourceUrl(occurrence.line_start)} target="_blank" rel="noreferrer">{finding.relative_path}:{occurrence.line_start}-{occurrence.line_end} · 查看固定提交源码</a> : `${finding.relative_path}:${occurrence.line_start}-${occurrence.line_end}`}</p>
+            <pre className="evidence-block"><code>{occurrence.evidence}</code></pre>
+          </div>)}
+          </details>
 
           <div className="recommendation">
             <span>建议动作</span>
             <p>{finding.recommendation}</p>
           </div>
 
+          <RemediationGuide finding={finding} />
           {finding.references.length ? (
             <div className="finding-references">
               <span>依据</span>

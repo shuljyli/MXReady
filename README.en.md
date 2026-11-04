@@ -140,9 +140,7 @@ prefilter yields an identical finding set. The output has no timestamps so two r
 
 ## Scan inputs and batch assessment
 
-The web UI accepts one public repository URL per scan. Use `mxready-scan` for a local source
-directory, or `mxready-scan-batch` for multiple public repositories. The web UI does not accept
-batch manifests or source ZIP uploads. The verification runner's `result.json` is a hardware
+The web UI supports individual scans and batches of up to 10 public repository URLs, with progress, explicit retries and a JSON summary. Use `mxready-scan` for local source directories and `mxready-scan-batch` for larger manifests. The web UI accepts batch text input, not manifest-file or source-ZIP uploads. The verification runner's `result.json` is a hardware
 verification result, not source code for scanning.
 
 For batch scans, create a UTF-8 manifest with one HTTPS repository URL per line, optionally
@@ -230,3 +228,5 @@ Static findings remain separate from hardware verification for the same commit.
 ## License
 
 [Apache License 2.0](LICENSE).
+
+See [report workflow](docs/report-workflow.md) for occurrence evidence, scan scope, comparison, runner checkout checks, and SARIF/CI integration.

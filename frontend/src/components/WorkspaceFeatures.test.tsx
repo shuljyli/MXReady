@@ -59,7 +59,7 @@ it("compares reports and rejects different repositories", async () => {
   await userEvent.click(screen.getByText("对比另一份报告"));
   await userEvent.type(screen.getByLabelText("基线扫描 ID"), "00000000-0000-0000-0000-000000000002");
   await userEvent.click(screen.getByRole("button", { name: "开始对比" }));
-  expect(await screen.findByText("新增 2 · 消失 0 · 保留 0")).toBeInTheDocument();
+  expect(await screen.findByText("新增 2 · 消失 0 · 保留 0 · 级别变化 0 · 次数变化 0")).toBeInTheDocument();
   vi.mocked(getReport).mockResolvedValue({ ...staticPassedFixture, repository: { ...staticPassedFixture.repository, url: "https://github.com/other/repo" } });
   await userEvent.click(screen.getByRole("button", { name: "开始对比" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("同一仓库");

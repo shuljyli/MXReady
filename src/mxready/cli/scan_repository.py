@@ -9,9 +9,11 @@ from uuid import NAMESPACE_URL, uuid5
 
 from mxready.config import Settings
 from mxready.errors import MxReadyError
-from mxready.models import ScanReport, StaticStatus
+from mxready.models import ScanReport
 from mxready.reporting.badge import render_badge
+from mxready.reporting.comparison import new_blockers
 from mxready.reporting.markdown import render_markdown
+from mxready.reporting.sarif import render_sarif
 from mxready.reporting.terminal import render_terminal_summary
 from mxready.repository.identity import parse_repository_url
 from mxready.scanning.analyzer import ScanAnalyzer
@@ -44,12 +46,28 @@ def main(argv: Sequence[str] | None = None) -> int:
         output_dir.mkdir(parents=True, exist_ok=True)
         stem = f"{identity.name}-{commit[:12]}"
         _write_outputs(output_dir, stem, report)
+        blockers = [f for f in report.findings if f.severity.value == "blocker"]
+        if arguments.fail_on == "new-blockers":
+            if arguments.baseline is None:
+                raise ValueError("--baseline is required with --fail-on new-blockers")
+            baseline_path = Path(arguments.baseline)
+            if baseline_path.stat().st_size > 20 * 1024 * 1024:
+                raise ValueError("Baseline exceeds 20 MiB")
+            baseline = ScanReport.model_validate_json(baseline_path.read_bytes())
+            blockers = new_blockers(baseline, report)
+            print(f"New or increased blocker groups: {len(blockers)}")
+        elif arguments.baseline is not None:
+            raise ValueError("--baseline requires --fail-on new-blockers")
     except (MxReadyError, OSError, ValueError) as error:
         print(f"MXReady scan error: {error}", file=sys.stderr)
         return 1
 
-    print(_terminal_summary(report, output_note=f"{stem}.json / {stem}.md / {stem}.svg"))
-    return 2 if report.static_status is StaticStatus.BLOCKED else 0
+    print(
+        _terminal_summary(
+            report, output_note=f"{stem}.json / {stem}.md / {stem}.svg / {stem}.sarif"
+        )
+    )
+    return 2 if blockers else 0
 
 
 def _terminal_summary(report: ScanReport, *, output_note: str) -> str:
@@ -83,7 +101,13 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("local_path", help="Local repository directory to inspect")
     parser.add_argument("--repo-url", required=True, help="Canonical public GitHub/Gitee URL")
     parser.add_argument("--commit", required=True, help="Resolved 40-character Git commit SHA")
-    parser.add_argument("--output", required=True, help="Directory for JSON, Markdown, and SVG")
+    parser.add_argument(
+        "--output", required=True, help="Directory for JSON, Markdown, SVG, and SARIF"
+    )
+    parser.add_argument("--baseline", type=Path, help="Trusted baseline report JSON")
+    parser.add_argument(
+        "--fail-on", choices=("all-blockers", "new-blockers"), default="all-blockers"
+    )
     return parser
 
 
@@ -103,6 +127,7 @@ def _commit_sha(value: str) -> str:
 
 
 def _write_outputs(output_dir: Path, stem: str, report: ScanReport) -> None:
+    (output_dir / f"{stem}.sarif").write_text(render_sarif(report), encoding="utf-8")
     (output_dir / f"{stem}.json").write_text(
         report.model_dump_json(indent=2) + "\n",
         encoding="utf-8",

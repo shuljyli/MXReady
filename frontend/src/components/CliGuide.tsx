@@ -16,7 +16,7 @@ export function CliGuide() {
       <p>生成逐仓报告与 batch-summary.csv / batch-summary.md。退出码：0 为全部成功且无阻塞，2 为存在阻塞仓库，1 为存在扫描失败。</p>
     </section>
     <section className="report-section prose"><h2>输入和报告范围</h2>
-      <p>Web 界面一次扫描一个公开仓库 URL。本地目录和批量清单交给对应 CLI；网页不接收源码 ZIP。runner 的 result.json 是验证结果，不是源码输入。</p>
+      <p>Web 支持单仓扫描和每批最多 10 个公开仓库 URL。本地目录和大型批量清单使用对应 CLI；网页不接收源码 ZIP。runner 的 result.json 是验证结果，不是源码输入。</p>
       <p>CLI 写出的报告文件不会自动进入 Web 数据库。静态结果不等于沐曦硬件认证。</p>
     </section>
   </div>;

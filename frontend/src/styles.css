@@ -98,7 +98,7 @@ main > *, .workspace, .scan-workspace, .report-main, .report-tools { min-width: 
 }
 .field { display: grid; gap: 10px; margin-bottom: 26px; }
 .field label { font-size: 14px; font-weight: 550; }
-.field input, .field select {
+.field input, .field select, .field textarea {
   min-width: 0; width: 100%; height: 50px; padding: 0 14px;
   color: var(--ink); background: #fff; border: 1px solid var(--control-line);
   border-radius: 8px; font-size: 14px;
@@ -473,3 +473,8 @@ main > *, .workspace, .scan-workspace, .report-main, .report-tools { min-width: 
 .checklist-toggle { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
 .checklist-toggle input { width: 18px; height: 18px; accent-color: #21785b; }
 @media (max-width: 600px) { .history-item { align-items: flex-start; flex-direction: column; } }
+
+.batch-scans, .finding-reviews { min-width: 0; overflow-wrap: anywhere; }
+.batch-scans button, .finding-reviews button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.batch-scans li, .finding-reviews li { margin-block: 16px; min-width: 0; }
+.field textarea { min-height: 100px; resize: vertical; }

@@ -138,6 +138,12 @@ def test_download_routes_use_safe_names_types_and_cache_headers(
 
     markdown = client.get(f"/api/scans/{report.scan_id}/report.md")
     json_response = client.get(f"/api/scans/{report.scan_id}/report.json")
+    sarif = client.get(f"/api/scans/{report.scan_id}/report.sarif")
+    assert sarif.status_code == 200
+    assert sarif.headers["content-type"].startswith("application/sarif+json")
+    assert sarif.headers["cache-control"] == "no-store"
+    assert sarif.json()["version"] == "2.1.0"
+    assert ".sarif" in sarif.headers["content-disposition"]
     badge = client.get(f"/api/scans/{report.scan_id}/badge.svg")
 
     assert markdown.status_code == 200

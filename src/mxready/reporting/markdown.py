@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 from collections import defaultdict
 
-from mxready.models import Finding, ScanReport, Severity
+from mxready.models import Finding, FindingOccurrence, ScanReport, Severity
 
 _SEVERITY_HEADINGS = {
     Severity.BLOCKER: "阻塞项",
@@ -44,6 +44,20 @@ def render_markdown(report: ScanReport) -> str:
         "",
     ]
 
+    lines.extend(["## 扫描范围", ""])
+    if report.coverage:
+        c = report.coverage
+        lines.extend(
+            [
+                f"分析文件：{c.analyzed_files}；字节：{c.analyzed_bytes}；排除目录：{c.excluded_directories}（未遍历内容）。",
+                f"文件类型：{_markdown_text(str(c.files_by_type))}",
+                f"跳过原因：{_markdown_text(str(c.skipped_by_reason))}",
+                "",
+            ]
+        )
+    else:
+        lines.extend(["旧报告未记录扫描范围，请重新扫描。", ""])
+    lines.extend(["仅表示支持的文件类型与限制内的扫描范围，不是完整仓库覆盖率。", ""])
     grouped: defaultdict[Severity, list[Finding]] = defaultdict(list)
     for finding in report.findings:
         grouped[finding.severity].append(finding)
@@ -106,8 +120,19 @@ def _render_finding(finding: Finding) -> list[str]:
         "- 证据：",
         "",
     ]
-    evidence_lines = finding.evidence.splitlines() or [""]
-    lines.extend(f"    {html.escape(line, quote=False)}" for line in evidence_lines)
+    for occurrence in finding.occurrences or [
+        FindingOccurrence(
+            line_start=finding.line_start, line_end=finding.line_end, evidence=finding.evidence
+        )
+    ]:
+        lines.extend([f"- 第 {occurrence.line_start}–{occurrence.line_end} 行", ""])
+        lines.extend(
+            f"    {html.escape(line, quote=False)}"
+            for line in occurrence.evidence.splitlines() or [""]
+        )
+        lines.append("")
+    if not finding.occurrences and finding.count > 1:
+        lines.append("旧报告仅保留聚合证据，无法恢复所有命中位置。")
     if finding.references:
         lines.extend(["", "- 参考："])
         for reference in finding.references:

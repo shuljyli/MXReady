@@ -24,6 +24,7 @@ const base: ScanReport = {
     top_blockers: [],
   },
   findings: [],
+  coverage: null,
   migration_checklist: [],
   analysis_warnings: [],
   static_status: "passed",
@@ -61,6 +62,7 @@ export const blockedReportFixture: ScanReport = {
           url: "https://gitee.com/metax-maca/cu-bridge/blob/master/README.md",
         },
       ],
+      occurrences: [],
       count: 1,
     },
     {
@@ -76,6 +78,7 @@ export const blockedReportFixture: ScanReport = {
       message: "构建配置绑定了 CUDA 默认安装目录。",
       recommendation: "把工具链路径改为可配置参数。",
       references: [],
+      occurrences: [],
       count: 2,
     },
   ],

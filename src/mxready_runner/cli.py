@@ -22,6 +22,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = run_manifest(
                 arguments.manifest,
                 approve=_interactive_approval,
+                repository_dir=arguments.repo_dir,
             )
         _write_result(arguments.output, result)
     except (ManifestError, OSError) as error:
@@ -42,6 +43,10 @@ def _build_parser() -> argparse.ArgumentParser:
         subparser = subparsers.add_parser(action)
         subparser.add_argument("--manifest", type=Path, required=True)
         subparser.add_argument("--output", type=Path, required=True)
+        if action == "run":
+            subparser.add_argument(
+                "--repo-dir", type=Path, help="Clean repository root; defaults to current directory"
+            )
     return parser
 
 

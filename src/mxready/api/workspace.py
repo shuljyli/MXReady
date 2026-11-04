@@ -9,6 +9,9 @@ from pydantic import StrictBool
 
 from mxready.errors import MxReadyError
 from mxready.models import (
+    FindingReview,
+    FindingReviewInput,
+    FindingReviewPage,
     ScanPage,
     ScanReport,
     ScanStatus,
@@ -125,3 +128,29 @@ def update_checklist(
         raise MxReadyError("CHECKLIST_ITEM_NOT_FOUND", "The checklist item does not exist.")
     request.app.state.store.set_checklist_item(scan_id, rule_id, payload.completed)
     return service.get_report(scan_id)
+
+
+@router.post("/{scan_id}/reviews", response_model=FindingReview)
+def append_review(scan_id: UUID, payload: FindingReviewInput, request: Request) -> FindingReview:
+    report = request.app.state.scan_service.get_report(scan_id)
+    if not any(
+        f.rule_id == payload.rule_id and f.relative_path == payload.relative_path
+        for f in report.findings
+    ):
+        raise MxReadyError("FINDING_NOT_FOUND", "The finding does not exist in this report.")
+    return request.app.state.store.append_review(scan_id, payload)
+
+
+@router.get("/{scan_id}/reviews", response_model=FindingReviewPage)
+def list_reviews(
+    scan_id: UUID,
+    request: Request,
+    rule_id: str = Query(min_length=1, max_length=100),
+    relative_path: str = Query(min_length=1, max_length=4096),
+    limit: int = Query(default=20, ge=1, le=50),
+    offset: int = Query(default=0, ge=0, le=1_000_000),
+) -> FindingReviewPage:
+    request.app.state.scan_service.get_report(scan_id)
+    return request.app.state.store.review_history(
+        scan_id, rule_id, relative_path, limit=limit, offset=offset
+    )

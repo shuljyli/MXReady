@@ -7,6 +7,9 @@ from uuid import UUID, uuid4
 
 from mxready.errors import MxReadyError
 from mxready.models import (
+    FindingReview,
+    FindingReviewInput,
+    FindingReviewPage,
     ScanJob,
     ScanPage,
     ScanReport,
@@ -54,6 +57,17 @@ _MIGRATIONS: list[str] = [
         completed INTEGER NOT NULL CHECK(completed IN (0, 1)),
         PRIMARY KEY (scan_id, rule_id)
     )""",
+    """CREATE TABLE finding_reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        scan_id TEXT NOT NULL REFERENCES scan_jobs(id) ON DELETE CASCADE,
+        rule_id TEXT NOT NULL,
+        relative_path TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('confirmed', 'false-positive', 'deferred')),
+        reason TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )""",
+    "CREATE INDEX finding_reviews_lookup "
+    "ON finding_reviews(scan_id, rule_id, relative_path, id DESC)",
 ]
 
 
@@ -390,6 +404,47 @@ class SQLiteStore:
                     for item in report.migration_checklist
                 ]
             }
+        )
+
+    def append_review(self, scan_id: UUID, payload: FindingReviewInput) -> FindingReview:
+        now = datetime.now(UTC)
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "INSERT INTO finding_reviews(scan_id, rule_id, relative_path, "
+                "status, reason, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    str(scan_id),
+                    payload.rule_id,
+                    payload.relative_path,
+                    payload.status,
+                    payload.reason,
+                    now.isoformat(),
+                ),
+            )
+        assert cursor.lastrowid is not None
+        return FindingReview(**payload.model_dump(), id=cursor.lastrowid, created_at=now)
+
+    def review_history(
+        self, scan_id: UUID, rule_id: str, relative_path: str, *, limit: int, offset: int
+    ) -> FindingReviewPage:
+        args = (str(scan_id), rule_id, relative_path)
+        where = " WHERE scan_id = ? AND rule_id = ? AND relative_path = ?"
+        with self._connect() as connection:
+            total = connection.execute(
+                "SELECT COUNT(*) FROM finding_reviews" + where, args
+            ).fetchone()[0]
+            rows = connection.execute(
+                "SELECT id, rule_id, relative_path, status, reason, created_at FROM finding_reviews"
+                + where
+                + " ORDER BY id DESC LIMIT ? OFFSET ?",
+                (*args, limit, offset),
+            ).fetchall()
+        return FindingReviewPage(
+            items=[FindingReview.model_validate(dict(row)) for row in rows],
+            total=total,
+            limit=limit,
+            offset=offset,
         )
 
     def set_checklist_item(self, scan_id: UUID, rule_id: str, completed: bool) -> None:

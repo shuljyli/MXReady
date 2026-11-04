@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from mxready.models import (
+    FindingReviewPage,
     ScanJob,
     ScanPage,
     ScanReport,
@@ -50,7 +51,15 @@ def typescript_type(schema: dict[str, Any]) -> str:
 
 def artifacts() -> dict[Path, str]:
     definitions: dict[str, Any] = {}
-    for model in (ScanJob, ScanReport, RuleCatalog, ScanPage, VerificationPage, VerificationDetail):
+    for model in (
+        FindingReviewPage,
+        ScanJob,
+        ScanReport,
+        RuleCatalog,
+        ScanPage,
+        VerificationPage,
+        VerificationDetail,
+    ):
         schema = model.model_json_schema(mode="serialization")
         definitions.update(schema.pop("$defs", {}))
         definitions[model.__name__] = schema

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export type WorkspacePage = "scan" | "history" | "rules" | "mcp" | "cli";
+export type WorkspacePage = "scan" | "batch" | "history" | "rules" | "mcp" | "cli";
 type Location = { page: WorkspacePage; ruleId?: string; ruleVersion?: number };
 
 function readLocation(): Location {
@@ -8,7 +8,7 @@ function readLocation(): Location {
   const page = params.get("page");
   const version = Number(params.get("ruleVersion"));
   return {
-    page: page === "rules" || page === "mcp" || page === "cli" || page === "history" ? page : "scan",
+    page: page === "batch" || page === "rules" || page === "mcp" || page === "cli" || page === "history" ? page : "scan",
     ruleId: params.get("rule") ?? undefined,
     ruleVersion: version >= 1 && Number.isInteger(version) ? version : undefined,
   };
