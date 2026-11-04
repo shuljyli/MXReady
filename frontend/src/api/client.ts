@@ -134,3 +134,14 @@ export function uploadVerification(
     },
   );
 }
+
+export function getReviews(scanId: string, ruleId: string, path: string, offset = 0, signal?: AbortSignal) {
+  const query = new URLSearchParams({ rule_id: ruleId, relative_path: path, offset: String(offset) });
+  return request<import("./types").FindingReviewPage>(`/api/scans/${encodeURIComponent(scanId)}/reviews?${query}`, { signal });
+}
+
+export function saveReview(scanId: string, payload: { rule_id: string; relative_path: string; status: "confirmed" | "false-positive" | "deferred"; reason: string }) {
+  return request<import("./types").FindingReview>(`/api/scans/${encodeURIComponent(scanId)}/reviews`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+  });
+}

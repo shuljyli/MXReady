@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 
 import type { Finding } from "../api/types";
 import { referenceUrl, toolExample } from "../lib/integration";
+import { RemediationGuide } from "./RemediationGuide";
 import { CopyButton } from "./CopyButton";
 import { Icon } from "./Icon";
 
@@ -90,6 +91,7 @@ export function FindingCard({ finding, onOpenRule, repository }: FindingCardProp
             <p>{finding.recommendation}</p>
           </div>
 
+          <RemediationGuide finding={finding} />
           {finding.references.length ? (
             <div className="finding-references">
               <span>依据</span>

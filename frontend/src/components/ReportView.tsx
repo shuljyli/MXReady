@@ -10,6 +10,7 @@ import type { ScanReport, Severity, StaticStatus } from "../api/types";
 import { getReport, updateChecklist } from "../api/client";
 import { agentHandoff, reportUrl } from "../lib/integration";
 import { CopyButton } from "./CopyButton";
+import { FindingReviews } from "./FindingReviews";
 import { FindingCard } from "./FindingCard";
 import { Icon } from "./Icon";
 import { VerificationPanel } from "./VerificationPanel";
@@ -305,6 +306,7 @@ export function ReportView({
         </> : <p>旧报告未记录扫描范围，请重新扫描。</p>}
         <p>按支持的文件类型和大小限制进行静态分析，不代表完整仓库覆盖率。</p>
       </section>
+      <FindingReviews report={report} />
       <ReportDetails report={report} />
       <ReportComparison report={report} />
 

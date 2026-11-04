@@ -29,6 +29,22 @@ export type FindingOccurrence = {
   evidence: string;
 };
 
+export type FindingReview = {
+  rule_id: string;
+  relative_path: string;
+  status: "confirmed" | "false-positive" | "deferred";
+  reason: string;
+  id: number;
+  created_at: string;
+};
+
+export type FindingReviewPage = {
+  items: Array<FindingReview>;
+  total: number;
+  limit: number;
+  offset: number;
+};
+
 export type MigrationChecklistItem = {
   rule_id: string;
   title: string;

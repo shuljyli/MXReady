@@ -60,7 +60,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         path = request.url.path.rstrip("/")
         is_write = (
             request.method == "POST"
-            and (path == "/api/scans" or path.endswith("/verification-runs"))
+            and (
+                path == "/api/scans"
+                or path.endswith("/verification-runs")
+                or (path.startswith("/api/scans/") and path.endswith("/reviews"))
+            )
         ) or (
             request.method == "PATCH" and path.startswith("/api/scans/") and "/checklist/" in path
         )

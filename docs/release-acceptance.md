@@ -75,3 +75,7 @@ runner inspect 通过只说明环境检查通过；具体项目可运行还需�
 
 每项记录提交、产物摘要、OS/架构/Python、命令、退出码、日志和结果文件。
 缺真实旧库或目标硬件时明确保持待验收，不用源码测试填补对应门槛。
+
+针对 extension-cpp 的人工真机流程和分项证据记录，见
+[`examples/hardware/README.md`](../examples/hardware/README.md)。模板中的 not-run 不能
+转换成验收通过；探针帮助采集数值与计时，构建日志、完整测试及性能阈值仍需单独审阅。

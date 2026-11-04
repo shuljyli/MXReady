@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   security-events: write
+  actions: read
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -27,16 +28,33 @@ jobs:
           [[ "$MXREADY_REF" =~ ^[0-9a-f]{40}$ ]] || { echo 'Set MXREADY_REF to a reviewed scanner commit'; exit 1; }
           python -m venv scanner-venv
           scanner-venv/bin/python -m pip install "mxready @ git+https://github.com/shuljyli/MXReady.git@$MXREADY_REF"
+      # Optional: set MXREADY_BASELINE_RUN to an approved prior run in this repository.
+      # Do not accept a baseline from an untrusted pull request.
+      - uses: actions/download-artifact@v4
+        if: vars.MXREADY_BASELINE_RUN != ''
+        with:
+          name: mxready-reports
+          path: ${{ runner.temp }}/mxready-baseline
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ vars.MXREADY_BASELINE_RUN }}
       - name: Scan without running project code
         id: scan
         working-directory: ${{ runner.temp }}
         env:
           SOURCE: ${{ github.workspace }}/source
           REPOSITORY: ${{ github.repository }}
+          BASELINE_RUN: ${{ vars.MXREADY_BASELINE_RUN }}
         run: |
           commit=$(git -C "$SOURCE" rev-parse HEAD)
+          policy=()
+          if [ -n "$BASELINE_RUN" ]; then
+            shopt -s nullglob
+            baseline=("$RUNNER_TEMP"/mxready-baseline/*.json)
+            [ "${#baseline[@]}" -eq 1 ] || { echo 'Expected exactly one baseline JSON'; exit 1; }
+            policy=(--fail-on new-blockers --baseline "${baseline[0]}")
+          fi
           set +e
-          scanner-venv/bin/mxready-scan "$SOURCE" --repo-url "https://github.com/$REPOSITORY" --commit "$commit" --output "$RUNNER_TEMP/mxready-reports"
+          scanner-venv/bin/mxready-scan "$SOURCE" --repo-url "https://github.com/$REPOSITORY" --commit "$commit" --output "$RUNNER_TEMP/mxready-reports" "${policy[@]}"
           status=$?
           set -e
           echo "status=$status" >> "$GITHUB_OUTPUT"

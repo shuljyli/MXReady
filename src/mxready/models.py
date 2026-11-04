@@ -130,6 +130,32 @@ class Finding(StrictModel):
         return self
 
 
+class FindingReviewInput(StrictModel):
+    rule_id: str = Field(min_length=1, max_length=100)
+    relative_path: str = Field(min_length=1, max_length=4096)
+    status: Literal["confirmed", "false-positive", "deferred"]
+    reason: str = Field(min_length=1, max_length=1000)
+
+    @field_validator("reason")
+    @classmethod
+    def nonblank_reason(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("A review reason is required")
+        return value.strip()
+
+
+class FindingReview(FindingReviewInput):
+    id: int
+    created_at: datetime
+
+
+class FindingReviewPage(StrictModel):
+    items: list[FindingReview]
+    total: int
+    limit: int
+    offset: int
+
+
 class ScanSummary(StrictModel):
     total_count: int = Field(ge=0)
     blocker_count: int = Field(ge=0)

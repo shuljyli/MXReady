@@ -1,0 +1,13 @@
+{
+  "schema_version": "example-1",
+  "status": "not-run",
+  "repository_url": "https://github.com/pytorch/extension-cpp",
+  "repository_commit": null,
+  "scan_id": null,
+  "environment": {"os": null, "gpu": null, "driver": null, "mxmaca": null, "cu_bridge": null, "python": null, "torch": null},
+  "build": {"status": "not-run", "command": null, "exit_code": null, "log": null, "sha256": null},
+  "functional": {"status": "not-run", "cases": [], "log": null, "sha256": null},
+  "performance": {"status": "not-run", "baseline_environment": null, "workload": null, "median_ms": null, "acceptance_threshold": null, "log": null, "sha256": null},
+  "runner_result": null,
+  "limitations": ["This template is not hardware evidence and is not a runner result upload."]
+}
