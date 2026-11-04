@@ -120,6 +120,7 @@ class RunResult:
     started_at: str
     finished_at: str
     overall_status: Literal["passed", "failed", "cancelled"]
+    repository_state: dict[str, str | bool] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -133,6 +134,7 @@ class RunResult:
             "started_at": self.started_at,
             "finished_at": self.finished_at,
             "overall_status": self.overall_status,
+            "repository_state": self.repository_state,
         }
 
     def to_json(self, *, indent: int = 2) -> str:

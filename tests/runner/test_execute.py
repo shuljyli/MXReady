@@ -3,8 +3,22 @@ from __future__ import annotations
 import json
 from subprocess import CompletedProcess, TimeoutExpired
 
+import pytest
+
 from mxready.models import VerificationRun
 from mxready_runner.execute import run_manifest
+
+
+@pytest.fixture(autouse=True)
+def verified_checkout(monkeypatch):
+    monkeypatch.setattr(
+        "mxready_runner.execute.verify_repository",
+        lambda root, commit: {
+            "working_directory": str(root),
+            "commit": commit,
+            "dirty": False,
+        },
+    )
 
 
 def test_run_refuses_commands_without_explicit_approval(
@@ -43,7 +57,7 @@ def test_run_executes_argument_array_and_redacts_bounded_output(
 
 
 def test_run_maps_timeout_to_failed_result(manifest_path) -> None:
-    def timeout_runner(command, *, timeout):
+    def timeout_runner(command, *, timeout, cwd):
         raise TimeoutExpired(command, timeout)
 
     result = run_manifest(

@@ -87,6 +87,26 @@ class RepositorySnapshot(StrictModel):
     commit: str = Field(pattern=r"^[0-9a-f]{40}$")
 
 
+class FindingOccurrence(StrictModel):
+    line_start: int = Field(ge=1)
+    line_end: int = Field(ge=1)
+    evidence: str
+
+    @model_validator(mode="after")
+    def ordered(self) -> "FindingOccurrence":
+        if self.line_end < self.line_start:
+            raise ValueError("line_end must be greater than or equal to line_start")
+        return self
+
+
+class ScanCoverage(StrictModel):
+    analyzed_files: int = Field(ge=0)
+    analyzed_bytes: int = Field(ge=0)
+    files_by_type: dict[str, int]
+    skipped_by_reason: dict[str, int]
+    excluded_directories: int = Field(ge=0)
+
+
 class Finding(StrictModel):
     rule_id: str
     rule_version: int = Field(ge=1)
@@ -101,6 +121,7 @@ class Finding(StrictModel):
     recommendation: str
     references: list[SourceReference]
     count: int = Field(default=1, ge=1)
+    occurrences: list[FindingOccurrence] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def line_range_is_ordered(self) -> "Finding":
@@ -143,6 +164,7 @@ class ScanReport(StrictModel):
     scanned_at: datetime
     summary: ScanSummary
     findings: list[Finding]
+    coverage: ScanCoverage | None = None
     migration_checklist: list[MigrationChecklistItem]
     analysis_warnings: list[AnalysisWarning]
     static_status: StaticStatus
@@ -200,7 +222,21 @@ class VerificationCommand(StrictModel):
         return self
 
 
+class VerifiedRepositoryState(StrictModel):
+    working_directory: str = Field(min_length=1, max_length=4096)
+    commit: str = Field(pattern=r"^[0-9a-f]{40}$")
+    dirty: Literal[False]
+
+
 class VerificationRun(StrictModel):
+    repository_state: VerifiedRepositoryState | None = None
+
+    @model_validator(mode="after")
+    def repository_state_matches(self) -> "VerificationRun":
+        if self.repository_state and self.repository_state.commit != self.repository_commit:
+            raise ValueError("repository state commit must match repository_commit")
+        return self
+
     schema_version: Literal["1.0"] = "1.0"
     scan_id: UUID
     repository_commit: str = Field(pattern=r"^[0-9a-f]{40}$")

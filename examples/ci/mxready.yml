@@ -1,0 +1,57 @@
+# Copy to .github/workflows/mxready.yml in the repository being scanned.
+# Set repository variable MXREADY_REF to a reviewed 40-character MXReady commit
+# containing SARIF support. Never install the repository being scanned.
+name: MXReady static assessment
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install reviewed scanner outside target source
+        working-directory: ${{ runner.temp }}
+        env:
+          MXREADY_REF: ${{ vars.MXREADY_REF }}
+        run: |
+          [[ "$MXREADY_REF" =~ ^[0-9a-f]{40}$ ]] || { echo 'Set MXREADY_REF to a reviewed scanner commit'; exit 1; }
+          python -m venv scanner-venv
+          scanner-venv/bin/python -m pip install "mxready @ git+https://github.com/shuljyli/MXReady.git@$MXREADY_REF"
+      - name: Scan without running project code
+        id: scan
+        working-directory: ${{ runner.temp }}
+        env:
+          SOURCE: ${{ github.workspace }}/source
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          commit=$(git -C "$SOURCE" rev-parse HEAD)
+          set +e
+          scanner-venv/bin/mxready-scan "$SOURCE" --repo-url "https://github.com/$REPOSITORY" --commit "$commit" --output "$RUNNER_TEMP/mxready-reports"
+          status=$?
+          set -e
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          # Exit 2 means static blockers, with valid reports; 1 means scan failure.
+          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then exit "$status"; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mxready-reports
+          path: ${{ runner.temp }}/mxready-reports/
+          if-no-files-found: error
+      - uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ runner.temp }}/mxready-reports/
+          checkout_path: ${{ github.workspace }}/source
+          category: mxready-static
+      - name: Fail when static blockers exist
+        if: steps.scan.outputs.status == '2'
+        run: exit 2

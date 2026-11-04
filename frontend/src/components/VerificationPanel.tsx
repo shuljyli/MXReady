@@ -172,8 +172,8 @@ export function VerificationPanel({
                 text="python -m mxready_runner inspect --manifest mxready.yml --output result.json" />
               <p>需要验证项目时，先审阅并修改 project-commands.example.json，把实际命令填入 mxready.yml 的 project_commands。默认该列表为空。</p>
               <CodeSnippet label="复制项目验证命令"
-                text="python -m mxready_runner run --manifest mxready.yml --output result.json" />
-              <p>run 执行项目命令前，需在 runner 中精确输入 yes。网页不会执行这些命令。</p>
+                text="python -m mxready_runner run --repo-dir /path/to/checkout --manifest mxready.yml --output result.json" />
+              <p>run 执行项目命令前，需在 runner 中精确输入 yes。指定仓库须为报告提交且工作区干净，验证包与输出放在仓库外；执行后会再次核对。网页不会执行这些命令。</p>
             </div>
           </li>
           <li>

@@ -6,7 +6,7 @@ from mxready.cli import scan_repository
 from mxready.cli.scan_repository import main
 
 
-def test_cli_writes_three_commit_pinned_outputs(tmp_path: Path, capsys) -> None:
+def test_cli_writes_four_commit_pinned_outputs(tmp_path: Path, capsys) -> None:
     output = tmp_path / "reports"
     commit = "d" * 40
 
@@ -35,6 +35,7 @@ def test_cli_writes_three_commit_pinned_outputs(tmp_path: Path, capsys) -> None:
         json_path.name,
         markdown_path.name,
         badge_path.name,
+        f"{stem}.sarif",
     }
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["repository"]["commit"] == commit

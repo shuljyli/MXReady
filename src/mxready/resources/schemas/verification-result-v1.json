@@ -137,10 +137,49 @@
       ],
       "title": "VerificationCommand",
       "type": "object"
+    },
+    "VerifiedRepositoryState": {
+      "additionalProperties": false,
+      "properties": {
+        "working_directory": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Working Directory",
+          "type": "string"
+        },
+        "commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "title": "Commit",
+          "type": "string"
+        },
+        "dirty": {
+          "const": false,
+          "title": "Dirty",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "working_directory",
+        "commit",
+        "dirty"
+      ],
+      "title": "VerifiedRepositoryState",
+      "type": "object"
     }
   },
   "additionalProperties": false,
   "properties": {
+    "repository_state": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/VerifiedRepositoryState"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
     "schema_version": {
       "const": "1.0",
       "default": "1.0",

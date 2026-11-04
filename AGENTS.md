@@ -49,6 +49,8 @@ Use short conventional subjects: `feat:`, `fix:`, `docs:`, `test:`, or `chore:`;
 
 Never execute scanned repository code in the Web service. Preserve runner confirmation, command allowlists, `shell=False`, timeouts, redaction, and output limits. Keep static findings separate from hardware verification; never introduce percentage compatibility scores. See `CONTRIBUTING.md` and `docs/security.md`. Synchronize `AGENTS.md` and `CLAUDE.md` when both exist.
 
+Report changes must preserve legacy reports without occurrence/coverage metadata. Keep SARIF locations aligned with individual occurrences and document scan exclusions. Runner project commands require a clean commit-matching checkout before and after execution; environment inspection remains separate. See `docs/report-workflow.md`.
+
 See `docs/architecture.md` for dependency directions and migration paths. Keep default rules and schemas inside package resources and verify installed artifacts outside the checkout. Task writes must preserve execution-token and lease checks; never mark all active jobs failed during application startup. Derive verification freshness when reading reports. Keep generated contracts synchronized with model changes and retain the dependency-free runner.
 
 Release builds stage frontend resources in a temporary source tree; do not commit built UI into `src/` or put user data, virtual environments or dependency caches in release archives. Keep `mxready-serve` user data separate from the installation directory. Document runtime prerequisites and distinguish ZIP/wheel installers from self-contained native executables and from hardware verification.

@@ -296,6 +296,15 @@ export function ReportView({
             onClick={() => showFile(path)}>{path}</button>
         </li>)}</ol> : <p>暂无优先复核文件</p>}
       </section>
+      <section className="report-section"><h2>扫描范围</h2>
+        {report.coverage ? <>
+          <p>实际分析 {report.coverage.analyzed_files} 个文件，共 {report.coverage.analyzed_bytes} 字节；排除 {report.coverage.excluded_directories} 个目录（未遍历其内容）。</p>
+          <p>文件类型：{Object.entries(report.coverage.files_by_type).map(([type, count]) => `${type}: ${count}`).join(" · ") || "无"}</p>
+          <p>跳过原因：{Object.entries(report.coverage.skipped_by_reason).map(([reason, count]) => `${reason}: ${count}`).join(" · ") || "无"}</p>
+          {report.coverage.analyzed_files === 0 ? <p role="alert">没有可分析的源码或配置文件；零命中不代表兼容性通过。</p> : null}
+        </> : <p>旧报告未记录扫描范围，请重新扫描。</p>}
+        <p>按支持的文件类型和大小限制进行静态分析，不代表完整仓库覆盖率。</p>
+      </section>
       <ReportDetails report={report} />
       <ReportComparison report={report} />
 
@@ -345,7 +354,7 @@ export function ReportView({
               <button type="button" className="text-button compact-button" onClick={clearFilters}>清除筛选</button></div>
             {visibleFindings.length ? (
               <div className="finding-list">{visibleFindings.slice(pageOffset, pageOffset + 50).map((finding, index) => (
-                <FindingCard finding={finding} onOpenRule={onOpenRule}
+                <FindingCard finding={finding} repository={report.repository} onOpenRule={onOpenRule}
                   key={finding.rule_id + "-" + finding.relative_path + "-" + finding.line_start + "-" + index} />
               ))}</div>
             ) : (

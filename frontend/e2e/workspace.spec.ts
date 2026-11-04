@@ -59,3 +59,19 @@ test("large reports paginate, retain filters, and fit the viewport", async ({ pa
   await expect(page.getByRole("article")).toHaveCount(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });
+
+test("report exposes scope, occurrence source links and SARIF export", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("公开仓库地址").fill("https://github.com/example/browser-fixture");
+  await page.getByRole("button", { name: "开始体检" }).click();
+  await expect(page.getByRole("heading", { name: "扫描范围", exact: true })).toBeVisible();
+  const card = page.getByRole("article").first();
+  const details = card.locator("details").first();
+  if ((await details.getAttribute("open")) === null) await details.locator("summary").click();
+  const source = card.getByRole("link", { name: /查看固定提交源码/ }).first();
+  await expect(source).toHaveAttribute("href", /\/blob\/a{40}\/.+#L\d+/);
+  const sarif = await page.request.get(await page.getByRole("link", { name: "SARIF", exact: true }).getAttribute("href") as string);
+  expect(sarif.ok()).toBeTruthy();
+  expect((await sarif.json()).version).toBe("2.1.0");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+});

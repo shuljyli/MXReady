@@ -466,3 +466,5 @@ npm run build
 ## 许可证
 
 本项目采用 [Apache License 2.0](LICENSE) 许可证。欢迎在遵守许可证条款的前提下使用、修改和分发。
+
+完整命中、扫描范围、报告差异、runner 版本核对与 SARIF/CI 接入见 [报告工作流](docs/report-workflow.md)。

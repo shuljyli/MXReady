@@ -59,10 +59,18 @@ def _terminate_tree(process: subprocess.Popen[bytes]) -> None:
             process.kill()
 
 
-def run_command(command: Sequence[str], *, timeout: int) -> CompletedProcess[str]:
+def run_command(
+    command: Sequence[str],
+    *,
+    timeout: int,
+    cwd: str | os.PathLike[str] | None = None,
+    env: dict[str, str] | None = None,
+) -> CompletedProcess[str]:
     with subprocess.Popen(
         list(command),
         shell=False,
+        cwd=cwd,
+        env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         start_new_session=os.name == "posix",

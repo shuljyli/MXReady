@@ -10,6 +10,7 @@ from mxready import __version__
 from mxready.models import (
     AnalysisWarning,
     Finding,
+    FindingOccurrence,
     MigrationChecklistItem,
     RepositorySnapshot,
     ScanReport,
@@ -102,6 +103,7 @@ class ScanAnalyzer:
             scanned_at=datetime.now(UTC),
             summary=summary,
             findings=findings,
+            coverage=index.coverage,
             migration_checklist=_build_migration_checklist(findings),
             analysis_warnings=[
                 AnalysisWarning(
@@ -111,6 +113,16 @@ class ScanAnalyzer:
                 )
                 for warning in index.warnings
             ]
+            + (
+                [
+                    AnalysisWarning(
+                        code="NO_ANALYZABLE_SOURCE",
+                        message="没有可分析的源码或配置文件；零命中不代表兼容性通过。",
+                    )
+                ]
+                if not index.files
+                else []
+            )
             + path_warnings
             + toolchain_warnings,
             static_status=calculate_static_status(summary),
@@ -122,14 +134,22 @@ def _aggregate_findings(findings: list[Finding]) -> list[Finding]:
     """同一规则在同一文件多次命中时合并为一条并累计命中数，降低报告噪音。"""
     grouped: dict[tuple[str, str], Finding] = {}
     for finding in findings:
+        occurrences = finding.occurrences or [
+            FindingOccurrence(
+                line_start=finding.line_start,
+                line_end=finding.line_end,
+                evidence=finding.evidence,
+            )
+        ]
         key = (finding.rule_id, finding.relative_path)
         existing = grouped.get(key)
         if existing is None:
-            grouped[key] = finding
+            grouped[key] = finding.model_copy(update={"occurrences": occurrences})
             continue
         grouped[key] = existing.model_copy(
             update={
-                "count": existing.count + 1,
+                "count": existing.count + finding.count,
+                "occurrences": existing.occurrences + occurrences,
                 "line_start": min(existing.line_start, finding.line_start),
                 "line_end": max(existing.line_end, finding.line_end),
             }

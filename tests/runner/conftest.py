@@ -16,6 +16,7 @@ class RecordingRunner:
         command: Sequence[str],
         *,
         timeout: int,
+        cwd=None,
     ) -> CompletedProcess[str]:
         self.calls.append((list(command), timeout))
         return CompletedProcess(

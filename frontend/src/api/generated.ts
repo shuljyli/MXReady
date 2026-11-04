@@ -20,6 +20,13 @@ export type Finding = {
   recommendation: string;
   references: Array<SourceReference>;
   count: number;
+  occurrences: Array<FindingOccurrence>;
+};
+
+export type FindingOccurrence = {
+  line_start: number;
+  line_end: number;
+  evidence: string;
 };
 
 export type MigrationChecklistItem = {
@@ -67,6 +74,14 @@ export type RulePattern = {
   equals: boolean | string | null;
 };
 
+export type ScanCoverage = {
+  analyzed_files: number;
+  analyzed_bytes: number;
+  files_by_type: Record<string, number>;
+  skipped_by_reason: Record<string, number>;
+  excluded_directories: number;
+};
+
 export type ScanJob = {
   id: string;
   repo_url: string;
@@ -99,6 +114,7 @@ export type ScanReport = {
   scanned_at: string;
   summary: ScanSummary;
   findings: Array<Finding>;
+  coverage: ScanCoverage | null;
   migration_checklist: Array<MigrationChecklistItem>;
   analysis_warnings: Array<AnalysisWarning>;
   static_status: StaticStatus;

@@ -28,6 +28,10 @@ This archive runs only on a host controlled by you.
 - Read `mxready.yml` and every project command before running it.
 - Environment inspection uses the fixed commands listed in the manifest.
 - Project commands run only after your explicit approval.
+- Use `run --repo-dir /path/to/clean/checkout`; HEAD must match the manifest.
+- Keep the manifest and result outside the checkout. Tracked and untracked changes
+  are rejected before and after project commands; ignored build outputs are permitted.
+- `inspect` only checks the environment and does not verify project source.
 - The runner never uses `sudo`, installs packages, or changes GPU drivers.
 - Commands use argument arrays with `shell=False` and bounded timeouts.
 - Output is redacted and truncated, but review `result.json` before sharing it.

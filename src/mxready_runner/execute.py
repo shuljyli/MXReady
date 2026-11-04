@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shlex
 import time
 from collections.abc import Callable
@@ -18,13 +19,14 @@ from mxready_runner.inspect import (
     run_command,
 )
 from mxready_runner.redact import sanitize_output
-from mxready_runner.schema import CommandResult, RunResult, load_manifest
+from mxready_runner.schema import CommandResult, ManifestError, RunResult, load_manifest
 
 
 def run_manifest(
     manifest_path: Path,
     *,
     approve: Callable[[list[str]], bool],
+    repository_dir: Path | None = None,
     command_runner: CommandRunner = run_command,
 ) -> RunResult:
     manifest = load_manifest(manifest_path)
@@ -47,6 +49,10 @@ def run_manifest(
             overall_status="cancelled",
         )
 
+    root = (repository_dir or Path.cwd()).resolve()
+    repository_state = (
+        verify_repository(root, manifest.repository_commit) if manifest.project_commands else None
+    )
     results: list[CommandResult] = []
     for command in manifest.project_commands:
         command_started = time.monotonic()
@@ -54,6 +60,7 @@ def run_manifest(
             process = command_runner(
                 command.command,
                 timeout=command.timeout_seconds,
+                cwd=root,
             )
             command_status: Literal["passed", "failed"] = (
                 "passed" if process.returncode == 0 else "failed"
@@ -92,6 +99,8 @@ def run_manifest(
             )
         results.append(result)
 
+    if manifest.project_commands:
+        verify_repository(root, manifest.repository_commit)
     overall_status: Literal["passed", "failed"] = (
         "passed"
         if environment_checks_passed(checks) and all(item.status == "passed" for item in results)
@@ -108,7 +117,34 @@ def run_manifest(
         started_at=started_at,
         finished_at=_utc_now(),
         overall_status=overall_status,
+        repository_state=repository_state,
     )
+
+
+def verify_repository(root: Path, expected_commit: str) -> dict[str, str | bool]:
+    """Fail closed before/after project commands; never infer HEAD from the manifest."""
+    env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+
+    def git(*args: str) -> str:
+        try:
+            result = run_command(["git", *args], cwd=root, env=env, timeout=15)
+        except (OSError, TimeoutExpired) as error:
+            raise ManifestError("Cannot inspect repository with Git") from error
+        if result.returncode:
+            raise ManifestError("Cannot inspect repository with Git")
+        return result.stdout.strip()
+
+    actual_root = Path(git("rev-parse", "--show-toplevel")).resolve()
+    if actual_root != root:
+        raise ManifestError("--repo-dir must be the repository root")
+    commit = git("rev-parse", "HEAD")
+    if commit != expected_commit:
+        raise ManifestError("Repository commit does not match the manifest")
+    if git("status", "--porcelain", "--untracked-files=all", "--ignore-submodules=none"):
+        raise ManifestError(
+            "Repository is dirty; use a clean checkout and keep runner outputs outside it"
+        )
+    return {"working_directory": str(root), "commit": commit, "dirty": False}
 
 
 def environment_fingerprint(checks) -> str:

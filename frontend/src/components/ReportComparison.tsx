@@ -9,7 +9,7 @@ export function ReportComparison({ report }: { report: ScanReport }) {
   const [baseline, setBaseline] = useState<ScanReport | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [group, setGroup] = useState<"added" | "removed" | "retained">("added");
+  const [group, setGroup] = useState<"added" | "removed" | "retained" | "severityChanged" | "countChanged">("added");
   const [offset, setOffset] = useState(0);
   const active = useRef<AbortController | null>(null);
   useEffect(() => () => active.current?.abort(), [report.scan_id]);
@@ -29,19 +29,20 @@ export function ReportComparison({ report }: { report: ScanReport }) {
     <form onSubmit={(event) => { event.preventDefault(); void compare(); }} className="comparison-form">
       <label className="field">基线扫描 ID<input value={id} onChange={(event) => setId(event.target.value)} /></label>
       <button className="secondary-button compact-button" type="submit" disabled={busy}>{busy ? "正在对比…" : "开始对比"}</button>
-    </form><p className="muted">从扫描历史复制同一仓库的扫描 ID。按规则、文件和证据匹配；行号移动不算新问题，消失项仍需人工确认。</p>
+    </form><p className="muted">从扫描历史复制同一仓库的扫描 ID。按规则和文件匹配；行号移动不算新问题，严重级别与命中次数单独比较，消失项仍需人工确认。</p>
     {error ? <p role="alert">{error}</p> : null}
     {comparison && baseline ? <>
       <p>基线 {baseline.repository.commit.slice(0, 12)} → 当前 {report.repository.commit.slice(0, 12)}</p>
       <p>基线规则 v{baseline.ruleset_version} / 工具 v{baseline.tool_version} → 当前规则 v{report.ruleset_version} / 工具 v{report.tool_version}</p>
       {comparison.conditionsChanged ? <p role="status">规则、工具或分析配置已变化；差异可能来自分析条件变化，不能全部视为代码整改效果。</p> : null}
       {!baseline.ruleset_digest || !report.ruleset_digest ? <p>旧报告缺少规则摘要，无法确认规则内容完全相同。</p> : null}
-      <p role="status">新增 {comparison.added.length} · 消失 {comparison.removed.length} · 保留 {comparison.retained.length}</p>
+      <p role="status">新增 {comparison.added.length} · 消失 {comparison.removed.length} · 保留 {comparison.retained.length} · 级别变化 {comparison.severityChanged.length} · 次数变化 {comparison.countChanged.length}</p>
       <label className="field">差异类别<select value={group} onChange={(event) => { setGroup(event.target.value as typeof group); setOffset(0); }}>
-        <option value="added">新增</option><option value="removed">消失</option><option value="retained">保留</option>
+        <option value="added">新增</option><option value="removed">消失</option><option value="retained">保留</option><option value="severityChanged">级别变化</option><option value="countChanged">次数变化</option>
       </select></label>
       <ul>{comparison[group].slice(offset, offset + 50).map((finding, index) => <li key={index}>
         <code>{finding.rule_id} · {finding.relative_path}:{finding.line_start}</code><p>{finding.title} · {finding.severity} · {finding.count} 次</p>
+        {comparison.changes.filter(c => c.after === finding).map(c => <p key="change">{c.before.severity} → {c.after.severity}；{c.before.count} → {c.after.count} 次</p>)}
       </li>)}</ul>
       <Pagination label="对比" offset={offset} limit={50} total={comparison[group].length} onChange={setOffset} />
     </> : null}

@@ -4,10 +4,12 @@ import hashlib
 import os
 import re
 from array import array
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from mxready.errors import MxReadyError
+from mxready.models import ScanCoverage
 
 _ALLOWED_EXTENSIONS = {
     ".c",
@@ -89,6 +91,7 @@ class IndexWarning:
 class FileIndex:
     files: tuple[IndexedFile, ...]
     warnings: tuple[IndexWarning, ...]
+    coverage: ScanCoverage | None = None
 
 
 def build_file_index(
@@ -111,8 +114,9 @@ def build_file_index(
     indexed_files: list[IndexedFile] = []
     warnings: list[IndexWarning] = []
     candidate_count = 0
+    skipped: Counter[str] = Counter()
 
-    for path, relative_path in _walk_candidate_files(root, warnings):
+    for path, relative_path in _walk_candidate_files(root, warnings, skipped):
         candidate_count += 1
         if candidate_count > max_files:
             raise MxReadyError(
@@ -193,7 +197,22 @@ def build_file_index(
             )
         )
 
+    skipped.update(w.code for w in warnings if w.code != "DIRECTORY_READ_ERROR")
     return FileIndex(
+        coverage=ScanCoverage(
+            analyzed_files=len(indexed_files),
+            analyzed_bytes=sum(f.size for f in indexed_files),
+            files_by_type=dict(
+                sorted(
+                    Counter(
+                        Path(f.relative_path).suffix.lower() or Path(f.relative_path).name
+                        for f in indexed_files
+                    ).items()
+                )
+            ),
+            excluded_directories=skipped.pop("EXCLUDED_DIRECTORY", 0),
+            skipped_by_reason=dict(sorted(skipped.items())),
+        ),
         files=tuple(sorted(indexed_files, key=lambda item: item.relative_path)),
         warnings=tuple(sorted(warnings, key=lambda item: (item.relative_path, item.code))),
     )
@@ -202,6 +221,7 @@ def build_file_index(
 def _walk_candidate_files(
     root: Path,
     warnings: list[IndexWarning],
+    skipped: Counter[str],
 ):
     pending = [root]
     while pending:
@@ -224,19 +244,25 @@ def _walk_candidate_files(
         for entry in ordered_entries:
             try:
                 if entry.is_symlink():
+                    skipped["SYMLINK"] += 1
                     continue
                 if entry.is_dir(follow_symlinks=False):
                     if not _is_excluded_directory(entry.name):
                         child_directories.append(Path(entry.path))
+                    else:
+                        skipped["EXCLUDED_DIRECTORY"] += 1
                     continue
                 if not entry.is_file(follow_symlinks=False):
                     continue
             except OSError:
+                skipped["ENTRY_READ_ERROR"] += 1
                 continue
 
             path = Path(entry.path)
             if _is_allowed_file(path):
                 yield path, _relative_path(path, root)
+            else:
+                skipped["UNSUPPORTED_FILE_TYPE"] += 1
 
         pending.extend(reversed(child_directories))
 

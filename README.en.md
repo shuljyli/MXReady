@@ -230,3 +230,5 @@ Static findings remain separate from hardware verification for the same commit.
 ## License
 
 [Apache License 2.0](LICENSE).
+
+See [report workflow](docs/report-workflow.md) for occurrence evidence, scan scope, comparison, runner checkout checks, and SARIF/CI integration.
