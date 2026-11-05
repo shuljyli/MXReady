@@ -1,0 +1,647 @@
+{
+  "schema_version": "1.0",
+  "scan_id": "5de1082f-f30a-539a-a1ca-9cd8ebd46a29",
+  "repository": {
+    "provider": "github",
+    "owner": "Dao-AILab",
+    "name": "causal-conv1d",
+    "url": "https://github.com/Dao-AILab/causal-conv1d",
+    "commit": "cd81f0413cad2fc1e6f17e785ac39f59aae690cd"
+  },
+  "tool_version": "0.3.1",
+  "ruleset_version": "4",
+  "ruleset_digest": "sha256:badf12ad29ce6f7cff9e6f07b4df4034822fbe9773571cad6517d9c65325c531",
+  "extra_ruleset_version": null,
+  "analysis_config": {
+    "max_findings": 10000,
+    "rule_timeout_seconds": 30,
+    "index_max_files": 10000,
+    "index_max_file_bytes": 1048576,
+    "prefilter": "on"
+  },
+  "scanned_at": "2026-11-05T07:04:11.362861Z",
+  "summary": {
+    "total_count": 10,
+    "blocker_count": 0,
+    "warning_count": 6,
+    "info_count": 4,
+    "top_blockers": [
+      ".github/scripts/build.sh",
+      "csrc/causal_conv1d_bwd.cu",
+      "csrc/causal_conv1d_common.h",
+      "csrc/causal_conv1d_fwd.cu",
+      "csrc/causal_conv1d_update.cu",
+      "setup.py"
+    ]
+  },
+  "findings": [
+    {
+      "rule_id": "MXR-PATH-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "path",
+      "title": "检测硬编码 CUDA 安装路径",
+      "relative_path": ".github/scripts/build.sh",
+      "line_start": 10,
+      "line_end": 11,
+      "evidence": "export PATH=/usr/local/cuda/bin:/usr/local/nvidia/bin:/usr/local/nvidia/lib64:$PATH",
+      "message": "项目硬编码了 /usr/local/cuda，可能绕过 MXMACA/cu-bridge 提供的工具链路径。",
+      "recommendation": "请将路径改为可配置项，复核 cu-bridge 环境变量，并在沐曦服务器验证解析结果。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "line_start": 10,
+          "line_end": 10,
+          "evidence": "export PATH=/usr/local/cuda/bin:/usr/local/nvidia/bin:/usr/local/nvidia/lib64:$PATH"
+        },
+        {
+          "line_start": 11,
+          "line_end": 11,
+          "evidence": "export LD_LIBRARY_PATH=/usr/local/nvidia/lib64:/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "csrc/causal_conv1d_bwd.cu",
+      "line_start": 54,
+      "line_end": 330,
+      "evidence": "__global__ __launch_bounds__(Ktraits::kNThreads)",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "line_start": 54,
+          "line_end": 54,
+          "evidence": "__global__ __launch_bounds__(Ktraits::kNThreads)"
+        },
+        {
+          "line_start": 330,
+          "line_end": 330,
+          "evidence": "__global__ __launch_bounds__(Ktraits::kNThreads)"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/causal_conv1d_common.h",
+      "line_start": 12,
+      "line_end": 12,
+      "evidence": "return __shfl_xor_sync(uint32_t(-1), val, offset);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 12,
+          "line_end": 12,
+          "evidence": "return __shfl_xor_sync(uint32_t(-1), val, offset);"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "csrc/causal_conv1d_fwd.cu",
+      "line_start": 47,
+      "line_end": 206,
+      "evidence": "__global__ __launch_bounds__(Ktraits::kNThreads)",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "line_start": 47,
+          "line_end": 47,
+          "evidence": "__global__ __launch_bounds__(Ktraits::kNThreads)"
+        },
+        {
+          "line_start": 206,
+          "line_end": 206,
+          "evidence": "__global__ __launch_bounds__(Ktraits::kNThreads)"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "csrc/causal_conv1d_update.cu",
+      "line_start": 24,
+      "line_end": 24,
+      "evidence": "__global__ __launch_bounds__(Ktraits::kNThreads)",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 24,
+          "line_end": 24,
+          "evidence": "__global__ __launch_bounds__(Ktraits::kNThreads)"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-ARCH-002",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "architecture",
+      "title": "检测硬编码 sm 或 compute 架构",
+      "relative_path": "setup.py",
+      "line_start": 180,
+      "line_end": 199,
+      "evidence": "cc_flag.append(\"arch=compute_75,code=sm_75\")",
+      "message": "项目硬编码了 NVIDIA sm/compute 架构编号，需要确认目标编译器如何处理该配置。",
+      "recommendation": "请复核架构列表是否可配置，并在 MXMACA 工具链上验证编译参数和运行结果。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 18,
+      "occurrences": [
+        {
+          "line_start": 180,
+          "line_end": 180,
+          "evidence": "cc_flag.append(\"arch=compute_75,code=sm_75\")"
+        },
+        {
+          "line_start": 180,
+          "line_end": 180,
+          "evidence": "cc_flag.append(\"arch=compute_75,code=sm_75\")"
+        },
+        {
+          "line_start": 182,
+          "line_end": 182,
+          "evidence": "cc_flag.append(\"arch=compute_80,code=sm_80\")"
+        },
+        {
+          "line_start": 182,
+          "line_end": 182,
+          "evidence": "cc_flag.append(\"arch=compute_80,code=sm_80\")"
+        },
+        {
+          "line_start": 184,
+          "line_end": 184,
+          "evidence": "cc_flag.append(\"arch=compute_87,code=sm_87\")"
+        },
+        {
+          "line_start": 184,
+          "line_end": 184,
+          "evidence": "cc_flag.append(\"arch=compute_87,code=sm_87\")"
+        },
+        {
+          "line_start": 187,
+          "line_end": 187,
+          "evidence": "cc_flag.append(\"arch=compute_90,code=sm_90\")"
+        },
+        {
+          "line_start": 187,
+          "line_end": 187,
+          "evidence": "cc_flag.append(\"arch=compute_90,code=sm_90\")"
+        },
+        {
+          "line_start": 190,
+          "line_end": 190,
+          "evidence": "cc_flag.append(\"arch=compute_100,code=sm_100\")"
+        },
+        {
+          "line_start": 190,
+          "line_end": 190,
+          "evidence": "cc_flag.append(\"arch=compute_100,code=sm_100\")"
+        },
+        {
+          "line_start": 192,
+          "line_end": 192,
+          "evidence": "cc_flag.append(\"arch=compute_120,code=sm_120\")"
+        },
+        {
+          "line_start": 192,
+          "line_end": 192,
+          "evidence": "cc_flag.append(\"arch=compute_120,code=sm_120\")"
+        },
+        {
+          "line_start": 195,
+          "line_end": 195,
+          "evidence": "cc_flag.append(\"arch=compute_103,code=sm_103\")"
+        },
+        {
+          "line_start": 195,
+          "line_end": 195,
+          "evidence": "cc_flag.append(\"arch=compute_103,code=sm_103\")"
+        },
+        {
+          "line_start": 197,
+          "line_end": 197,
+          "evidence": "cc_flag.append(\"arch=compute_110,code=sm_110\")"
+        },
+        {
+          "line_start": 197,
+          "line_end": 197,
+          "evidence": "cc_flag.append(\"arch=compute_110,code=sm_110\")"
+        },
+        {
+          "line_start": 199,
+          "line_end": 199,
+          "evidence": "cc_flag.append(\"arch=compute_121,code=sm_121\")"
+        },
+        {
+          "line_start": 199,
+          "line_end": 199,
+          "evidence": "cc_flag.append(\"arch=compute_121,code=sm_121\")"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-TEST-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "test",
+      "title": "检测 CUDA 可用性静默跳过测试",
+      "relative_path": "tests/test_causal_conv1d.py",
+      "line_start": 714,
+      "line_end": 750,
+      "evidence": "@pytest.mark.skipif(not torch.cuda.is_available(), reason=\"CUDA required\")",
+      "message": "测试在 torch.cuda 不可用时静默跳过，迁移到沐曦环境后可能因环境未配置而跳过，造成验证通过的假象。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核跳过条件，并在真机环境手动运行核心 CUDA 测试以确认实际覆盖。",
+      "references": [
+        {
+          "title": "pytest skipif documentation",
+          "url": "https://docs.pytest.org/"
+        },
+        {
+          "title": "unittest skipUnless documentation",
+          "url": "https://docs.python.org/3/library/unittest.html"
+        }
+      ],
+      "count": 3,
+      "occurrences": [
+        {
+          "line_start": 714,
+          "line_end": 714,
+          "evidence": "@pytest.mark.skipif(not torch.cuda.is_available(), reason=\"CUDA required\")"
+        },
+        {
+          "line_start": 732,
+          "line_end": 732,
+          "evidence": "@pytest.mark.skipif(not torch.cuda.is_available(), reason=\"CUDA required\")"
+        },
+        {
+          "line_start": 750,
+          "line_end": 750,
+          "evidence": "@pytest.mark.skipif(not torch.cuda.is_available(), reason=\"CUDA required\")"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-CUB-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "library",
+      "title": "识别 CUB 用法",
+      "relative_path": "csrc/causal_conv1d_bwd.cu",
+      "line_start": 10,
+      "line_end": 323,
+      "evidence": "#include <cub/block/block_load.cuh>",
+      "message": "项目使用 CUB；MXMACA 提供 mcCUB 且对外 API 接口不变，通常无需改动源码。",
+      "recommendation": "请复核 CUB 版本与 mcCUB 的对应关系，并在沐曦环境验证编译与结果。",
+      "references": [
+        {
+          "title": "MXMACA AI training manual",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/587/C500_AITrainningMaunal_CN.html"
+        }
+      ],
+      "count": 16,
+      "occurrences": [
+        {
+          "line_start": 10,
+          "line_end": 10,
+          "evidence": "#include <cub/block/block_load.cuh>"
+        },
+        {
+          "line_start": 11,
+          "line_end": 11,
+          "evidence": "#include <cub/block/block_store.cuh>"
+        },
+        {
+          "line_start": 12,
+          "line_end": 12,
+          "evidence": "#include <cub/block/block_reduce.cuh>"
+        },
+        {
+          "line_start": 40,
+          "line_end": 40,
+          "evidence": "using BlockLoadT = cub::BlockLoad<input_t, kNThreads, kNElts, cub::BLOCK_LOAD_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 40,
+          "line_end": 40,
+          "evidence": "using BlockLoadT = cub::BlockLoad<input_t, kNThreads, kNElts, cub::BLOCK_LOAD_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 41,
+          "line_end": 41,
+          "evidence": "using BlockLoadVecT = cub::BlockLoad<vec_t, kNThreads, 1, cub::BLOCK_LOAD_DIRECT>;"
+        },
+        {
+          "line_start": 41,
+          "line_end": 41,
+          "evidence": "using BlockLoadVecT = cub::BlockLoad<vec_t, kNThreads, 1, cub::BLOCK_LOAD_DIRECT>;"
+        },
+        {
+          "line_start": 42,
+          "line_end": 42,
+          "evidence": "using BlockStoreT = cub::BlockStore<input_t, kNThreads, kNElts, cub::BLOCK_STORE_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 42,
+          "line_end": 42,
+          "evidence": "using BlockStoreT = cub::BlockStore<input_t, kNThreads, kNElts, cub::BLOCK_STORE_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 43,
+          "line_end": 43,
+          "evidence": "using BlockStoreVecT = cub::BlockStore<vec_t, kNThreads, 1, cub::BLOCK_STORE_DIRECT>;"
+        },
+        {
+          "line_start": 43,
+          "line_end": 43,
+          "evidence": "using BlockStoreVecT = cub::BlockStore<vec_t, kNThreads, 1, cub::BLOCK_STORE_DIRECT>;"
+        },
+        {
+          "line_start": 44,
+          "line_end": 44,
+          "evidence": "using BlockReduceFloatT = cub::BlockReduce<float, kNThreads>;"
+        },
+        {
+          "line_start": 322,
+          "line_end": 322,
+          "evidence": "// using BlockLoadT = cub::BlockLoad<input_t, kNThreads, kNItems, cub::BLOCK_LOAD_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 322,
+          "line_end": 322,
+          "evidence": "// using BlockLoadT = cub::BlockLoad<input_t, kNThreads, kNItems, cub::BLOCK_LOAD_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 323,
+          "line_end": 323,
+          "evidence": "// using BlockStoreT = cub::BlockStore<input_t, kNThreads, kNItems, cub::BLOCK_STORE_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 323,
+          "line_end": 323,
+          "evidence": "// using BlockStoreT = cub::BlockStore<input_t, kNThreads, kNItems, cub::BLOCK_STORE_WARP_TRANSPOSE>;"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-CUB-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "library",
+      "title": "识别 CUB 用法",
+      "relative_path": "csrc/causal_conv1d_fwd.cu",
+      "line_start": 10,
+      "line_end": 199,
+      "evidence": "#include <cub/block/block_load.cuh>",
+      "message": "项目使用 CUB；MXMACA 提供 mcCUB 且对外 API 接口不变，通常无需改动源码。",
+      "recommendation": "请复核 CUB 版本与 mcCUB 的对应关系，并在沐曦环境验证编译与结果。",
+      "references": [
+        {
+          "title": "MXMACA AI training manual",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/587/C500_AITrainningMaunal_CN.html"
+        }
+      ],
+      "count": 14,
+      "occurrences": [
+        {
+          "line_start": 10,
+          "line_end": 10,
+          "evidence": "#include <cub/block/block_load.cuh>"
+        },
+        {
+          "line_start": 11,
+          "line_end": 11,
+          "evidence": "#include <cub/block/block_store.cuh>"
+        },
+        {
+          "line_start": 35,
+          "line_end": 35,
+          "evidence": "using BlockLoadT = cub::BlockLoad<input_t, kNThreads, kNElts, cub::BLOCK_LOAD_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 35,
+          "line_end": 35,
+          "evidence": "using BlockLoadT = cub::BlockLoad<input_t, kNThreads, kNElts, cub::BLOCK_LOAD_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 36,
+          "line_end": 36,
+          "evidence": "using BlockLoadVecT = cub::BlockLoad<vec_t, kNThreads, 1, cub::BLOCK_LOAD_DIRECT>;"
+        },
+        {
+          "line_start": 36,
+          "line_end": 36,
+          "evidence": "using BlockLoadVecT = cub::BlockLoad<vec_t, kNThreads, 1, cub::BLOCK_LOAD_DIRECT>;"
+        },
+        {
+          "line_start": 37,
+          "line_end": 37,
+          "evidence": "using BlockStoreT = cub::BlockStore<input_t, kNThreads, kNElts, cub::BLOCK_STORE_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 37,
+          "line_end": 37,
+          "evidence": "using BlockStoreT = cub::BlockStore<input_t, kNThreads, kNElts, cub::BLOCK_STORE_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 38,
+          "line_end": 38,
+          "evidence": "using BlockStoreVecT = cub::BlockStore<vec_t, kNThreads, 1, cub::BLOCK_STORE_DIRECT>;"
+        },
+        {
+          "line_start": 38,
+          "line_end": 38,
+          "evidence": "using BlockStoreVecT = cub::BlockStore<vec_t, kNThreads, 1, cub::BLOCK_STORE_DIRECT>;"
+        },
+        {
+          "line_start": 198,
+          "line_end": 198,
+          "evidence": "// using BlockLoadT = cub::BlockLoad<input_t, kNThreads, kNItems, cub::BLOCK_LOAD_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 198,
+          "line_end": 198,
+          "evidence": "// using BlockLoadT = cub::BlockLoad<input_t, kNThreads, kNItems, cub::BLOCK_LOAD_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 199,
+          "line_end": 199,
+          "evidence": "// using BlockStoreT = cub::BlockStore<input_t, kNThreads, kNItems, cub::BLOCK_STORE_WARP_TRANSPOSE>;"
+        },
+        {
+          "line_start": 199,
+          "line_end": 199,
+          "evidence": "// using BlockStoreT = cub::BlockStore<input_t, kNThreads, kNItems, cub::BLOCK_STORE_WARP_TRANSPOSE>;"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PYTORCH-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "pytorch-extension",
+      "title": "识别 PyTorch CUDAExtension",
+      "relative_path": "setup.py",
+      "line_start": 243,
+      "line_end": 243,
+      "evidence": "CUDAExtension(",
+      "message": "项目通过 PyTorch CUDAExtension 构建原生扩展，需要准备与目标工具链匹配的编译环境。",
+      "recommendation": "请复核扩展源文件、编译参数与依赖库，并在 MXMACA PyTorch 环境完成最小构建验证。",
+      "references": [
+        {
+          "title": "PyTorch C++/CUDA extensions",
+          "url": "https://docs.pytorch.org/docs/stable/cpp_extension.html"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 243,
+          "line_end": 243,
+          "evidence": "CUDAExtension("
+        }
+      ]
+    }
+  ],
+  "coverage": {
+    "analyzed_files": 26,
+    "analyzed_bytes": 199756,
+    "files_by_type": {
+      ".cpp": 1,
+      ".cu": 3,
+      ".h": 3,
+      ".md": 1,
+      ".py": 7,
+      ".sh": 4,
+      ".toml": 1,
+      ".yaml": 1,
+      ".yml": 5
+    },
+    "skipped_by_reason": {
+      "UNSUPPORTED_FILE_TYPE": 5
+    },
+    "excluded_directories": 1
+  },
+  "migration_checklist": [
+    {
+      "rule_id": "MXR-PATH-001",
+      "title": "检测硬编码 CUDA 安装路径",
+      "action": "请将路径改为可配置项，复核 cu-bridge 环境变量，并在沐曦服务器验证解析结果。",
+      "affected_files": [
+        ".github/scripts/build.sh"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "action": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "affected_files": [
+        "csrc/causal_conv1d_bwd.cu",
+        "csrc/causal_conv1d_fwd.cu",
+        "csrc/causal_conv1d_update.cu"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "title": "检测 CUDA warp 同步内建函数",
+      "action": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "affected_files": [
+        "csrc/causal_conv1d_common.h"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-ARCH-002",
+      "title": "检测硬编码 sm 或 compute 架构",
+      "action": "请复核架构列表是否可配置，并在 MXMACA 工具链上验证编译参数和运行结果。",
+      "affected_files": [
+        "setup.py"
+      ],
+      "completed": false
+    }
+  ],
+  "analysis_warnings": [
+    {
+      "code": "PATH_CONTEXT_DEMOTION",
+      "relative_path": null,
+      "message": "测试/夹具路径上的 MXR-TEST-001（1 个文件） 已封顶为提示，不参与静态状态判定；文件仍被扫描，结论可逐条复核。"
+    }
+  ],
+  "static_status": "warnings",
+  "verification_status": "not-run"
+}

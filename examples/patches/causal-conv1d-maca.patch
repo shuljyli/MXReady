@@ -1,0 +1,89 @@
+diff --git a/setup.py b/setup.py
+index 0bcdd81..5573c11 100644
+--- a/setup.py
++++ b/setup.py
+@@ -167,8 +167,10 @@ if not SKIP_CUDA_BUILD:
+     else:
+         check_if_cuda_home_none(PACKAGE_NAME)
+         # Check, if CUDA11 is installed for compute capability 8.0
+-
+-        if CUDA_HOME is not None:
++        # 兼容 MXMACA/cu-bridge：该工具链可能不提供 nvcc 入口，此时跳过 NVIDIA 版本检查与硬编码架构参数，
++        # 由 PyTorch 的 BuildExtension 生成目标平台架构参数。
++        bare_metal_version = None
++        if CUDA_HOME is not None and os.path.exists(os.path.join(CUDA_HOME, "bin", "nvcc")):
+             _, bare_metal_version = get_cuda_bare_metal_version(CUDA_HOME)
+             if bare_metal_version < Version("11.6"):
+                 raise RuntimeError(
+@@ -176,28 +178,6 @@ if not SKIP_CUDA_BUILD:
+                     "Note: make sure nvcc has a supported version by running nvcc -V."
+                 )
+ 
+-        cc_flag.append("-gencode")
+-        cc_flag.append("arch=compute_75,code=sm_75")
+-        cc_flag.append("-gencode")
+-        cc_flag.append("arch=compute_80,code=sm_80")
+-        cc_flag.append("-gencode")
+-        cc_flag.append("arch=compute_87,code=sm_87")
+-        if bare_metal_version >= Version("11.8"):
+-            cc_flag.append("-gencode")
+-            cc_flag.append("arch=compute_90,code=sm_90")
+-        if bare_metal_version >= Version("12.8"):
+-            cc_flag.append("-gencode")
+-            cc_flag.append("arch=compute_100,code=sm_100")
+-            cc_flag.append("-gencode")
+-            cc_flag.append("arch=compute_120,code=sm_120")
+-        if bare_metal_version >= Version("13.0"):
+-            cc_flag.append("-gencode")
+-            cc_flag.append("arch=compute_103,code=sm_103")
+-            cc_flag.append("-gencode")
+-            cc_flag.append("arch=compute_110,code=sm_110")
+-            cc_flag.append("-gencode")
+-            cc_flag.append("arch=compute_121,code=sm_121")
+-
+     # HACK: The compiler flag -D_GLIBCXX_USE_CXX11_ABI is set to be the same as
+     # torch._C._GLIBCXX_USE_CXX11_ABI
+     # https://github.com/pytorch/pytorch/blob/8472c24e3b5b60150096486616d98b7bea01500b/torch/utils/cpp_extension.py#L920
+@@ -218,26 +198,22 @@ if not SKIP_CUDA_BUILD:
+             + cc_flag,
+         }
+     else:
+-        extra_compile_args = {
+-            "cxx": ["-O3"],
+-            "nvcc": append_nvcc_threads(
+-                [
+-                    "-O3",
+-                    "-U__CUDA_NO_HALF_OPERATORS__",
+-                    "-U__CUDA_NO_HALF_CONVERSIONS__",
+-                    "-U__CUDA_NO_BFLOAT16_OPERATORS__",
+-                    "-U__CUDA_NO_BFLOAT16_CONVERSIONS__",
+-                    "-U__CUDA_NO_BFLOAT162_OPERATORS__",
+-                    "-U__CUDA_NO_BFLOAT162_CONVERSIONS__",
+-                    "--expt-relaxed-constexpr",
+-                    "--expt-extended-lambda",
+-                    "--use_fast_math",
+-                    "--ptxas-options=-v",
+-                    "-lineinfo",
+-                ]
+-                + cc_flag
+-            ),
+-        }
++        nvcc_flags = [
++            "-O3",
++            "-U__CUDA_NO_HALF_OPERATORS__",
++            "-U__CUDA_NO_HALF_CONVERSIONS__",
++            "-U__CUDA_NO_BFLOAT16_OPERATORS__",
++            "-U__CUDA_NO_BFLOAT16_CONVERSIONS__",
++            "-U__CUDA_NO_BFLOAT162_OPERATORS__",
++            "-U__CUDA_NO_BFLOAT162_CONVERSIONS__",
++            "--expt-relaxed-constexpr",
++            "--expt-extended-lambda",
++            "--use_fast_math",
++        ]
++        if bare_metal_version is not None:
++            nvcc_flags += ["--ptxas-options=-v", "-lineinfo"]
++            nvcc_flags = append_nvcc_threads(nvcc_flags)
++        extra_compile_args = {"cxx": ["-O3"], "nvcc": nvcc_flags + cc_flag}
+ 
+     ext_modules.append(
+         CUDAExtension(

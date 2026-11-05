@@ -51,6 +51,16 @@ MVP 不包含私有仓库、自动修改源码、远程 GPU 服务器的 Docker 
 四条里有两条**能编译通过**，但 lane 计算和线程束宽度在 64 宽度的 wave 上会算出错误结果，测试也未必覆盖得到；
 另两条在沐曦上直接编不过。这两类问题都会让一次迁移拖上几周。
 
+另外两个固定提交的案例补上了阻断与修复闭环两侧的证据：
+
+- [`bitsandbytes`](https://github.com/bitsandbytes-foundation/bitsandbytes)（`a616886`）：27 条发现，其中 7 条阻断
+  （`MXR-PTX-001` 4 条、`MXR-WARP-001` 3 条），CLI 退出码 2。完整报告见
+  [examples/reports/bitsandbytes.md](examples/reports/bitsandbytes.md)。
+- [`causal-conv1d`](https://github.com/Dao-AILab/causal-conv1d)（`cd81f04`）：按报告修掉 `setup.py` 里硬编码的
+  `sm_75…sm_90` 架构列表后，发现从 10 条降到 9 条、`MXR-ARCH-002` 消失；在 MetaX C500 上用临时补丁构建，
+  并恢复干净 checkout 后由 runner 验证，五项环境检查与单卡 smoke 全部 `passed`。补丁、前后报告与结果见
+  [迁移案例记录](docs/migration-case-2026-11.md)。
+
 ## 架构
 
 ```text
@@ -81,7 +91,7 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | React 单页界面 | 可用 | Vitest + TypeScript 严格模式 |
 | 批量评估（`mxready-scan-batch`） | 可用 | CLI 回归 |
 | MCP 工具（`mxready-mcp`，需 `.[mcp]`） | 可用 | 后端测试 + 实际 stdio 握手 |
-| 真机沐曦 GPU 验证 | 已完成一次脱敏验证（MetaX C500，`pytorch/extension-cpp` @ `1c325b2`） | runner `inspect` 五项环境检查与单卡 smoke 全部 `passed`；其他项目仍需各自验证 |
+| 真机沐曦 GPU 验证 | 已完成两次脱敏验证（MetaX C500：`pytorch/extension-cpp` @ `1c325b2`、`causal-conv1d` @ `cd81f04`） | runner `inspect` 五项环境检查与单卡 smoke 全部 `passed`；causal-conv1d 的构建使用了未提交上游的临时补丁，其他项目仍需各自验证 |
 
 工程状态：`ruff check`、`ruff format --check`、`mypy`、契约校验与 `pytest` 用例全绿（当前 490 余条），
 分支覆盖率 89%（门槛 80%）；CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS。
@@ -97,8 +107,9 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 - **前端未配置 ESLint / Prettier**，以 TypeScript 严格模式与 Vitest 兜底。
 
 > 公开项目示例报告见 [examples/reports](examples/reports)：`pytorch-extension-cpp` 全部通过（4 条提示），
-> `nvidia-apex` 为阻断状态（12 条阻断）。两份放在一起是为了说明报告会真的判绿，也会真的判红。
-> 远程验证流程见 [examples/verification/README.md](examples/verification/README.md)。
+> `nvidia-apex`（12 条阻断）与 `bitsandbytes`（7 条阻断）为阻断状态，`causal-conv1d` 保留修复前/后两份。
+> 放在一起是为了说明报告会真的判绿，也会真的判红。远程验证流程见
+> [examples/verification/README.md](examples/verification/README.md)。
 
 ## 安装包（Windows / Linux / macOS）
 
@@ -424,6 +435,7 @@ npm run build
 | [docs/security.md](docs/security.md) | 安全模型 |
 | [docs/rules.md](docs/rules.md) | 规则开发指南 |
 | [docs/runner.md](docs/runner.md) | 远程验证 runner 指南 |
+| [docs/migration-case-2026-11.md](docs/migration-case-2026-11.md) | 真实仓库案例：阻断诊断、修复与真机复验、否定路径 |
 | [examples/verification/README.md](examples/verification/README.md) | 真机验证交接 SOP |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 贡献流程与质量门 |
@@ -454,7 +466,7 @@ npm run build
 ## MVP 路线图
 
 1. 用三个公开 CUDA 扩展项目生成可复现报告并校正规则精度；
-2. 在更多公开项目上完成相同提交的脱敏真机验证（已完成 `pytorch/extension-cpp` @ `1c325b2`）；
+2. 在更多公开项目上完成相同提交的脱敏真机验证（已完成 `pytorch/extension-cpp` @ `1c325b2` 与 `causal-conv1d` @ `cd81f04`）；
 3. 选择一个上游项目提交小范围、可评审的迁移 PR；
 4. 根据真实适配反馈扩充规则与最小验证模板。
 

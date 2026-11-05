@@ -1,0 +1,60 @@
+{
+  "checks": [
+    {
+      "command": [
+        "uname",
+        "-a"
+      ],
+      "id": "uname",
+      "timeout_seconds": 10
+    },
+    {
+      "command": [
+        "python",
+        "--version"
+      ],
+      "id": "python-version",
+      "timeout_seconds": 10
+    },
+    {
+      "command": [
+        "mx-smi",
+        "--version"
+      ],
+      "id": "mx-smi-version",
+      "timeout_seconds": 10
+    },
+    {
+      "command": [
+        "mx-smi"
+      ],
+      "id": "mx-smi",
+      "timeout_seconds": 20
+    },
+    {
+      "command": [
+        "python",
+        "-c",
+        "import torch; available=torch.cuda.is_available(); count=torch.cuda.device_count(); print(torch.__version__); print(available); print(count); name=torch.cuda.get_device_name(0) if available and count else ''; print(name); raise SystemExit(0 if available and count > 0 else 1)"
+      ],
+      "id": "pytorch-device",
+      "timeout_seconds": 30
+    }
+  ],
+  "project_commands": [
+    {
+      "command": [
+        "python",
+        "-c",
+        "import torch; from causal_conv1d import causal_conv1d_fn, causal_conv1d_update; from causal_conv1d.causal_conv1d_interface import causal_conv1d_ref, causal_conv1d_update_ref; torch.manual_seed(0); x=torch.randn(2,128,256,device='cuda'); w=torch.randn(128,4,device='cuda'); b=torch.randn(128,device='cuda'); out=causal_conv1d_fn(x,w,b,activation='silu'); ref=causal_conv1d_ref(x,w,b,activation='silu'); torch.testing.assert_close(out,ref,rtol=3e-4,atol=1e-3); xs=torch.randn(2,128,device='cuda'); s1=torch.zeros(2,128,3,device='cuda'); s2=torch.zeros(2,128,3,device='cuda'); ou=causal_conv1d_update(xs,s1,w,b,activation='silu'); ru=causal_conv1d_update_ref(xs,s2,w,b,activation='silu'); torch.testing.assert_close(ou,ru,rtol=3e-4,atol=1e-3); print('MXReady causal-conv1d CUDA smoke passed')"
+      ],
+      "id": "causal-conv1d-cuda-smoke",
+      "timeout_seconds": 300
+    }
+  ],
+  "repository_commit": "cd81f0413cad2fc1e6f17e785ac39f59aae690cd",
+  "repository_url": "https://github.com/Dao-AILab/causal-conv1d",
+  "runner_version": "0.3.1",
+  "scan_id": "5de1082f-f30a-539a-a1ca-9cd8ebd46a29",
+  "schema_version": "1.0"
+}

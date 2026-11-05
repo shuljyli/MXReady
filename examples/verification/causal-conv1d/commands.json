@@ -1,0 +1,11 @@
+[
+  {
+    "id": "causal-conv1d-cuda-smoke",
+    "command": [
+      "python",
+      "-c",
+      "import torch; from causal_conv1d import causal_conv1d_fn, causal_conv1d_update; from causal_conv1d.causal_conv1d_interface import causal_conv1d_ref, causal_conv1d_update_ref; torch.manual_seed(0); x=torch.randn(2,128,256,device='cuda'); w=torch.randn(128,4,device='cuda'); b=torch.randn(128,device='cuda'); out=causal_conv1d_fn(x,w,b,activation='silu'); ref=causal_conv1d_ref(x,w,b,activation='silu'); torch.testing.assert_close(out,ref,rtol=3e-4,atol=1e-3); xs=torch.randn(2,128,device='cuda'); s1=torch.zeros(2,128,3,device='cuda'); s2=torch.zeros(2,128,3,device='cuda'); ou=causal_conv1d_update(xs,s1,w,b,activation='silu'); ru=causal_conv1d_update_ref(xs,s2,w,b,activation='silu'); torch.testing.assert_close(ou,ru,rtol=3e-4,atol=1e-3); print('MXReady causal-conv1d CUDA smoke passed')"
+    ],
+    "timeout_seconds": 300
+  }
+]

@@ -1,0 +1,1142 @@
+{
+  "schema_version": "1.0",
+  "scan_id": "08dd1af5-2ac4-5d55-8df6-8edbbf777b92",
+  "repository": {
+    "provider": "github",
+    "owner": "bitsandbytes-foundation",
+    "name": "bitsandbytes",
+    "url": "https://github.com/bitsandbytes-foundation/bitsandbytes",
+    "commit": "a616886cacf86701514f0cb1d6be760f967481c0"
+  },
+  "tool_version": "0.3.1",
+  "ruleset_version": "4",
+  "ruleset_digest": "sha256:badf12ad29ce6f7cff9e6f07b4df4034822fbe9773571cad6517d9c65325c531",
+  "extra_ruleset_version": null,
+  "analysis_config": {
+    "max_findings": 10000,
+    "rule_timeout_seconds": 30,
+    "index_max_files": 10000,
+    "index_max_file_bytes": 1048576,
+    "prefilter": "on"
+  },
+  "scanned_at": "2026-11-05T07:05:59.211603Z",
+  "summary": {
+    "total_count": 27,
+    "blocker_count": 7,
+    "warning_count": 10,
+    "info_count": 10,
+    "top_blockers": [
+      "csrc/gemm_4bit_simt.cu",
+      "csrc/gemm_4bit_sm75.cu",
+      "csrc/gemm_4bit_sm80.cu",
+      "csrc/gemm_4bit_mma.cuh"
+    ]
+  },
+  "findings": [
+    {
+      "rule_id": "MXR-PTX-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "ptx",
+      "title": "检测内联 PTX 汇编",
+      "relative_path": "csrc/gemm_4bit_mma.cuh",
+      "line_start": 45,
+      "line_end": 117,
+      "evidence": "asm(\"cvt.rn.bf16x2.f32 %0, %1, %2;\" : \"=r\"(result) : \"f\"(hi), \"f\"(lo));",
+      "message": "内联汇编块嵌入的是 NVIDIA 虚拟 ISA（PTX）指令，MXMACA 后端不执行 PTX；这类代码可能固化 NVIDIA 指令语义。",
+      "recommendation": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "references": [
+        {
+          "title": "NVIDIA Inline PTX Assembly",
+          "url": "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html"
+        },
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 3,
+      "occurrences": [
+        {
+          "line_start": 45,
+          "line_end": 45,
+          "evidence": "asm(\"cvt.rn.bf16x2.f32 %0, %1, %2;\" : \"=r\"(result) : \"f\"(hi), \"f\"(lo));"
+        },
+        {
+          "line_start": 107,
+          "line_end": 107,
+          "evidence": "asm volatile(\"st.global.cs.b32 [%0], %1;\" :: \"l\"(&C[m0 * N + n0]), \"r\"(c01));"
+        },
+        {
+          "line_start": 117,
+          "line_end": 117,
+          "evidence": "asm volatile(\"st.global.cs.b32 [%0], %1;\" :: \"l\"(&C[m1 * N + n0]), \"r\"(c23));"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-WARP-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "warp",
+      "title": "检测硬编码 32 线程束假设",
+      "relative_path": "csrc/gemm_4bit_simt.cu",
+      "line_start": 138,
+      "line_end": 138,
+      "evidence": "const int lane_id = threadIdx.x & 31;",
+      "message": "代码按 32 线程一组计算 lane 或定义线程束宽度常量；MXMACA 的线程束（wave）宽度为 64，这类算术可能编译通过但结果错位。",
+      "recommendation": "请复核 lane 计算与掩码宽度，改用运行时查询的线程束宽度，并在沐曦环境用最小用例比对结果。",
+      "references": [
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 138,
+          "line_end": 138,
+          "evidence": "const int lane_id = threadIdx.x & 31;"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PTX-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "ptx",
+      "title": "检测内联 PTX 汇编",
+      "relative_path": "csrc/gemm_4bit_simt.cu",
+      "line_start": 286,
+      "line_end": 408,
+      "evidence": "asm volatile(\r\n                \"ld.global.cs.v4.u32 {%0,%1,%2,%3}, [%4];\\n\"",
+      "message": "内联汇编块嵌入的是 NVIDIA 虚拟 ISA（PTX）指令，MXMACA 后端不执行 PTX；这类代码可能固化 NVIDIA 指令语义。",
+      "recommendation": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "references": [
+        {
+          "title": "NVIDIA Inline PTX Assembly",
+          "url": "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html"
+        },
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "line_start": 286,
+          "line_end": 287,
+          "evidence": "asm volatile(\r\n                \"ld.global.cs.v4.u32 {%0,%1,%2,%3}, [%4];\\n\""
+        },
+        {
+          "line_start": 407,
+          "line_end": 408,
+          "evidence": "asm volatile(\r\n                            \"ld.global.ca.v4.u32 {%0,%1,%2,%3}, [%4];\\n\""
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PTX-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "ptx",
+      "title": "检测内联 PTX 汇编",
+      "relative_path": "csrc/gemm_4bit_sm75.cu",
+      "line_start": 34,
+      "line_end": 248,
+      "evidence": "asm volatile(\r\n        \"mma.sync.aligned.m16n8k8.row.col.f32.f16.f16.f32 \"",
+      "message": "内联汇编块嵌入的是 NVIDIA 虚拟 ISA（PTX）指令，MXMACA 后端不执行 PTX；这类代码可能固化 NVIDIA 指令语义。",
+      "recommendation": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "references": [
+        {
+          "title": "NVIDIA Inline PTX Assembly",
+          "url": "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html"
+        },
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 6,
+      "occurrences": [
+        {
+          "line_start": 34,
+          "line_end": 35,
+          "evidence": "asm volatile(\r\n        \"mma.sync.aligned.m16n8k8.row.col.f32.f16.f16.f32 \""
+        },
+        {
+          "line_start": 50,
+          "line_end": 51,
+          "evidence": "asm volatile(\r\n        \"ldmatrix.sync.aligned.m8n8.x2.shared.b16 {%0,%1}, [%2];\\n\""
+        },
+        {
+          "line_start": 64,
+          "line_end": 65,
+          "evidence": "asm volatile(\r\n        \"ldmatrix.sync.aligned.m8n8.x1.shared.b16 {%0}, [%1];\\n\""
+        },
+        {
+          "line_start": 187,
+          "line_end": 188,
+          "evidence": "asm volatile(\r\n                    \"ld.global.ca.v4.u32 {%0,%1,%2,%3}, [%4];\\n\""
+        },
+        {
+          "line_start": 231,
+          "line_end": 232,
+          "evidence": "asm volatile(\r\n                        \"ld.global.cs.v4.u32 {%0,%1,%2,%3}, [%4];\\n\""
+        },
+        {
+          "line_start": 247,
+          "line_end": 248,
+          "evidence": "asm volatile(\r\n                        \"ld.global.cs.v2.u32 {%0,%1}, [%2];\\n\""
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-WARP-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "warp",
+      "title": "检测硬编码 32 线程束假设",
+      "relative_path": "csrc/gemm_4bit_sm75.cu",
+      "line_start": 147,
+      "line_end": 148,
+      "evidence": "const int warp_id = threadIdx.x / 32;",
+      "message": "代码按 32 线程一组计算 lane 或定义线程束宽度常量；MXMACA 的线程束（wave）宽度为 64，这类算术可能编译通过但结果错位。",
+      "recommendation": "请复核 lane 计算与掩码宽度，改用运行时查询的线程束宽度，并在沐曦环境用最小用例比对结果。",
+      "references": [
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "line_start": 147,
+          "line_end": 147,
+          "evidence": "const int warp_id = threadIdx.x / 32;"
+        },
+        {
+          "line_start": 148,
+          "line_end": 148,
+          "evidence": "const int lane_id = threadIdx.x % 32;"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-PTX-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "ptx",
+      "title": "检测内联 PTX 汇编",
+      "relative_path": "csrc/gemm_4bit_sm80.cu",
+      "line_start": 34,
+      "line_end": 402,
+      "evidence": "asm volatile(\r\n            \"mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 \"",
+      "message": "内联汇编块嵌入的是 NVIDIA 虚拟 ISA（PTX）指令，MXMACA 后端不执行 PTX；这类代码可能固化 NVIDIA 指令语义。",
+      "recommendation": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "references": [
+        {
+          "title": "NVIDIA Inline PTX Assembly",
+          "url": "https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html"
+        },
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 9,
+      "occurrences": [
+        {
+          "line_start": 34,
+          "line_end": 35,
+          "evidence": "asm volatile(\r\n            \"mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 \""
+        },
+        {
+          "line_start": 44,
+          "line_end": 45,
+          "evidence": "asm volatile(\r\n            \"mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32 \""
+        },
+        {
+          "line_start": 69,
+          "line_end": 70,
+          "evidence": "asm volatile(\r\n        \"ldmatrix.sync.aligned.m8n8.x4.shared.b16 {%0,%1,%2,%3}, [%4];\\n\""
+        },
+        {
+          "line_start": 89,
+          "line_end": 90,
+          "evidence": "asm volatile(\r\n        \"ldmatrix.sync.aligned.m8n8.x2.shared.b16 {%0,%1}, [%2];\\n\""
+        },
+        {
+          "line_start": 257,
+          "line_end": 258,
+          "evidence": "asm volatile(\r\n                    \"ld.global.ca.v4.u32 {%0,%1,%2,%3}, [%4];\\n\""
+        },
+        {
+          "line_start": 318,
+          "line_end": 319,
+          "evidence": "asm volatile(\r\n                        \"ld.global.cs.v4.u32 {%0,%1,%2,%3},   [%16];\\n\""
+        },
+        {
+          "line_start": 356,
+          "line_end": 357,
+          "evidence": "asm volatile(\r\n                        \"ld.global.cs.v4.u32 {%0,%1,%2,%3}, [%8];\\n\""
+        },
+        {
+          "line_start": 385,
+          "line_end": 386,
+          "evidence": "asm volatile(\r\n                        \"ld.global.cs.v4.u32 {%0,%1,%2,%3}, [%4];\\n\""
+        },
+        {
+          "line_start": 401,
+          "line_end": 402,
+          "evidence": "asm volatile(\r\n                        \"ld.global.cs.v2.u32 {%0,%1}, [%2];\\n\""
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-WARP-001",
+      "rule_version": 1,
+      "severity": "blocker",
+      "category": "warp",
+      "title": "检测硬编码 32 线程束假设",
+      "relative_path": "csrc/gemm_4bit_sm80.cu",
+      "line_start": 215,
+      "line_end": 216,
+      "evidence": "const int warp_id = threadIdx.x / 32;",
+      "message": "代码按 32 线程一组计算 lane 或定义线程束宽度常量；MXMACA 的线程束（wave）宽度为 64，这类算术可能编译通过但结果错位。",
+      "recommendation": "请复核 lane 计算与掩码宽度，改用运行时查询的线程束宽度，并在沐曦环境用最小用例比对结果。",
+      "references": [
+        {
+          "title": "MXMACA runtime API guide",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html"
+        }
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "line_start": 215,
+          "line_end": 215,
+          "evidence": "const int warp_id = threadIdx.x / 32;"
+        },
+        {
+          "line_start": 216,
+          "line_end": 216,
+          "evidence": "const int lane_id = threadIdx.x % 32;"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-CMAKE-002",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "cmake",
+      "title": "检测 CMake FindCUDAToolkit",
+      "relative_path": "CMakeLists.txt",
+      "line_start": 138,
+      "line_end": 138,
+      "evidence": "find_package(CUDAToolkit REQUIRED)",
+      "message": "工程显式查找 NVIDIA CUDAToolkit，其搜索路径和导入目标带有工具链假设。",
+      "recommendation": "请复核 CUDAToolkit_ROOT、导入目标和链接库，并在 cu-bridge 环境验证 CMake 配置。",
+      "references": [
+        {
+          "title": "CMake FindCUDAToolkit",
+          "url": "https://cmake.org/cmake/help/latest/module/FindCUDAToolkit.html"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 138,
+          "line_end": 138,
+          "evidence": "find_package(CUDAToolkit REQUIRED)"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "library",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "relative_path": "csrc/compat.cuh",
+      "line_start": 181,
+      "line_end": 183,
+      "evidence": "#include <cublasLt.h>",
+      "message": "源码直接包含 NVIDIA 数学库头文件，目标环境需要由兼容层或等价库提供相应 API 映射。",
+      "recommendation": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "line_start": 181,
+          "line_end": 182,
+          "evidence": "#include <cublasLt.h>"
+        },
+        {
+          "line_start": 183,
+          "line_end": 183,
+          "evidence": "#include <cublas_v2.h>"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/gemm_4bit_simt.cu",
+      "line_start": 88,
+      "line_end": 348,
+      "evidence": "v += __shfl_down_sync(BNB_FULL_WARP_MASK, v, offset, 32);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 5,
+      "occurrences": [
+        {
+          "line_start": 88,
+          "line_end": 88,
+          "evidence": "v += __shfl_down_sync(BNB_FULL_WARP_MASK, v, offset, 32);"
+        },
+        {
+          "line_start": 328,
+          "line_end": 328,
+          "evidence": "b_dq[j * 2] = __shfl_sync(BNB_FULL_WARP_MASK, my_lut_f32_shfl, byte >> 4, 32) * scale_f;"
+        },
+        {
+          "line_start": 329,
+          "line_end": 329,
+          "evidence": "b_dq[j * 2 + 1] = __shfl_sync(BNB_FULL_WARP_MASK, my_lut_f32_shfl, byte & 0x0f, 32) * scale_f;"
+        },
+        {
+          "line_start": 347,
+          "line_end": 347,
+          "evidence": "hi = __shfl_sync(BNB_FULL_WARP_MASK, my_lut_u32, byte >> 4, 32);"
+        },
+        {
+          "line_start": 348,
+          "line_end": 348,
+          "evidence": "lo = __shfl_sync(BNB_FULL_WARP_MASK, my_lut_u32, byte & 0x0f, 32);"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "csrc/gemm_4bit_simt.cu",
+      "line_start": 110,
+      "line_end": 110,
+      "evidence": "__global__ void __launch_bounds__(WARPS_PER_BLOCK * 32) gemm_4bit_simt(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 110,
+          "line_end": 110,
+          "evidence": "__global__ void __launch_bounds__(WARPS_PER_BLOCK * 32) gemm_4bit_simt("
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "csrc/gemm_4bit_sm75.cu",
+      "line_start": 98,
+      "line_end": 98,
+      "evidence": "__global__ void __launch_bounds__(CTA_SIZE) gemm_4bit_sm75_m16n8k8(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 98,
+          "line_end": 98,
+          "evidence": "__global__ void __launch_bounds__(CTA_SIZE) gemm_4bit_sm75_m16n8k8("
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/gemm_4bit_sm75.cu",
+      "line_start": 220,
+      "line_end": 221,
+      "evidence": "const float hi = __shfl_sync(0xffffffff, my_lut_f32, byte >> 4);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "line_start": 220,
+          "line_end": 220,
+          "evidence": "const float hi = __shfl_sync(0xffffffff, my_lut_f32, byte >> 4);"
+        },
+        {
+          "line_start": 221,
+          "line_end": 221,
+          "evidence": "const float lo = __shfl_sync(0xffffffff, my_lut_f32, byte & 0x0f);"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "csrc/gemm_4bit_sm80.cu",
+      "line_start": 128,
+      "line_end": 128,
+      "evidence": "__global__ void __launch_bounds__(CTA_SIZE) gemm_4bit_sm80_m16n8k16(",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 128,
+          "line_end": 128,
+          "evidence": "__global__ void __launch_bounds__(CTA_SIZE) gemm_4bit_sm80_m16n8k16("
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "intrinsic",
+      "title": "检测 CUDA warp 同步内建函数",
+      "relative_path": "csrc/gemm_4bit_sm80.cu",
+      "line_start": 302,
+      "line_end": 303,
+      "evidence": "const float hi = __shfl_sync(0xffffffff, my_lut_f32, byte >> 4);",
+      "message": "内核使用 warp 同步内建函数，其掩码、warp 宽度和硬件执行假设需要复核。",
+      "recommendation": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        }
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "line_start": 302,
+          "line_end": 302,
+          "evidence": "const float hi = __shfl_sync(0xffffffff, my_lut_f32, byte >> 4);"
+        },
+        {
+          "line_start": 303,
+          "line_end": 303,
+          "evidence": "const float lo = __shfl_sync(0xffffffff, my_lut_f32, byte & 0x0f);"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "kernel",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "relative_path": "csrc/kernels.cu",
+      "line_start": 270,
+      "line_end": 1332,
+      "evidence": "//__launch_bounds__(TH, 4)",
+      "message": "内核使用 __launch_bounds__ 固化线程和寄存器调优假设，目标架构的最佳配置可能不同。",
+      "recommendation": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "references": [
+        {
+          "title": "MXMACA performance tuning guide",
+          "url": "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide"
+        },
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        }
+      ],
+      "count": 8,
+      "occurrences": [
+        {
+          "line_start": 270,
+          "line_end": 270,
+          "evidence": "//__launch_bounds__(TH, 4)"
+        },
+        {
+          "line_start": 532,
+          "line_end": 532,
+          "evidence": "__launch_bounds__(BLOCK_SIZE / NUM_VALS, 1) __global__ void kPreconditionOptimizer32bit2State("
+        },
+        {
+          "line_start": 606,
+          "line_end": 606,
+          "evidence": "__launch_bounds__(TH, 1) __global__ void kOptimizer32bit2State("
+        },
+        {
+          "line_start": 730,
+          "line_end": 730,
+          "evidence": "__launch_bounds__(BLOCK_SIZE / NUM_VALS, 1) __global__ void kPreconditionOptimizer32bit1State("
+        },
+        {
+          "line_start": 807,
+          "line_end": 807,
+          "evidence": "__launch_bounds__(TH, 1) __global__ void kOptimizer32bit1State("
+        },
+        {
+          "line_start": 915,
+          "line_end": 915,
+          "evidence": "__launch_bounds__(256, 3) __global__ void kOptimizerStatic8bit2StateBlockwise("
+        },
+        {
+          "line_start": 1153,
+          "line_end": 1153,
+          "evidence": "__launch_bounds__(256, 3) __global__ void kOptimizerStatic8bit1StateBlockwise("
+        },
+        {
+          "line_start": 1332,
+          "line_end": 1332,
+          "evidence": "__launch_bounds__(1024, BNB_MAX_THREADS_PER_SM / 1024) __global__"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-002",
+      "rule_version": 1,
+      "severity": "warning",
+      "category": "dependency",
+      "title": "检测 bitsandbytes 依赖",
+      "relative_path": "pyproject.toml",
+      "line_start": 61,
+      "line_end": 61,
+      "evidence": "\"bitsandbytes[test]\",",
+      "message": "bitsandbytes 包含原生 GPU 组件和设备相关构建逻辑，需要单独确认目标平台版本。",
+      "recommendation": "请复核依赖版本、预编译包来源和算子覆盖，并在沐曦环境验证导入与核心功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 61,
+          "line_end": 61,
+          "evidence": "\"bitsandbytes[test]\","
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-TEST-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "test",
+      "title": "检测 CUDA 可用性静默跳过测试",
+      "relative_path": "tests/test_functional.py",
+      "line_start": 461,
+      "line_end": 730,
+      "evidence": "@pytest.mark.skipif(not torch.cuda.is_available(), reason=\"CUDA is required\")",
+      "message": "测试在 torch.cuda 不可用时静默跳过，迁移到沐曦环境后可能因环境未配置而跳过，造成验证通过的假象。（该命中位于测试或夹具路径：规则命中的是测试代码本身，通常不代表交付产物的迁移风险，已从 warning 降为提示；若该夹具描述的正是交付行为，请另行复核。）",
+      "recommendation": "请复核跳过条件，并在真机环境手动运行核心 CUDA 测试以确认实际覆盖。",
+      "references": [
+        {
+          "title": "pytest skipif documentation",
+          "url": "https://docs.pytest.org/"
+        },
+        {
+          "title": "unittest skipUnless documentation",
+          "url": "https://docs.python.org/3/library/unittest.html"
+        }
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "line_start": 461,
+          "line_end": 461,
+          "evidence": "@pytest.mark.skipif(not torch.cuda.is_available(), reason=\"CUDA is required\")"
+        },
+        {
+          "line_start": 730,
+          "line_end": 730,
+          "evidence": "@pytest.mark.skipif(not torch.cuda.is_available(), reason=\"CUDA is required\")"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-CMAKE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "cmake",
+      "title": "识别 CMake CUDA 语言",
+      "relative_path": "CMakeLists.txt",
+      "line_start": 137,
+      "line_end": 137,
+      "evidence": "enable_language(CUDA) # This will fail if CUDA is not found",
+      "message": "CMake 项目启用了 CUDA 语言，目标环境需要提供与工程探测逻辑匹配的编译器。",
+      "recommendation": "请复核 CMake 工具链选择和语言探测结果，并在 MXMACA/cu-bridge 环境验证配置阶段。",
+      "references": [
+        {
+          "title": "CMake FindCUDAToolkit",
+          "url": "https://cmake.org/cmake/help/latest/module/FindCUDAToolkit.html"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 137,
+          "line_end": 137,
+          "evidence": "enable_language(CUDA) # This will fail if CUDA is not found"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/compat.cuh",
+      "line_start": 44,
+      "line_end": 44,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 44,
+          "line_end": 44,
+          "evidence": "#include <cuda_runtime.h>"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-MEMORY-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 显存管理 Runtime API",
+      "relative_path": "csrc/compat.cuh",
+      "line_start": 70,
+      "line_end": 71,
+      "evidence": "#define BNB_DEVICE_MALLOC(p, s) cudaMalloc(p, s)",
+      "message": "源码调用 CUDA 显存管理 Runtime API，需要确认 cu-bridge 对相应 API 的映射与行为差异。",
+      "recommendation": "请复核显存分配/释放调用点与错误处理，并结合 cu-bridge 当前版本在沐曦环境验证。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 2,
+      "occurrences": [
+        {
+          "line_start": 70,
+          "line_end": 70,
+          "evidence": "#define BNB_DEVICE_MALLOC(p, s) cudaMalloc(p, s)"
+        },
+        {
+          "line_start": 71,
+          "line_end": 71,
+          "evidence": "#define BNB_DEVICE_FREE(p) cudaFree(p)"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-RUNTIME-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 数据拷贝与事件 Runtime API",
+      "relative_path": "csrc/compat.cuh",
+      "line_start": 72,
+      "line_end": 72,
+      "evidence": "#define BNB_DEVICE_MEMSET(p, v, s) cudaMemset(p, v, s)",
+      "message": "源码调用 CUDA 数据拷贝或事件 API，其同步语义与错误处理需要结合目标运行时确认。",
+      "recommendation": "请复核拷贝路径、同步点与事件使用方式，并在沐曦环境验证数据一致性与性能。",
+      "references": [
+        {
+          "title": "CUDA Programming Guide",
+          "url": "https://docs.nvidia.com/cuda/cuda-programming-guide/"
+        },
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 72,
+          "line_end": 72,
+          "evidence": "#define BNB_DEVICE_MEMSET(p, v, s) cudaMemset(p, v, s)"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-CUB-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "library",
+      "title": "识别 CUB 用法",
+      "relative_path": "csrc/compat_device.cuh",
+      "line_start": 18,
+      "line_end": 49,
+      "evidence": "#include <cub/block/block_discontinuity.cuh>",
+      "message": "项目使用 CUB；MXMACA 提供 mcCUB 且对外 API 接口不变，通常无需改动源码。",
+      "recommendation": "请复核 CUB 版本与 mcCUB 的对应关系，并在沐曦环境验证编译与结果。",
+      "references": [
+        {
+          "title": "MXMACA AI training manual",
+          "url": "https://developer.metax-tech.com/api/client/document/preview/587/C500_AITrainningMaunal_CN.html"
+        }
+      ],
+      "count": 10,
+      "occurrences": [
+        {
+          "line_start": 18,
+          "line_end": 19,
+          "evidence": "#include <cub/block/block_discontinuity.cuh>"
+        },
+        {
+          "line_start": 20,
+          "line_end": 20,
+          "evidence": "#include <cub/block/block_load.cuh>"
+        },
+        {
+          "line_start": 21,
+          "line_end": 21,
+          "evidence": "#include <cub/block/block_radix_sort.cuh>"
+        },
+        {
+          "line_start": 22,
+          "line_end": 22,
+          "evidence": "#include <cub/block/block_reduce.cuh>"
+        },
+        {
+          "line_start": 23,
+          "line_end": 23,
+          "evidence": "#include <cub/block/block_store.cuh>"
+        },
+        {
+          "line_start": 24,
+          "line_end": 24,
+          "evidence": "#include <cub/cub.cuh>"
+        },
+        {
+          "line_start": 25,
+          "line_end": 25,
+          "evidence": "#include <cub/warp/warp_reduce.cuh>"
+        },
+        {
+          "line_start": 41,
+          "line_end": 41,
+          "evidence": "// CCCL 2.8.2+ moved to cuda::maximum<>{}, older versions use cub::Max()"
+        },
+        {
+          "line_start": 47,
+          "line_end": 47,
+          "evidence": "#define BNB_MAX_OP cub::Max()"
+        },
+        {
+          "line_start": 49,
+          "line_end": 49,
+          "evidence": "#define BNB_SUM_OP cub::Sum()"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-DEVICE-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 设备管理 API",
+      "relative_path": "csrc/gemm_4bit.cu",
+      "line_start": 21,
+      "line_end": 21,
+      "evidence": "cudaGetDevice(&dev);",
+      "message": "源码调用 CUDA 设备管理 API，多设备枚举与选择逻辑包含平台假设。",
+      "recommendation": "请复核设备选择与同步逻辑，并在沐曦环境验证设备枚举与上下文行为。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 21,
+          "line_end": 21,
+          "evidence": "cudaGetDevice(&dev);"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/gemm_4bit_sm75.cuh",
+      "line_start": 7,
+      "line_end": 7,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 7,
+          "line_end": 7,
+          "evidence": "#include <cuda_runtime.h>"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-HEADER-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "header",
+      "title": "识别 cuda_runtime.h 头文件",
+      "relative_path": "csrc/gemm_4bit_sm80.cuh",
+      "line_start": 7,
+      "line_end": 7,
+      "evidence": "#include <cuda_runtime.h>",
+      "message": "源码直接包含 CUDA Runtime 头文件，需要由目标兼容层和工具链提供相应映射。",
+      "recommendation": "请复核使用到的 Runtime API，并结合 cu-bridge 当前版本在沐曦环境验证编译与功能。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 7,
+          "line_end": 7,
+          "evidence": "#include <cuda_runtime.h>"
+        }
+      ]
+    },
+    {
+      "rule_id": "MXR-MEMORY-001",
+      "rule_version": 1,
+      "severity": "info",
+      "category": "runtime",
+      "title": "检测 CUDA 显存管理 Runtime API",
+      "relative_path": "csrc/pythonInterface.cpp",
+      "line_start": 559,
+      "line_end": 559,
+      "evidence": "CUDA_CHECK_RETURN(cudaMallocManaged(&ptr, bytes, cudaMemAttachHost));",
+      "message": "源码调用 CUDA 显存管理 Runtime API，需要确认 cu-bridge 对相应 API 的映射与行为差异。",
+      "recommendation": "请复核显存分配/释放调用点与错误处理，并结合 cu-bridge 当前版本在沐曦环境验证。",
+      "references": [
+        {
+          "title": "MetaX-MACA cu-bridge",
+          "url": "https://gitee.com/metax-maca/cu-bridge"
+        }
+      ],
+      "count": 1,
+      "occurrences": [
+        {
+          "line_start": 559,
+          "line_end": 559,
+          "evidence": "CUDA_CHECK_RETURN(cudaMallocManaged(&ptr, bytes, cudaMemAttachHost));"
+        }
+      ]
+    }
+  ],
+  "coverage": {
+    "analyzed_files": 148,
+    "analyzed_bytes": 1702772,
+    "files_by_type": {
+      ".cpp": 4,
+      ".cu": 6,
+      ".cuh": 10,
+      ".h": 4,
+      ".md": 24,
+      ".py": 79,
+      ".sh": 4,
+      ".toml": 2,
+      ".txt": 1,
+      ".yaml": 1,
+      ".yml": 13
+    },
+    "skipped_by_reason": {
+      "UNSUPPORTED_FILE_TYPE": 37
+    },
+    "excluded_directories": 1
+  },
+  "migration_checklist": [
+    {
+      "rule_id": "MXR-PTX-001",
+      "title": "检测内联 PTX 汇编",
+      "action": "请逐处复核 asm 块对应的硬件能力，改用目标平台支持的内建函数或等价 C++ 实现，并在沐曦环境验证功能与性能。",
+      "affected_files": [
+        "csrc/gemm_4bit_mma.cuh",
+        "csrc/gemm_4bit_simt.cu",
+        "csrc/gemm_4bit_sm75.cu",
+        "csrc/gemm_4bit_sm80.cu"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-WARP-001",
+      "title": "检测硬编码 32 线程束假设",
+      "action": "请复核 lane 计算与掩码宽度，改用运行时查询的线程束宽度，并在沐曦环境用最小用例比对结果。",
+      "affected_files": [
+        "csrc/gemm_4bit_simt.cu",
+        "csrc/gemm_4bit_sm75.cu",
+        "csrc/gemm_4bit_sm80.cu"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-CMAKE-002",
+      "title": "检测 CMake FindCUDAToolkit",
+      "action": "请复核 CUDAToolkit_ROOT、导入目标和链接库，并在 cu-bridge 环境验证 CMake 配置。",
+      "affected_files": [
+        "CMakeLists.txt"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-LIBRARY-001",
+      "title": "识别 cuBLAS / cuDNN / cuFFT / cuSPARSE / cuSOLVER 头文件",
+      "action": "请复核实际使用的库 API 与链接配置，并结合 cu-bridge 当前版本在沐曦环境验证编译与数值行为。",
+      "affected_files": [
+        "csrc/compat.cuh"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-INTRINSIC-001",
+      "title": "检测 CUDA warp 同步内建函数",
+      "action": "请复核内建函数语义与 warp 假设，并依据性能指南在沐曦设备验证正确性和性能。",
+      "affected_files": [
+        "csrc/gemm_4bit_simt.cu",
+        "csrc/gemm_4bit_sm75.cu",
+        "csrc/gemm_4bit_sm80.cu"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-KERNEL-001",
+      "title": "检测 __launch_bounds__ 调优假设",
+      "action": "请复核线程块和资源约束，并依据 MXMACA 性能指南在沐曦设备重新验证调优参数。",
+      "affected_files": [
+        "csrc/gemm_4bit_simt.cu",
+        "csrc/gemm_4bit_sm75.cu",
+        "csrc/gemm_4bit_sm80.cu",
+        "csrc/kernels.cu"
+      ],
+      "completed": false
+    },
+    {
+      "rule_id": "MXR-DEPENDENCY-002",
+      "title": "检测 bitsandbytes 依赖",
+      "action": "请复核依赖版本、预编译包来源和算子覆盖，并在沐曦环境验证导入与核心功能。",
+      "affected_files": [
+        "pyproject.toml"
+      ],
+      "completed": false
+    }
+  ],
+  "analysis_warnings": [
+    {
+      "code": "PATH_CONTEXT_DEMOTION",
+      "relative_path": null,
+      "message": "测试/夹具路径上的 MXR-TEST-001（1 个文件） 已封顶为提示，不参与静态状态判定；文件仍被扫描，结论可逐条复核。"
+    }
+  ],
+  "static_status": "blocked",
+  "verification_status": "not-run"
+}

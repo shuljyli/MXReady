@@ -34,9 +34,8 @@ frontend/test-results/
 frontend/playwright-report/
 *.tsbuildinfo
 
-# Generated verification bundles and handover results (regenerate on demand)
+# Generated verification bundles (regenerate on demand)
 examples/verification/*.zip
-examples/verification/*redacted*.json
 
 # Editors and operating systems
 .idea/

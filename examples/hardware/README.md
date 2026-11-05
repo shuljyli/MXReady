@@ -1,6 +1,8 @@
 # 沐曦真机验证样板：extension-cpp
 
-当前状态：**未执行真机验证**。模板字段不得当作通过证据，不上传为 runner result.json。
+当前状态：`pytorch/extension-cpp` 已完成一次脱敏真机验证，结果见
+`examples/verification/metax-verification-redacted.json` 与 `extension-cpp-probe-result.json`；
+`acceptance-template.json` 仍是模板字段，不得当作通过证据，不上传为 runner result.json。
 
 1. 选择并记录 https://github.com/pytorch/extension-cpp 的完整提交，审阅源码及项目构建说明。
    在用户控制的沐曦服务器上准备该提交的干净 checkout，记录 OS、GPU、驱动、MXMACA、

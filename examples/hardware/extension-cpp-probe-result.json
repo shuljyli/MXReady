@@ -1,0 +1,19 @@
+{
+  "recorded_at": "2026-11-05T06:51:06.921654+00:00",
+  "build": "not-evaluated",
+  "functional": "passed",
+  "performance": "measured",
+  "environment": {
+    "device": "MetaX C500",
+    "torch": "2.8.0+metax3.3.0.2"
+  },
+  "timing": {
+    "median_ms": 0.07408400415442884,
+    "min_ms": 0.0689359731040895,
+    "max_ms": 0.09281100938096642,
+    "repeats": 100,
+    "warmup": 20,
+    "elements": 1048576,
+    "dtype": "float32"
+  }
+}

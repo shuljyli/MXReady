@@ -1,6 +1,6 @@
 # MetaX 真机验证交接
 
-本目录提供 `pytorch/extension-cpp` 的远程验证交接脚本与只读辅助工具。验证 ZIP 不随仓库提交，需按项目 README 的 `mxready-build-bundle` 命令在本地生成。真实结果文件（`metax-verification-redacted.json`）尚不存在；只有在授权的沐曦服务器上运行、人工脱敏并核对提交后，才应新增（该文件已被 `.gitignore` 忽略，避免误提交残留内网信息）。
+本目录提供 `pytorch/extension-cpp` 的远程验证交接脚本与只读辅助工具。验证 ZIP 不随仓库提交，需按项目 README 的 `mxready-build-bundle` 命令在本地生成。脱敏后的真机结果已随仓库提交为 `metax-verification-redacted.json`；新的结果只有在授权的沐曦服务器上运行、人工脱敏并核对提交后，才应新增或覆盖。
 
 ## 1. 核对环境
 
@@ -10,7 +10,7 @@
 - 驱动、MXMACA、cu-bridge 与 PyTorch 的精确版本；
 - 当前 PyTorch 是否按该 MXMACA 版本提供；
 - `mx-smi` 命令存在且 `--version` 可用（若服务器提供的工具名或参数不同，先联系提供方确认等价命令，不要自行猜测）；
-- 服务器 Python 版本（MXReady runner 要求 Python 3.11+，以沐曦官方 PyTorch wheel 支持的版本为准）；
+- 服务器 Python 版本（runner 代码可在 3.10 运行；wheel 安装仍要求 3.11+，镜像默认 3.10 时用源码目录运行，以沐曦官方 PyTorch wheel 支持的版本为准）；
 - cu-bridge 工具链位置（官方环境通常在 `/opt/maca/tools/cu-bridge/bin/cucc` 与 `cmake_maca`），构建前确认存在；
 - 是否允许在临时目录编译一个小型 PyTorch C++/CUDA 扩展。
 
@@ -56,8 +56,10 @@ python -m mxready_runner inspect --manifest mxready.yml --output inspect.json
 runner 故意禁止包管理器，因此构建必须在 runner 外由操作者明确执行：
 
 ```bash
-python -m pip install --no-build-isolation -e ./extension_cpp
+python -m pip install --no-build-isolation ./extension_cpp
 ```
+
+可编辑安装（`-e`）可能只登记源码路径而不编译 `_C`，导致 smoke 导入时报 `extension_cpp` 缺少 `ops`；真机验证请使用上面的非 editable 安装，并确认构建产物来自本次运行。
 
 这一步应使用服务器提供方认可的 MXMACA/cu-bridge/PyTorch 环境。不要使用 `sudo`，不要更换系统驱动。
 
@@ -109,7 +111,7 @@ runner 会列出项目命令。再次核对后输入精确的 `yes`。成功标�
 examples/verification/metax-verification-redacted.json
 ```
 
-然后在 MXReady 报告页上传该副本。不要修改提交号、状态或失败结果来制造 `verified`。
+该路径已入库，更新时保持同样的脱敏标准；随后在 MXReady 报告页上传该副本。不要修改提交号、状态或失败结果来制造 `verified`。
 
 ## 8. 脚本化辅助（可选，只读）
 

@@ -1,0 +1,88 @@
+{
+  "checks": [
+    {
+      "command": [
+        "uname",
+        "-a"
+      ],
+      "duration_ms": 2,
+      "id": "uname",
+      "return_code": 0,
+      "status": "passed",
+      "stderr": "",
+      "stdout": "Linux [HOST] 5.15.0-58-generic #64~20.04.1-Ubuntu SMP Fri Jan 6 16:42:31 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux\n"
+    },
+    {
+      "command": [
+        "python",
+        "--version"
+      ],
+      "duration_ms": 2,
+      "id": "python-version",
+      "return_code": 0,
+      "status": "passed",
+      "stderr": "",
+      "stdout": "Python 3.10.10\n"
+    },
+    {
+      "command": [
+        "mx-smi",
+        "--version"
+      ],
+      "duration_ms": 16,
+      "id": "mx-smi-version",
+      "return_code": 0,
+      "status": "passed",
+      "stderr": "",
+      "stdout": "\nmx-smi  version: 2.2.9\n\n"
+    },
+    {
+      "command": [
+        "mx-smi"
+      ],
+      "duration_ms": 114,
+      "id": "mx-smi",
+      "return_code": 0,
+      "status": "passed",
+      "stderr": "",
+      "stdout": "mx-smi  version: 2.2.9\n\n=================== MetaX System Management Interface Log ===================\nTimestamp                                         : Sat Oct 31 03:17:29 2026\n\nAttached GPUs                                     : 1\n+---------------------------------------------------------------------------------+\n| MX-SMI 2.2.9                       Kernel Mode Driver Version: 3.8.30           |\n| MACA Version: 3.3.0.15             BIOS Version: 1.33.5.0                       |\n|------------------+-----------------+---------------------+----------------------|\n| Board       Name | GPU   Persist-M | Bus-id              | GPU-Util      sGPU-M |\n| Pwr:Usage/Cap    | Temp       Perf | Memory-Usage        | GPU-State            |\n|==================+=================+=====================+======================|\n| 0     MetaX C500 | 0           Off | 0000:36:00.0        | 0%           Enabled |\n| 56W / 350W       | 33C          P0 | 826/65536 MiB       | Available            |\n+------------------+-----------------+---------------------+----------------------+\n\n+---------------------------------------------------------------------------------+\n| Sliced GPU                                                                      |\n|------------------------------------+---------------------+----------------------|\n| Minor    GPU    sGPU-Id    Compute | Vram Quota          | sGPU-Util            |\n|====================================+=====================+======================|\n| 010      0      2          25%     | 0/16000 MiB         | 0%                   |\n+------------------------------------+---------------------+----------------------+\n\n+---------------------------------------------------------------------------------+\n| Process:                                                                        |\n|  GPU                    PID         Process Name                 GPU Memory     |\n|                                                                  Usage(MiB)     |\n|=================================================================================|\n|  no process found                                                               |\n+---------------------------------------------------------------------------------+\n\nEnd of Log\n"
+    },
+    {
+      "command": [
+        "python",
+        "-c",
+        "import torch; available=torch.cuda.is_available(); count=torch.cuda.device_count(); print(torch.__version__); print(available); print(count); name=torch.cuda.get_device_name(0) if available and count else ''; print(name); raise SystemExit(0 if available and count > 0 else 1)"
+      ],
+      "duration_ms": 11178,
+      "id": "pytorch-device",
+      "return_code": 0,
+      "status": "passed",
+      "stderr": "",
+      "stdout": "2.8.0+metax3.3.0.2\nTrue\n1\nMetaX C500\n"
+    }
+  ],
+  "commands": [
+    {
+      "command": [
+        "python",
+        "-c",
+        "import torch, extension_cpp; a=torch.randn(1024, device='cuda'); b=torch.randn(1024, device='cuda'); actual=extension_cpp.ops.mymuladd(a, b, 1.0); torch.testing.assert_close(actual, a * b + 1.0); print('MXReady extension_cpp CUDA smoke passed')"
+      ],
+      "duration_ms": 10827,
+      "id": "extension-cpp-cuda-smoke",
+      "return_code": 0,
+      "status": "passed",
+      "stderr": "",
+      "stdout": "MXReady extension_cpp CUDA smoke passed\n",
+      "timeout_seconds": 120
+    }
+  ],
+  "environment_fingerprint": "sha256:81d464f78cc4cb85bd4068922653005cec0802c5a562287ab0fdf1c72f552467",
+  "finished_at": "2026-10-31T03:17:51.401204+00:00",
+  "overall_status": "passed",
+  "repository_commit": "1c325b202ae5e11de3cefb9a65be28f47949edd4",
+  "runner_version": "0.3.0",
+  "scan_id": "3c0f0348-2141-587b-b964-e253df29bd5a",
+  "schema_version": "1.0",
+  "started_at": "2026-10-31T03:17:29.261660+00:00"
+}

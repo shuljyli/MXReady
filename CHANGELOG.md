@@ -7,6 +7,8 @@
 
 ### Added
 
+- 新增真实仓库迁移案例记录 [docs/migration-case-2026-11.md](docs/migration-case-2026-11.md)，并入库对应证据：bitsandbytes 与 causal-conv1d 的固定提交报告、causal-conv1d 的 runner 结果与构建补丁、extension-cpp probe 输出。
+- 脱敏后的 extension-cpp 真机结果（`examples/verification/metax-verification-redacted.json`）纳入版本库，README 的真机验证声明可直接核验。
 - 新增逐发现的人工复核（确认/误报/暂缓）及追加历史，必须填写依据，不影响静态或硬件结论；旧数据库自动追加表结构。
 - 新增各类问题的条件化整改示例、验证命令与官方参考，以及 extension-cpp 真机验收模板和人工运行探针（尚无真机结果）。
 - Web 支持每批最多 10 个公开仓库、逐项进度、会话恢复、显式新建重试与汇总 JSON；不自动重提状态不明的请求。
@@ -31,6 +33,7 @@
 
 ### Fixed
 
+- runner 移除 Python 3.11 专用的 `datetime.UTC`，可在 MACA 镜像自带的 Python 3.10 上直接运行；发布 wheel 的 `requires-python` 仍按宿主要求保留。
 - 校验 runner 环境检查与固定命令契约一致，自定义项目命令继续要求人工确认。
 - 批量扫描按提交保存每仓 JSON/Markdown，避免不同 ref 的报告互相覆盖，并确保 CSV 引用实际文件。
 - 文档字符串降级使用精确字符范围，保留同行可执行代码的原始风险级别。
@@ -41,6 +44,7 @@
 
 ### Changed
 
+- README 与文档索引同步真实项目证据：新增 bitsandbytes 阻断与 causal-conv1d 修复→重扫→真机复验案例，真机验证状态更新为两次，并补充 GitLink 镜像文档。
 - 同步中英文 README：明确 Web、本地目录和批量 CLI 的输入边界，补充英文批量扫描与 MCP 用法，避免覆盖率数字随测试变化而过期。
 
 ## [0.3.1] - 2026-10-31

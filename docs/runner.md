@@ -14,7 +14,7 @@ schemas/verification-result-v1.json
 
 `mxready.yml` 使用 JSON 语法，因此既是合法 YAML，也能由 Python 标准库 `json` 读取。它固定包含扫描 ID、仓库 URL、40 位提交、runner 版本、环境检查和可选项目命令。`project-commands.example.json` 是项目命令的参考模板，默认清单不含项目命令；需要项目验证时，把模板中的占位内容替换为实际 smoke 命令后填入 `mxready.yml` 的 `project_commands`（见 [examples/verification/README.md](../examples/verification/README.md) 第 5 步）。
 
-runner 只要求 Python 3.11+，不依赖 PyYAML、Pydantic 或其他第三方包。
+runner 的代码只依赖标准库，并已避免 3.11 专用 API，可直接在 Python 3.10 解释器运行；发布 wheel 的 `requires-python` 仍随宿主服务保留为 3.11+。它不依赖 PyYAML、Pydantic 或其他第三方包。
 
 ## `inspect` 与 `run`
 

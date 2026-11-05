@@ -136,7 +136,7 @@ prefilter yields an identical finding set. The output has no timestamps so two r
 | React single-page UI | Available | Vitest + TypeScript strict mode |
 | Batch assessment (`mxready-scan-batch`) | Available | CLI regression |
 | MCP tools (`mxready-mcp`, requires `.[mcp]`) | Available | Backend tests and stdio handshake |
-| Real MetaX GPU verification | One redacted run completed (MetaX C500, `pytorch/extension-cpp` @ `1c325b2`) | Runner `inspect` checks and a single-GPU smoke all `passed`; every other project still needs its own run |
+| Real MetaX GPU verification | Two redacted runs completed (MetaX C500: `pytorch/extension-cpp` @ `1c325b2`, `causal-conv1d` @ `cd81f04`) | Runner `inspect` checks and a single-GPU smoke all `passed`; the causal-conv1d build used a temporary patch that was not submitted upstream, and every other project still needs its own run |
 
 ## Scan inputs and batch assessment
 
@@ -199,6 +199,7 @@ Static findings remain separate from hardware verification for the same commit.
 | [docs/security.md](docs/security.md) | Security model |
 | [docs/rules.md](docs/rules.md) | Rule authoring guide |
 | [docs/runner.md](docs/runner.md) | Remote verification runner guide |
+| [docs/migration-case-2026-11.md](docs/migration-case-2026-11.md) | Real-repository cases: blocker diagnosis, fix and on-hardware re-verification, negative path |
 | [examples/verification/README.md](examples/verification/README.md) | On-hardware verification handover SOP |
 | [CHANGELOG.md](CHANGELOG.md) | Release history |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution flow and quality gate |
@@ -221,7 +222,7 @@ Static findings remain separate from hardware verification for the same commit.
 ## Roadmap
 
 1. Generate reproducible reports on three public CUDA extension projects and calibrate rule precision;
-2. Complete redacted on-hardware verification for more projects (done for `pytorch/extension-cpp` @ `1c325b2`);
+2. Complete redacted on-hardware verification for more projects (done for `pytorch/extension-cpp` @ `1c325b2` and `causal-conv1d` @ `cd81f04`);
 3. Submit a small, reviewable migration pull request upstream;
 4. Extend the rule set and the minimal verification template based on real adaptation feedback.
 
