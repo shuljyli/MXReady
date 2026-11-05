@@ -1,0 +1,16 @@
+MXReady runner negative-path transcript
+
+环境：Windows、Python 3.14.2、runner 0.3.1 源码（仅标准库）。
+用途：复现 runner 的脏工作区拒绝路径；与 2026-11-05 在 MetaX C500 容器上执行的检查相同。
+路径已替换为 <demo-repo> / <workspace>，其余输出保持原样。
+
+$ echo yes | python -m mxready_runner run --manifest mxready.yml --repo-dir repo --output result.json
+[stdout]
+Project commands proposed by the MXReady manifest:
+  1. python -c 'print('"'"'should not run'"'"')'
+Run these commands on this host? Type 'yes' to continue:
+[stderr]
+MXReady runner error: Repository is dirty; use a clean checkout and keep runner outputs outside it
+
+[exit code] 2
+[result.json written] False

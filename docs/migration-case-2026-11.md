@@ -45,7 +45,7 @@
 
 ## 否定路径
 
-在干净 checkout 中放入一个未跟踪文件后重新执行 runner：退出码 2，报错 `Repository is dirty; use a clean checkout`，且不生成 `result.json`。清理后仓库恢复干净。
+在干净 checkout 中放入一个未跟踪文件后重新执行 runner：退出码 2，报错 `Repository is dirty; use a clean checkout and keep runner outputs outside it`，且不生成 `result.json`。清理后仓库恢复干净。2026-11-05 的远端实测与该行为一致；本机用同一检查复现的完整输出见 [`examples/verification/causal-conv1d/negative-path.txt`](../examples/verification/causal-conv1d/negative-path.txt)。
 
 证据：本轮 SSH 输出，runner 0.3.1。
 

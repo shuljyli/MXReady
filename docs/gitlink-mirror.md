@@ -91,7 +91,7 @@ sha256sum -c SHA256SUMS.txt
 Windows 侧用 PowerShell：
 
 ```powershell
-Get-FileHash .\mxready-0.3.1-windows.zip -Algorithm SHA256
+Get-FileHash .\mxready-1.0.0-windows.zip -Algorithm SHA256
 ```
 
 ## 四、链接盘点：只有两处需要判断

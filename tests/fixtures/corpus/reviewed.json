@@ -84,6 +84,86 @@
         "MXR-WARP-001"
       ],
       "review_note": "Printing queried warp width does not hard-code a 32-thread arithmetic assumption."
+    },
+    {
+      "id": "bitsandbytes-inline-ptx",
+      "repository": "https://github.com/bitsandbytes-foundation/bitsandbytes",
+      "commit": "a616886cacf86701514f0cb1d6be760f967481c0",
+      "path": "csrc/gemm_4bit_simt.cu",
+      "source_blob_sha": "d0f5354fba6ec8f466f7a390f80c56616042c4e6",
+      "source_lines": [
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291
+      ],
+      "excerpt": "            // clang-format off\n            asm volatile(\n                \"ld.global.cs.v4.u32 {%0,%1,%2,%3}, [%4];\\n\"\n                : \"=r\"(b_packed4.x), \"=r\"(b_packed4.y),\n                  \"=r\"(b_packed4.z), \"=r\"(b_packed4.w)\n                : \"l\"(bptr)\n            );\n",
+      "expected": [
+        {
+          "rule_id": "MXR-PTX-001",
+          "severity": "blocker"
+        }
+      ],
+      "forbidden": [
+        "MXR-WARP-001",
+        "MXR-ARCH-002"
+      ],
+      "review_note": "4-bit GEMM SIMT kernel embeds literal PTX; the barrier and cache hints are NVIDIA-specific."
+    },
+    {
+      "id": "bitsandbytes-hardcoded-warp",
+      "repository": "https://github.com/bitsandbytes-foundation/bitsandbytes",
+      "commit": "a616886cacf86701514f0cb1d6be760f967481c0",
+      "path": "csrc/gemm_4bit_simt.cu",
+      "source_blob_sha": "d0f5354fba6ec8f466f7a390f80c56616042c4e6",
+      "source_lines": [
+        136,
+        137,
+        138,
+        139,
+        140
+      ],
+      "excerpt": "    constexpr int K_STRIDE = 32 * NUM_VAL; // = 1024 K elements per outer step\n\n    const int lane_id = threadIdx.x & 31;\n    const int warp_id = threadIdx.x >> 5;\n    const int warp_n = blockIdx.x * WARPS_PER_BLOCK + warp_id;\n",
+      "expected": [
+        {
+          "rule_id": "MXR-WARP-001",
+          "severity": "blocker"
+        }
+      ],
+      "forbidden": [
+        "MXR-PTX-001"
+      ],
+      "review_note": "Lane arithmetic assumes a 32-thread warp; a 64-wide wave would produce wrong results."
+    },
+    {
+      "id": "causal-conv1d-hardcoded-arch",
+      "repository": "https://github.com/Dao-AILab/causal-conv1d",
+      "commit": "cd81f0413cad2fc1e6f17e785ac39f59aae690cd",
+      "path": "setup.py",
+      "source_blob_sha": "0bcdd8153f87461bd2051cb25c4a8db516e5e05b",
+      "source_lines": [
+        179,
+        180,
+        181,
+        182,
+        183,
+        184
+      ],
+      "excerpt": "        cc_flag.append(\"-gencode\")\n        cc_flag.append(\"arch=compute_75,code=sm_75\")\n        cc_flag.append(\"-gencode\")\n        cc_flag.append(\"arch=compute_80,code=sm_80\")\n        cc_flag.append(\"-gencode\")\n        cc_flag.append(\"arch=compute_87,code=sm_87\")\n",
+      "expected": [
+        {
+          "rule_id": "MXR-ARCH-002",
+          "severity": "warning"
+        }
+      ],
+      "forbidden": [
+        "MXR-PTX-001",
+        "MXR-WARP-001"
+      ],
+      "review_note": "Build script pins NVIDIA compute capabilities instead of deriving the target from the toolchain."
     }
   ]
 }

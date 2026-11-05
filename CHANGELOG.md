@@ -5,12 +5,21 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-05
+
+第一个稳定版本。1.0 起，报告与验证结果 schema 1.0、规则 ID、CLI 参数、MCP 工具名与验证清单格式
+视为稳定契约，破坏性变更需要新的主版本。静态结论仍不代表项目已兼容 MXMACA；真机结论只覆盖
+对应提交与对应环境。
+
 ### Added
 
+- 新增否定路径的脱敏终端留痕 `examples/verification/causal-conv1d/negative-path.txt`，记录脏工作区被拒的完整输出、退出码与“不写 result.json”。
+- CI 新增 Python 3.10 的 runner-only 作业，覆盖 MACA 镜像自带解释器上不依赖宿主依赖的测试。
+- 规则语料新增 bitsandbytes 内联 PTX / 32 线程束与 causal-conv1d 硬编码架构 3 个真实片段。
 - 新增真实仓库迁移案例记录 [docs/migration-case-2026-11.md](docs/migration-case-2026-11.md)，并入库对应证据：bitsandbytes 与 causal-conv1d 的固定提交报告、causal-conv1d 的 runner 结果与构建补丁、extension-cpp probe 输出。
 - 脱敏后的 extension-cpp 真机结果（`examples/verification/metax-verification-redacted.json`）纳入版本库，README 的真机验证声明可直接核验。
 - 新增逐发现的人工复核（确认/误报/暂缓）及追加历史，必须填写依据，不影响静态或硬件结论；旧数据库自动追加表结构。
-- 新增各类问题的条件化整改示例、验证命令与官方参考，以及 extension-cpp 真机验收模板和人工运行探针（尚无真机结果）。
+- 新增各类问题的条件化整改示例、验证命令与官方参考，以及 extension-cpp 真机验收模板和人工运行探针（真机结果见 `examples/verification/metax-verification-redacted.json`）。
 - Web 支持每批最多 10 个公开仓库、逐项进度、会话恢复、显式新建重试与汇总 JSON；不自动重提状态不明的请求。
 - CLI 支持可信基线和仅新增/升级/次数增加阻塞组的 CI 策略；条件不一致拒绝比较，完整静态报告仍保留。
 - 升级 Vite、Vitest 与 source-map-js，修复本次 npm audit 报告的开发工具链告警。
@@ -33,6 +42,7 @@
 
 ### Fixed
 
+- runner 在无法读取交互确认（stdin 非终端）时以退出码 2 拒绝执行，不再抛出 `EOFError`。
 - runner 移除 Python 3.11 专用的 `datetime.UTC`，可在 MACA 镜像自带的 Python 3.10 上直接运行；发布 wheel 的 `requires-python` 仍按宿主要求保留。
 - 校验 runner 环境检查与固定命令契约一致，自定义项目命令继续要求人工确认。
 - 批量扫描按提交保存每仓 JSON/Markdown，避免不同 ref 的报告互相覆盖，并确保 CSV 引用实际文件。
@@ -44,6 +54,7 @@
 
 ### Changed
 
+- 版本升至 1.0.0：0.x 阶段的功能与契约冻结为稳定版本；README 工程状态数字按实测更新为 540 余条用例、90% 分支覆盖率。
 - README 与文档索引同步真实项目证据：新增 bitsandbytes 阻断与 causal-conv1d 修复→重扫→真机复验案例，真机验证状态更新为两次，并补充 GitLink 镜像文档。
 - 同步中英文 README：明确 Web、本地目录和批量 CLI 的输入边界，补充英文批量扫描与 MCP 用法，避免覆盖率数字随测试变化而过期。
 
@@ -303,7 +314,8 @@ MXMACA；正式版本将在后续发布。
 - Web 扫描路径永不执行被扫描仓库中的代码。
 - 仓库地址主机白名单、受限 Git 获取、只读索引与上传结果严格校验。
 
-[Unreleased]: https://github.com/shuljyli/MXReady/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/shuljyli/MXReady/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/shuljyli/MXReady/compare/v0.3.1...v1.0.0
 [0.3.1]: https://github.com/shuljyli/MXReady/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/shuljyli/MXReady/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/shuljyli/MXReady/compare/v0.2.0...v0.2.1
