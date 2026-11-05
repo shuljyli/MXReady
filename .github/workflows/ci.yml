@@ -89,8 +89,11 @@ jobs:
       - name: Runner tests on the Python shipped by MACA images
         # test_execute imports mxready.models (Pydantic) and the host package still
         # requires Python 3.11+; the remaining runner tests are standard-library only.
+        # --confcutdir keeps tests/conftest.py (which imports datetime.UTC from 3.11)
+        # out of collection, so the job verifies the real 3.10 boundary.
         run: >-
           python -m pytest
+          --confcutdir=tests/runner
           tests/runner/test_cli.py
           tests/runner/test_inspect.py
           tests/runner/test_process.py
