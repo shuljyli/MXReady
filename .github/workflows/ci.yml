@@ -78,6 +78,26 @@ jobs:
         shell: powershell
         run: .\scripts\make.ps1 clean
 
+  runner-python310:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: python -m pip install "pytest>=8,<9"
+      - name: Runner tests on the Python shipped by MACA images
+        # test_execute imports mxready.models (Pydantic) and the host package still
+        # requires Python 3.11+; the remaining runner tests are standard-library only.
+        run: >-
+          python -m pytest
+          tests/runner/test_cli.py
+          tests/runner/test_inspect.py
+          tests/runner/test_process.py
+          tests/runner/test_redact.py
+          tests/runner/test_repository.py
+          tests/runner/test_schema.py
+
   dependency-scan:
     runs-on: ubuntu-latest
     steps:

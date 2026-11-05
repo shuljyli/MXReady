@@ -73,3 +73,22 @@ def test_cli_rejects_modified_checks_before_executing_anything(
     assert main([action, "--manifest", str(manifest), "--output", str(output)]) == 2
     assert "environment check" in capsys.readouterr().err
     assert not output.exists()
+
+
+def test_run_without_interactive_stdin_cancels(tmp_path: Path, monkeypatch, capsys) -> None:
+    manifest = tmp_path / "mxready.yml"
+    payload = json.loads(Path("tests/fixtures/verification/mxready.yml").read_text())
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+
+    def no_input(*args, **kwargs):
+        raise EOFError
+
+    monkeypatch.setattr("mxready_runner.execute.collect_environment", lambda *args, **kwargs: [])
+    monkeypatch.setattr("builtins.input", no_input)
+    output = tmp_path / "result.json"
+
+    assert main(["run", "--manifest", str(manifest), "--output", str(output)]) == 2
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["overall_status"] == "cancelled"
+    assert payload["commands"] == []
+    assert "No interactive terminal" in capsys.readouterr().err

@@ -72,7 +72,14 @@ def _interactive_approval(commands: list[str]) -> bool:
     print("Project commands proposed by the MXReady manifest:")
     for index, command in enumerate(commands, start=1):
         print(f"  {index}. {command}")
-    response = input("Run these commands on this host? Type 'yes' to continue: ")
+    try:
+        response = input("Run these commands on this host? Type 'yes' to continue: ")
+    except EOFError:
+        print(
+            "No interactive terminal; refusing to run project commands.",
+            file=sys.stderr,
+        )
+        return False
     return response.strip().casefold() == "yes"
 
 
