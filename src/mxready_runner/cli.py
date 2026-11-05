@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from mxready_runner import __version__
@@ -52,7 +52,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _inspect_manifest(path: Path) -> RunResult:
     manifest = load_manifest(path)
-    started = datetime.now(UTC).isoformat()
+    started = datetime.now(timezone.utc).isoformat()
     checks = collect_environment(checks=manifest.checks)
     return RunResult(
         schema_version="1.0",
@@ -63,7 +63,7 @@ def _inspect_manifest(path: Path) -> RunResult:
         checks=checks,
         commands=[],
         started_at=started,
-        finished_at=datetime.now(UTC).isoformat(),
+        finished_at=datetime.now(timezone.utc).isoformat(),
         overall_status="passed" if environment_checks_passed(checks) else "failed",
     )
 

@@ -6,7 +6,7 @@ import os
 import shlex
 import time
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from subprocess import TimeoutExpired
 from typing import Literal
@@ -168,7 +168,7 @@ def environment_fingerprint(checks) -> str:
 
 
 def _utc_now() -> str:
-    return datetime.now(UTC).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _duration_ms(started: float) -> int:
