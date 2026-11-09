@@ -20,7 +20,7 @@
 python scripts/smoke_release.py --dist dist \
   --candidate-commit <完整提交> --evidence-dir dist/evidence-online
 python -m pip download --only-binary=:all: --constraint packaging/runtime-constraints.txt --dest dist/wheelhouse \
-  dist/mxready-1.0.0-py3-none-any.whl
+  dist/mxready-1.0.1-py3-none-any.whl
 python scripts/smoke_release.py --dist dist --wheelhouse dist/wheelhouse \
   --candidate-commit <完整提交> --evidence-dir dist/evidence-offline
 ```

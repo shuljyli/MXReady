@@ -4,11 +4,11 @@
 
 | 使用场景 | 方案 | 使用者需要准备 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.0-windows.zip` | Python 3.11+（含 pip）、Git、PowerShell 5.1+ |
-| Linux | `mxready-1.0.0-linux.zip` | Python 3.11+（含 venv/pip）、Git、Bash |
-| macOS（Apple Silicon / Intel） | `mxready-1.0.0-macos.zip` | Python 3.11+（含 pip）、Git、Bash |
+| Windows 10/11 | `mxready-1.0.1-windows.zip` | Python 3.11+（含 pip）、Git、PowerShell 5.1+ |
+| Linux | `mxready-1.0.1-linux.zip` | Python 3.11+（含 venv/pip）、Git、Bash |
+| macOS（Apple Silicon / Intel） | `mxready-1.0.1-macos.zip` | Python 3.11+（含 pip）、Git、Bash |
 | 自行维护 Python 环境，只要能用起来 | PyPI 上的 `mxready` | Python 3.11+（含 pip）、Git |
-| 已有 Python 环境 / 自动化部署 | `mxready-1.0.0-py3-none-any.whl` | Python 3.11+、Git |
+| 已有 Python 环境 / 自动化部署 | `mxready-1.0.1-py3-none-any.whl` | Python 3.11+、Git |
 | 容器部署 | 仓库中的 Dockerfile / Compose | Docker Engine + Compose；桌面系统也可用 Docker Desktop |
 | 开发与修改源码 | Git 源码 + 开发脚本 | Python 3.11+、Git、Node.js 22+ |
 
@@ -35,7 +35,7 @@ CI 的 `Release packages` 工作流也提供打包产物下载；手动运行不
 校验下载文件（把占位的文件名替换为实际 ZIP 名称）：
 
 ```powershell
-Get-FileHash .\mxready-1.0.0-windows.zip -Algorithm SHA256
+Get-FileHash .\mxready-1.0.1-windows.zip -Algorithm SHA256
 ```
 
 Linux 可在附件所在目录执行 `sha256sum -c SHA256SUMS.txt`，macOS 执行
@@ -171,7 +171,7 @@ PyPI 安装按包声明的版本范围联网解析依赖，不保证与 ZIP 内 
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install ./mxready-1.0.0-py3-none-any.whl
+.venv/bin/python -m pip install ./mxready-1.0.1-py3-none-any.whl
 .venv/bin/mxready-serve
 ```
 
@@ -187,7 +187,7 @@ ZIP 安装器使用包内 `runtime-constraints.txt` 固定核心运行依赖版�
 进入解压目录，下载依赖 wheel：
 
 ```bash
-python3 -m pip download --only-binary=:all: --constraint runtime-constraints.txt --dest packages ./packages/mxready-1.0.0-py3-none-any.whl
+python3 -m pip download --only-binary=:all: --constraint runtime-constraints.txt --dest packages ./packages/mxready-1.0.1-py3-none-any.whl
 ```
 
 Windows 使用 `py -3 -m pip download`。将整个目录复制到离线机器，执行
@@ -221,11 +221,11 @@ scripts/build_release.py   构建编排，不放业务逻辑
 src/mxready/cli/serve.py    安装后的生产启动入口
 docs/installation.md       安装、升级、离线与构建说明
 dist/                      本地生成，Git 忽略
-  mxready-1.0.0-windows.zip
-  mxready-1.0.0-linux.zip
-  mxready-1.0.0-macos.zip
-  mxready-1.0.0-py3-none-any.whl
-  mxready-1.0.0.tar.gz
+  mxready-1.0.1-windows.zip
+  mxready-1.0.1-linux.zip
+  mxready-1.0.1-macos.zip
+  mxready-1.0.1-py3-none-any.whl
+  mxready-1.0.1.tar.gz
   SHA256SUMS.txt
   build-provenance.json
 ```
@@ -261,8 +261,8 @@ ZIP 内仅保留 `packages/`、安装/启动入口、共享安装器、依赖约
 npm --prefix frontend ci && npm --prefix frontend run build
 python scripts/build_release.py --output dist --skip-frontend-build
 python -m pip install twine
-twine check dist/mxready-1.0.0-py3-none-any.whl dist/mxready-1.0.0.tar.gz
-twine upload dist/mxready-1.0.0-py3-none-any.whl dist/mxready-1.0.0.tar.gz
+twine check dist/mxready-1.0.1-py3-none-any.whl dist/mxready-1.0.1.tar.gz
+twine upload dist/mxready-1.0.1-py3-none-any.whl dist/mxready-1.0.1.tar.gz
 # Username 填 __token__，Password 填 PyPI 账号级 API token
 ```
 

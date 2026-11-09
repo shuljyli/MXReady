@@ -3,7 +3,7 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与
 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [1.0.1] - 2026-11-09
 
 ### Added
 
@@ -18,6 +18,10 @@
 ### Changed
 
 - CI 工作流默认只授予 `contents: read` 令牌，与发布工作流的权限口径保持一致。
+
+### Fixed
+
+- 修复已知问题。
 
 ## [1.0.0] - 2026-11-05
 
@@ -328,7 +332,8 @@ MXMACA；正式版本将在后续发布。
 - Web 扫描路径永不执行被扫描仓库中的代码。
 - 仓库地址主机白名单、受限 Git 获取、只读索引与上传结果严格校验。
 
-[Unreleased]: https://github.com/shuljyli/MXReady/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/shuljyli/MXReady/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/shuljyli/MXReady/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/shuljyli/MXReady/compare/v0.3.1...v1.0.0
 [0.3.1]: https://github.com/shuljyli/MXReady/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/shuljyli/MXReady/compare/v0.2.1...v0.3.0
