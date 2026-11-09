@@ -9,6 +9,11 @@
 
 - 本地 CLI 在 Git 仓库目录中可省略 `--repo-url` 与 `--commit`，默认取 `origin` 地址与当前 `HEAD`；探测失败时明确提示需要显式传入的参数。
 - Web 错误面板为扫描失败码（未预期错误、仓库获取失败、压缩包超限、分析超时等）给出中文处理建议，不再只有原始错误码可读。
+- 报告页的发现卡片默认只展开阻塞项，警告与提示折叠为一行摘要；标题栏按钮（支持 Enter/空格）展开后内容与之前完全一致。
+- 报告对比的「基线扫描 ID」提供同一仓库已完成扫描的候选下拉，排除当前扫描自身，仍可直接粘贴任意扫描 ID。
+- 发布工作流在三平台安装冒烟通过后，把同一份含网页的 wheel 与源码包上传到 PyPI，联网环境可直接
+  `python -m pip install mxready` 或 `pipx install mxready`，无需下载附件或自行构建前端；发布凭据采用
+  PyPI Trusted Publishing（GitHub Actions OIDC），仓库内不保存 API token。
 
 ### Changed
 

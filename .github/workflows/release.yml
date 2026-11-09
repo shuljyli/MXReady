@@ -130,3 +130,31 @@ jobs:
               --notes-file dist/RELEASE_NOTES.md \
               "${assets[@]}"
           fi
+
+  # PyPI 只接受 wheel 与 sdist，ZIP、SHA256SUMS.txt 与 build-provenance.json 仍只挂 GitHub Release。
+  # 上传的是 install 作业在 Windows/Linux/macOS 上真实装过的同一份产物，不重新构建一次。
+  # 注册表上的版本一旦上线就不能覆盖，所以这里不接受 --clobber 语义：同一 tag 重跑会被 PyPI 拒绝，
+  # 必须先递增 pyproject 版本号。
+  pypi:
+    needs: artifacts
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    # 必须与 PyPI 受信发布者配置里的 Environment 字段一致，否则 OIDC 令牌换不到上传权限。
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mxready-installers
+          path: dist
+      - name: Keep only the distributions PyPI accepts
+        run: |
+          set -euo pipefail
+          mkdir -p dist-pypi
+          cp dist/mxready-*.whl dist/mxready-*.tar.gz dist-pypi/
+          ls -l dist-pypi
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-pypi

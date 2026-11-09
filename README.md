@@ -121,6 +121,7 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | Windows 10/11 | `mxready-1.0.0-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
 | Linux | `mxready-1.0.0-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
 | macOS（Apple Silicon / Intel） | `mxready-1.0.0-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
+| 自行管理 Python 环境 | PyPI 上的 `mxready` | `python -m pip install mxready`，然后 `mxready-serve` |
 | 已有 Python 环境 | `mxready-1.0.0-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
 
 启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。

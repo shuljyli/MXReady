@@ -7,6 +7,7 @@
 | Windows 10/11 | `mxready-1.0.0-windows.zip` | Python 3.11+（含 pip）、Git、PowerShell 5.1+ |
 | Linux | `mxready-1.0.0-linux.zip` | Python 3.11+（含 venv/pip）、Git、Bash |
 | macOS（Apple Silicon / Intel） | `mxready-1.0.0-macos.zip` | Python 3.11+（含 pip）、Git、Bash |
+| 自行维护 Python 环境，只要能用起来 | PyPI 上的 `mxready` | Python 3.11+（含 pip）、Git |
 | 已有 Python 环境 / 自动化部署 | `mxready-1.0.0-py3-none-any.whl` | Python 3.11+、Git |
 | 容器部署 | 仓库中的 Dockerfile / Compose | Docker Engine + Compose；桌面系统也可用 Docker Desktop |
 | 开发与修改源码 | Git 源码 + 开发脚本 | Python 3.11+、Git、Node.js 22+ |
@@ -27,6 +28,8 @@ Windows、Linux 和 macOS 包共享相同应用代码，区别是安装与启动
 维护者执行下文的构建命令后，在源码根目录的 `dist/` 获得三个 ZIP、通用 wheel、源码包及
 `SHA256SUMS.txt` 和 `build-provenance.json`。发布到 GitHub 后可从
 [Releases](https://github.com/shuljyli/MXReady/releases) 获取；若版本没有附件，应先自行构建。
+含网页的 wheel 与源码包同样发布到 [PyPI](https://pypi.org/project/mxready/)，联网环境可直接
+`python -m pip install mxready`，见下文「PyPI 在线安装」。
 CI 的 `Release packages` 工作流也提供打包产物下载；手动运行不创建公开 Release，`v*` 标签通过安装矩阵后才发布附件。
 
 校验下载文件（把占位的文件名替换为实际 ZIP 名称）：
@@ -128,6 +131,36 @@ Intel 与 Apple Silicon 使用同一个 macOS ZIP；pip 按所运行的 Python �
 环境变量配置见源码中的 `.env.example` 和部署文档；启动脚本不自动加载 `.env`。
 默认监听 `127.0.0.1`。共享网络部署前按安全模型设置反向代理、访问控制与 TLS。
 
+## PyPI 在线安装
+
+PyPI 上的 `mxready` 与 GitHub Release 的 wheel 是同一份产物：发布工作流先在三平台安装并启动通过，
+再上传注册表，wheel 内含网页、规则与验证 schema，因此不需要 Node.js，也不需要自行构建前端。
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install mxready
+mxready-serve
+```
+
+Windows 把 `python3` 改为 `py -3`、`.venv/bin/` 改为 `.venv\Scripts\`。启动后同样打开
+<http://127.0.0.1:8000>。
+
+随包安装的命令有 `mxready-serve`、`mxready-scan`、`mxready-scan-public`、`mxready-scan-batch`、
+`mxready-build-bundle`、`mxready-runner`；MCP 前端属于可选依赖组，用
+`python -m pip install "mxready[mcp]"` 安装。数据库沿用 `mxready-serve` 的系统默认目录，
+升级只需 `python -m pip install -U mxready`，历史报告保持不变。
+
+希望与宿主 Python 环境隔离时改用 pipx 或 uv，两者都会建立独立虚拟环境并把命令放入 PATH：
+
+```bash
+pipx install mxready
+uv tool install mxready
+```
+
+PyPI 安装按包声明的版本范围联网解析依赖，不保证与 ZIP 内 `runtime-constraints.txt` 的取值完全一致，
+也不提供离线安装；需要固定依赖版本或离线部署时，仍按上文的 ZIP 安装器与下文的离线准备步骤执行。
+
 ## wheel 安装与离线准备
 
 已经维护 Python 环境的用户可以直接安装 wheel；推荐为 MXReady 建立专用 venv：
@@ -200,6 +233,39 @@ ZIP 内仅保留 `packages/`、安装/启动入口、共享安装器、依赖约
 `.github/workflows/release.yml` 在 `v*` 标签或手动触发时构建，并在 Windows/Linux/macOS 上
 解压对应 ZIP、运行安装入口，在源码目录之外检查网页、静态资源、规则与验证 ZIP。
 通过后才上传构建附件；这不表示已经在所有 CPU、所有 Python 版本或沐曦真机上完成验证。
+
+### PyPI 受信发布者（一次性配置）
+
+发布使用 PyPI 的 Trusted Publishing（GitHub Actions 换取 OIDC 短期令牌），仓库里不保存 API token：
+
+1. PyPI 账号开启两步验证；
+2. 项目还不存在时，从 PyPI 账号侧栏的 **publishing** 添加 GitHub Actions 的 *pending publisher*，
+   填 Project name `mxready`、Owner `shuljyli`、Repository `MXReady`、Workflow name `release.yml`、
+   Environment `pypi`；首次成功发布即创建该项目，并把这条 pending 配置转成正式受信发布者；
+3. pending publisher 在实际使用前不保留名字，若期间被他人抢注则配置失效；项目存在后，配置改到
+   项目页面的 **Publishing** 下维护。
+
+`v*` 标签触发时 `pypi` 作业排在 `install` 矩阵之后，只上传 wheel 与 sdist。PyPI 不允许覆盖已发布
+版本，重跑同一标签会直接失败，需要先递增 `pyproject.toml` 的版本号。
+
+### 首个版本从本地上传（可选，一次性）
+
+上一条路径需要仓库里已有带 `pypi` 作业的发布工作流；项目还不存在、又想先把包发出去时，可以在本地
+构建后直接上传，两条路径二选一：
+
+```bash
+npm --prefix frontend ci && npm --prefix frontend run build
+python scripts/build_release.py --output dist --skip-frontend-build
+python -m pip install twine
+twine check dist/mxready-1.0.0-py3-none-any.whl dist/mxready-1.0.0.tar.gz
+twine upload dist/mxready-1.0.0-py3-none-any.whl dist/mxready-1.0.0.tar.gz
+# Username 填 __token__，Password 填 PyPI 账号级 API token
+```
+
+项目还不存在时无法创建 project-scoped token，因此首次上传要用账号级（Entire account）token，
+上传成功后改回项目级或直接改用受信发布者。本地构建的 wheel 与 CI 产物功能一致但字节摘要不同，
+所以同一版本的 `SHA256SUMS.txt` 只能对应一个渠道；从下一个版本起改由 `v*` 标签统一发布，
+两个渠道就是同一份产物了。
 
 维护者的证据留存命令和逐项发布门槛见 [发布验收](release-acceptance.md)。
 安装矩阵保留每组的在线和 `--no-index` 检查日志；后者不等于操作系统已断网。
