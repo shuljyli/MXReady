@@ -28,6 +28,32 @@ const pages: Array<{ page: WorkspacePage; label: string; icon: "scan" | "file" |
   { page: "cli", label: "命令行使用", icon: "file" },
 ];
 
+// 只覆盖能到达本页错误面板的错误码：job.failure_code 与轮询请求失败。
+// 提交阶段的准入错误（限流、并发上限）由 ScanForm 直接展示服务端文案，不在此列。
+const failureHints: Record<string, string> = {
+  SCAN_INTERRUPTED: "任务执行已中断，请新建扫描。原任务不会自动重放。",
+  SCAN_INTERNAL_ERROR: "扫描过程中出现未预期的错误，请新建扫描；若持续失败请查看服务日志。",
+  SCAN_FAILED: "扫描未能产出结果，请新建扫描；若持续失败请核对仓库地址与提交。",
+  SCAN_NOT_FOUND: "找不到这个扫描任务，可能已被清理，请核对扫描 ID 或重新发起。",
+  CLONE_FAILED: "无法获取该公开仓库，请确认仓库可公开访问后重新扫描。",
+  REPOSITORY_UNAVAILABLE: "该仓库暂时无法访问，请稍后重新扫描。",
+  REPOSITORY_NOT_FOUND: "该仓库不存在或已设为私有，请检查地址后重新扫描。",
+  GIT_NOT_FOUND: "本机未安装 Git，命令行扫描与克隆式分析无法执行，请安装 Git 或改用压缩包分析。",
+  INVALID_REPOSITORY_URL: "仓库地址需要是完整的 GitHub 或 Gitee 公开 HTTPS 地址。",
+  UNSUPPORTED_REPOSITORY_HOST: "目前只支持 GitHub 和 Gitee 的公开仓库。",
+  INVALID_GIT_REF: "分支、标签或提交编号格式不合法，请检查后重新提交。",
+  ARCHIVE_FETCH_FAILED: "无法下载仓库压缩包，请稍后重试，或改用其它分支、提交。",
+  ARCHIVE_FALLBACK_UNAVAILABLE: "无法退回压缩包获取，请检查 Git 是否可用或稍后重试。",
+  INVALID_REPOSITORY_ARCHIVE: "仓库压缩包结构异常，无法安全解压，请重新扫描。",
+  TOO_MANY_FILES: "仓库文件数超过分析上限，请精简仓库或只扫描核心目录。",
+  REPOSITORY_TOO_LARGE: "仓库体积超过下载上限，请清理大文件后重试。",
+  ANALYSIS_LIMIT_EXCEEDED: "规则评估超过时间预算，请缩小扫描范围后重试。",
+  REQUEST_TIMEOUT: "读取服务超时，请确认 Web 服务仍在运行后重试。",
+  NETWORK_ERROR: "无法连接 Web 服务，请确认服务已启动、地址与代理配置正确。",
+  HTTP_ERROR: "服务返回了无法识别的错误，请刷新页面或查看服务日志。",
+  POLLING_FAILED: "暂时读不到任务状态，请稍后点击“继续查看扫描”。",
+};
+
 type AppProps = { initialJob?: ScanJob; pollIntervalMs?: number };
 
 export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
@@ -141,7 +167,7 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
             {view.kind === "error" ? <section className="error-panel" role="alert">
               <span className="panel-icon"><Icon name="info" /></span><p className="eyebrow">任务中止</p>
               <h1>这次体检没有完成</h1><code className="error-code">{view.code}</code><p>{view.message}</p>
-              {view.code === "SCAN_INTERRUPTED" ? <p>任务执行已中断，请新建扫描。原任务不会自动重放。</p> : null}
+              {failureHints[view.code] ? <p>{failureHints[view.code]}</p> : null}
               {view.job ? <TaskDetails job={view.job} /> : null}
               <div className="error-actions">
                 {view.scanId && !view.job ? <button className="primary-button" onClick={retry} type="button">继续查看扫描</button> : null}

@@ -227,6 +227,20 @@ it("stops on a failed job and can return to the form", async () => {
   expect(screen.getByLabelText("公开仓库地址")).toBeInTheDocument();
 });
 
+it("translates an unexpected scan failure into actionable guidance", async () => {
+  vi.mocked(getScan).mockResolvedValue({
+    ...queuedJob,
+    status: "failed",
+    stage_message: "扫描失败",
+    failure_code: "SCAN_INTERNAL_ERROR",
+    failure_message: "The scan failed unexpectedly. Start a new scan and try again.",
+  });
+
+  render(<App initialJob={queuedJob} pollIntervalMs={1} />);
+  expect(await screen.findByText(/未预期的错误/)).toBeInTheDocument();
+  expect(screen.getByText("SCAN_INTERNAL_ERROR")).toBeInTheDocument();
+});
+
 it("shows a skeleton while the completed report is loading", async () => {
   vi.useFakeTimers();
   vi.mocked(getScan).mockResolvedValue({
