@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from mxready import __version__
 from mxready.cli.generate_public_report import generate_public_report
 from mxready.errors import MxReadyError
 from mxready.models import ScanReport, Severity
@@ -346,6 +347,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "a CSV/Markdown readiness summary."
         ),
     )
+    parser.add_argument("--version", action="version", version=f"MXReady {__version__}")
     parser.add_argument(
         "sources",
         nargs="+",

@@ -13,6 +13,7 @@ Two constraints shape the implementation:
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import atexit
 import base64
@@ -424,10 +425,17 @@ def build_server() -> FastMCP:
     return server
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="mxready-mcp",
+        description="Serve MXReady migration evidence over the Model Context Protocol.",
+    )
+    parser.add_argument("--version", action="version", version=f"MXReady {__version__}")
+    parser.parse_args(argv)
     _configure_stderr_logging()
     build_server().run()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

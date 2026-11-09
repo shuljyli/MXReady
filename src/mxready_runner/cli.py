@@ -38,6 +38,7 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="mxready-runner",
         description="Run reviewed MXReady checks on a user-controlled host.",
     )
+    parser.add_argument("--version", action="version", version=f"MXReady runner {__version__}")
     subparsers = parser.add_subparsers(dest="action", required=True)
     for action in ("inspect", "run"):
         subparser = subparsers.add_parser(action)

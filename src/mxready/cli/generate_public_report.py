@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
 
+from mxready import __version__
 from mxready.config import Settings
 from mxready.errors import MxReadyError
 from mxready.models import ScanReport, StaticStatus
@@ -120,6 +121,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "commit-pinned MXReady evidence."
         ),
     )
+    parser.add_argument("--version", action="version", version=f"MXReady {__version__}")
     parser.add_argument("repository_url", help="Public GitHub/Gitee HTTPS URL")
     parser.add_argument(
         "--label",

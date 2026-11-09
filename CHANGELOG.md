@@ -3,6 +3,15 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与
 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Fixed
+
+- 所有对外命令支持 `--version`（`mxready-serve`、`mxready-scan`、`mxready-scan-public`、
+  `mxready-scan-batch`、`mxready-build-bundle`、`mxready-mcp`、`mxready-runner`）：此前五个 CLI
+  报 `unrecognized arguments` 并以退出码 2 退出，`mxready-mcp` 静默忽略该参数，现场核对版本只能
+  退回 `pip show`。runner 独立分发，输出为 `MXReady runner <版本>`。
+
 ## [1.0.1] - 2026-11-09
 
 ### Added

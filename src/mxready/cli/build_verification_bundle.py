@@ -7,6 +7,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from mxready import __version__
 from mxready.errors import MxReadyError
 from mxready.models import ScanReport
 from mxready.verification.bundle import build_verification_bundle
@@ -36,6 +37,7 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="mxready-build-bundle",
         description="Build a safe-default MXReady verification ZIP from a JSON report.",
     )
+    parser.add_argument("--version", action="version", version=f"MXReady {__version__}")
     parser.add_argument("report", type=Path, help="MXReady JSON report")
     parser.add_argument("--output", type=Path, required=True, help="Output ZIP path")
     return parser

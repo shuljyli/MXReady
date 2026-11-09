@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
 
+from mxready import __version__
 from mxready.config import Settings
 from mxready.errors import MxReadyError
 from mxready.models import ScanReport
@@ -107,6 +108,7 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="mxready-scan",
         description="Generate MXReady reports from a trusted local source directory.",
     )
+    parser.add_argument("--version", action="version", version=f"MXReady {__version__}")
     parser.add_argument("local_path", help="Local repository directory to inspect")
     parser.add_argument(
         "--repo-url",

@@ -9,6 +9,7 @@ from pathlib import Path
 
 import uvicorn
 
+from mxready import __version__
 from mxready.app import create_app
 from mxready.config import Settings
 
@@ -30,6 +31,7 @@ def _port(value: str) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--version", action="version", version=f"MXReady {__version__}")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=_port, default=8000)
     parser.add_argument("--data-dir", type=Path)
