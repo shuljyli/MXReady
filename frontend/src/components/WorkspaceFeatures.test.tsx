@@ -11,7 +11,10 @@ vi.mock("../api/client", async (original) => ({
   listVerifications: vi.fn(), getVerification: vi.fn(), updateChecklist: vi.fn(), getReport: vi.fn(),
 }));
 
-beforeEach(() => { vi.resetAllMocks(); sessionStorage.clear(); });
+beforeEach(() => {
+  vi.resetAllMocks(); sessionStorage.clear();
+  vi.mocked(listScans).mockResolvedValue({ items: [], total: 0, limit: 20, offset: 0 });
+});
 
 it("searches scan history and opens a selected scan", async () => {
   vi.mocked(listScans).mockResolvedValue({ items: [{ id: staticPassedFixture.scan_id,
@@ -63,4 +66,23 @@ it("compares reports and rejects different repositories", async () => {
   vi.mocked(getReport).mockResolvedValue({ ...staticPassedFixture, repository: { ...staticPassedFixture.repository, url: "https://github.com/other/repo" } });
   await userEvent.click(screen.getByRole("button", { name: "开始对比" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("同一仓库");
+});
+
+it("offers same-repository completed scans as baseline candidates", async () => {
+  const candidate = { id: "00000000-0000-0000-0000-000000000003", repo_url: blockedReportFixture.repository.url,
+    requested_ref: null, resolved_commit: "b".repeat(40), status: "completed" as const, stage_message: "完成",
+    created_at: blockedReportFixture.scanned_at, updated_at: blockedReportFixture.scanned_at,
+    failure_code: null, failure_message: null };
+  vi.mocked(listScans).mockResolvedValue({
+    items: [{ ...candidate, id: blockedReportFixture.scan_id }, candidate], total: 2, limit: 20, offset: 0 });
+  render(<ReportView report={blockedReportFixture} onReset={vi.fn()} />);
+  await userEvent.click(screen.getByText("对比另一份报告"));
+
+  expect(await screen.findByText(/^b{12} ·/)).toHaveAttribute("value", candidate.id);
+  expect(screen.queryByText(/^a{12} ·/)).not.toBeInTheDocument();
+  expect(listScans).toHaveBeenLastCalledWith(
+    expect.objectContaining({ q: blockedReportFixture.repository.url, status: "completed", offset: 0 }),
+    expect.any(AbortSignal));
+  await userEvent.type(screen.getByLabelText("基线扫描 ID"), candidate.id);
+  expect(screen.getByLabelText("基线扫描 ID")).toHaveValue(candidate.id);
 });
