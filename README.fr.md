@@ -29,6 +29,13 @@ bash start.sh
 .\start.ps1
 ```
 
+Vous pouvez aussi l'installer depuis PyPI (l'interface web est incluse, Node.js n'est pas nécessaire) :
+
+```bash
+python -m pip install mxready
+mxready-serve
+```
+
 Ouvrez ensuite <http://127.0.0.1:8000> et collez l'adresse du dépôt.
 
 Cela fonctionne aussi en ligne de commande :

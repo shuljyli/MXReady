@@ -29,6 +29,13 @@ bash start.sh
 .\start.ps1
 ```
 
+PyPI를 사용해서도 설치할 수 있습니다(웹 화면이 함께 포함되어 Node.js가 필요 없습니다):
+
+```bash
+python -m pip install mxready
+mxready-serve
+```
+
 그다음 <http://127.0.0.1:8000> 을 열고 저장소 주소를 넣으면 결과가 나옵니다.
 
 명령줄에서도 쓸 수 있습니다.

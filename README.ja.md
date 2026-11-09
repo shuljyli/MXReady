@@ -29,6 +29,13 @@ bash start.sh
 .\start.ps1
 ```
 
+PyPI からも導入できます（Web UI を同梱しているため Node.js は不要です）：
+
+```bash
+python -m pip install mxready
+mxready-serve
+```
+
 起動したら <http://127.0.0.1:8000> を開いてください。リポジトリの URL を入れると結果が出ます。
 
 コマンドラインからも使えます。
