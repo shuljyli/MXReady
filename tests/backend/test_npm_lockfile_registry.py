@@ -33,7 +33,8 @@ def test_lockfile_resolves_every_dependency_from_official_registry() -> None:
 
     assert not offenders, (
         "frontend/package-lock.json 中存在非官方源的 resolved 下载地址，"
-        f"共 {len(offenders)} 条：\n" + "\n".join(f"  {name} -> {url}" for name, url in offenders)
+        f"共 {len(offenders)} 条：\n"
+        + "\n".join(f"  {name} -> {url}" for name, url in offenders)
         + "\n请在未配置镜像 registry 的环境下重装依赖，或把这些 URL 的域名改回 "
         f"{OFFICIAL_REGISTRY}（integrity 无需改动，两个源是同一份字节）。"
     )
