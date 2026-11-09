@@ -307,6 +307,8 @@ mxready-scan tests/fixtures/repositories/cuda_extension --repo-url https://githu
 
 命令生成 `<仓库>-<commit12>.json`、`.md` 和 `.svg`。退出码为：`0` 表示通过或仅有警告，`2` 表示存在阻塞项，`1` 表示操作失败。
 
+在 Git 仓库目录中运行时可省略 `--repo-url` 与 `--commit`，命令默认读取 `origin` 地址与当前 `HEAD`（SSH 形式的 `origin` 会转换为 HTTPS 地址）；探测不到时会在报错信息里指明需要显式传入的参数。
+
 终端直接输出极简检查结果（命中按严重程度排序，最多列出 5 条，其余见报告文件）：
 
 ```text

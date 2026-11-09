@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -20,14 +21,22 @@ from mxready.scanning.analyzer import ScanAnalyzer
 from mxready.scanning.rule_loader import load_rule_catalog
 
 _COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+_SCP_LIKE_REMOTE = re.compile(
+    r"^(?:[^@/:]+@)?(?P<host>[A-Za-z0-9._-]*\.[A-Za-z0-9-]+):(?P<path>[A-Za-z0-9._~/-]+)$"
+)
+_SSH_URL_REMOTE = re.compile(
+    r"^ssh://(?:[^@/]+@)?(?P<host>[A-Za-z0-9._-]+)/(?P<path>[A-Za-z0-9._~/-]+)$"
+)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = _build_parser().parse_args(argv)
     try:
         repository_root = _local_repository(arguments.local_path)
-        commit = _commit_sha(arguments.commit)
-        identity = parse_repository_url(arguments.repo_url)
+        commit = _commit_sha(arguments.commit or _detect_commit(repository_root))
+        identity = parse_repository_url(
+            arguments.repo_url or _detect_repository_url(repository_root)
+        )
         settings = Settings.from_env()
         report = ScanAnalyzer(
             load_rule_catalog(
@@ -99,8 +108,14 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Generate MXReady reports from a trusted local source directory.",
     )
     parser.add_argument("local_path", help="Local repository directory to inspect")
-    parser.add_argument("--repo-url", required=True, help="Canonical public GitHub/Gitee URL")
-    parser.add_argument("--commit", required=True, help="Resolved 40-character Git commit SHA")
+    parser.add_argument(
+        "--repo-url",
+        help="Canonical public GitHub/Gitee URL; defaults to the local origin remote",
+    )
+    parser.add_argument(
+        "--commit",
+        help="Resolved 40-character Git commit SHA; defaults to the local HEAD",
+    )
     parser.add_argument(
         "--output", required=True, help="Directory for JSON, Markdown, SVG, and SARIF"
     )
@@ -124,6 +139,57 @@ def _commit_sha(value: str) -> str:
     if not _COMMIT_PATTERN.fullmatch(value):
         raise ValueError("Commit must be a 40-character lowercase hexadecimal SHA.")
     return value
+
+
+def _run_git(repository_root: Path, *arguments: str) -> str:
+    """在只读模式下询问本地仓库；git 不可用或命令失败时返回空字符串。"""
+    try:
+        completed = subprocess.run(
+            ("git", "-C", str(repository_root), *arguments),
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+            shell=False,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return completed.stdout.strip() if completed.returncode == 0 else ""
+
+
+def _detect_commit(repository_root: Path) -> str:
+    commit = _run_git(repository_root, "rev-parse", "HEAD")
+    if not commit:
+        raise ValueError(
+            "Cannot resolve the local HEAD (git rev-parse HEAD failed); "
+            "pass --commit with a 40-character commit SHA."
+        )
+    return commit
+
+
+def _detect_repository_url(repository_root: Path) -> str:
+    remote = _run_git(repository_root, "remote", "get-url", "origin")
+    normalized = _normalize_remote_url(remote)
+    if not normalized.startswith("https://"):
+        raise ValueError(
+            "Cannot resolve a public origin remote (git remote get-url origin failed); "
+            "pass --repo-url with a GitHub/Gitee HTTPS URL."
+        )
+    return normalized
+
+
+def _normalize_remote_url(value: str) -> str:
+    """把 SSH 形式的 origin 地址转成 parse_repository_url 接受的 HTTPS 形式。"""
+    candidate = value.strip()
+    if "://" in candidate:
+        match = _SSH_URL_REMOTE.fullmatch(candidate) if candidate.startswith("ssh://") else None
+    else:
+        match = _SCP_LIKE_REMOTE.fullmatch(candidate)
+    if match is None:
+        return candidate
+    return f"https://{match.group('host')}/{match.group('path')}"
 
 
 def _write_outputs(output_dir: Path, stem: str, report: ScanReport) -> None:

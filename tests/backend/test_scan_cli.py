@@ -1,9 +1,45 @@
 import io
 import json
+import shutil
+import subprocess
 from pathlib import Path
 
 from mxready.cli import scan_repository
 from mxready.cli.scan_repository import main
+
+_FIXTURE_REPOSITORY = Path(__file__).resolve().parents[1] / "fixtures" / "repositories"
+
+
+def _git(root: Path, *arguments: str) -> str:
+    completed = subprocess.run(
+        ("git", "-C", str(root), *arguments),
+        capture_output=True,
+        check=True,
+        encoding="utf-8",
+        shell=False,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
+def _make_git_clone(root: Path, remote: str) -> None:
+    """把只读样例目录变成带 origin 的真实仓库。"""
+    shutil.copytree(_FIXTURE_REPOSITORY / "cuda_extension", root)
+    _git(root, "init", "-q")
+    _git(root, "remote", "add", "origin", remote)
+    _git(root, "add", ".")
+    _git(
+        root,
+        "-c",
+        "user.name=MXReady Test",
+        "-c",
+        "user.email=test@example.com",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-qm",
+        "initial",
+    )
 
 
 def test_cli_writes_four_commit_pinned_outputs(tmp_path: Path, capsys) -> None:
@@ -105,6 +141,47 @@ def test_cli_rejects_non_sha_commit(capsys, tmp_path: Path) -> None:
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "40-character lowercase hexadecimal SHA" in captured.err
+
+
+def test_cli_detects_identity_from_a_local_clone(tmp_path: Path, capsys) -> None:
+    repository = tmp_path / "clone"
+    _make_git_clone(repository, "git@github.com:example/cuda-extension.git")
+    commit = _git(repository, "rev-parse", "HEAD")
+
+    exit_code = main([str(repository), "--output", str(tmp_path / "reports")])
+
+    captured = capsys.readouterr()
+    assert exit_code == 2, captured.err
+    payload = json.loads(
+        (tmp_path / "reports" / f"cuda-extension-{commit[:12]}.json").read_text(encoding="utf-8")
+    )
+    assert payload["repository"]["url"] == "https://github.com/example/cuda-extension"
+    assert payload["repository"]["commit"] == commit
+
+
+def test_cli_reports_missing_git_identity_without_traceback(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    repository = tmp_path / "empty-repository"
+    repository.mkdir()
+    _git(repository, "init", "-q")
+
+    exit_code = main([str(repository), "--output", str(tmp_path / "reports")])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "pass --commit" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_scp_and_ssh_remotes_become_https_urls() -> None:
+    normalize = scan_repository._normalize_remote_url
+    assert normalize("git@github.com:owner/repo.git") == "https://github.com/owner/repo.git"
+    assert normalize("ssh://git@gitee.com/owner/repo.git") == "https://gitee.com/owner/repo.git"
+    assert normalize("https://github.com/owner/repo") == "https://github.com/owner/repo"
+    assert normalize("../local-mirror") == "../local-mirror"
+    assert normalize("D:/local-mirror") == "D:/local-mirror"
 
 
 class _LegacyCodePageStdout(io.StringIO):
