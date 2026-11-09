@@ -12,6 +12,7 @@ vi.mock("../api/client", async (importOriginal) => ({
 
 it("combines file and text filters without confusing occurrences with findings", async () => {
   render(<ReportView report={blockedReportFixture} onReset={vi.fn()} />);
+  await userEvent.click(screen.getByRole("button", { name: "展开详情：硬编码 CUDA 路径" }));
   expect(screen.getByText("同规则在此文件聚合命中 2 次")).toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: "优先复核 setup.py" }));
   expect(screen.queryByText("硬编码 CUDA 路径")).not.toBeInTheDocument();

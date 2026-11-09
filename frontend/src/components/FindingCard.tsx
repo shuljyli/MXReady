@@ -33,16 +33,14 @@ export function FindingCard({ finding, onOpenRule, repository }: FindingCardProp
     if (!base) return undefined;
     return `${base.replace(/\.git$/, "").replace(/\/$/, "")}/blob/${repository.commit}/${finding.relative_path.split("/").map(encodeURIComponent).join("/")}#L${line}`;
   };
-  const [expanded, setExpanded] = useState(true);
+  // 只有阻塞项默认展开：长报告先露出必须处理的问题，警告与提示按级别收敛。
+  // 折叠只影响展开状态，正文仍由标题栏按钮（支持 Enter/空格）完整可达，不隐藏任何结论。
+  const [expanded, setExpanded] = useState(finding.severity === "blocker");
   const contentId = useId();
   const toggleLabel = `${expanded ? "收起" : "展开"}详情`;
 
   return (
-    <article
-      className={`finding-card finding-${finding.severity}${
-        expanded ? "" : " finding-card-collapsed"
-      }`}
-    >
+    <article className={`finding-card finding-${finding.severity}`}>
       <header className="finding-header">
         <h3 aria-label={finding.title}>
           <button

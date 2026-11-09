@@ -24,6 +24,19 @@ it("collapses and expands details with a click", async () => {
   expect(screen.getByText("compiler = 'nvcc'")).toBeInTheDocument();
 });
 
+it("keeps non-blocking findings collapsed until expanded by keyboard", async () => {
+  render(<FindingCard finding={blockedReportFixture.findings[1]} />);
+
+  expect(screen.getByText("硬编码 CUDA 路径")).toBeInTheDocument();
+  expect(screen.queryByText("构建配置绑定了 CUDA 默认安装目录。")).not.toBeInTheDocument();
+
+  const toggle = screen.getByRole("button", { name: "展开详情：硬编码 CUDA 路径" });
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  toggle.focus();
+  await userEvent.keyboard("{Enter}");
+  expect(screen.getByText("构建配置绑定了 CUDA 默认安装目录。")).toBeInTheDocument();
+});
+
 it("toggles with Enter and Space keys", async () => {
   render(<FindingCard finding={finding} />);
 
