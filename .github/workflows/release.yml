@@ -135,6 +135,9 @@ jobs:
   # 上传的是 install 作业在 Windows/Linux/macOS 上真实装过的同一份产物，不重新构建一次。
   # 注册表上的版本一旦上线就不能覆盖，所以这里不接受 --clobber 语义：同一 tag 重跑会被 PyPI 拒绝，
   # 必须先递增 pyproject 版本号。
+  # 唯一例外是版本已经通过别的途径上过线（例如受信发布者还没配好时先用 twine 手工传过），
+  # 这时补打 tag 只为生成 GitHub Release。先查 PyPI 再决定是否上传，避免这一作业必然红叉；
+  # 查询本身失败时保持"继续上传"，让 PyPI 的拒绝暴露出来，绝不静默跳过一次真正的发布。
   pypi:
     needs: artifacts
     if: startsWith(github.ref, 'refs/tags/v')
@@ -155,6 +158,22 @@ jobs:
           mkdir -p dist-pypi
           cp dist/mxready-*.whl dist/mxready-*.tar.gz dist-pypi/
           ls -l dist-pypi
+      - name: Check whether this version is already published on PyPI
+        id: registry
+        run: |
+          set -euo pipefail
+          wheel="$(ls dist-pypi/*.whl | head -n 1)"
+          version="$(basename "${wheel}" | cut -d'-' -f2)"
+          status="$(curl --silent --show-error --output /dev/null \
+            --write-out '%{http_code}' "https://pypi.org/pypi/mxready/${version}/json")"
+          if [ "${status}" = "200" ]; then
+            echo "mxready ${version} 已在 PyPI 上，跳过本次上传（GitHub Release 仍会照常发布）。"
+            echo "published=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "PyPI 返回 HTTP ${status}，视为未发布，继续上传 mxready ${version}。"
+            echo "published=false" >> "${GITHUB_OUTPUT}"
+          fi
       - uses: pypa/gh-action-pypi-publish@release/v1
+        if: steps.registry.outputs.published != 'true'
         with:
           packages-dir: dist-pypi
