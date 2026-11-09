@@ -161,6 +161,10 @@ uv tool install mxready
 PyPI 安装按包声明的版本范围联网解析依赖，不保证与 ZIP 内 `runtime-constraints.txt` 的取值完全一致，
 也不提供离线安装；需要固定依赖版本或离线部署时，仍按上文的 ZIP 安装器与下文的离线准备步骤执行。
 
+若 pip 的默认索引被设为国内镜像站，刚发布的版本同步到镜像存在延迟，此时 `pip install mxready` 会报
+`No matching distribution found`；临时加 `--index-url https://pypi.org/simple` 从官方索引安装即可，
+不必为一次安装改动全局 pip 配置。
+
 ## wheel 安装与离线准备
 
 已经维护 Python 环境的用户可以直接安装 wheel；推荐为 MXReady 建立专用 venv：
