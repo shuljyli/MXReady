@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+# 默认只授予只读令牌，与 release.yml 保持一致；作业未声明额外权限。
+permissions:
+  contents: read
+
 # 连续推送时取消被取代的运行，避免矩阵作业排队互相干扰。
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
