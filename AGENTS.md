@@ -15,6 +15,7 @@ MXReady statically assesses PyTorch CUDA extensions for migration to MetaX MXMAC
 - `tests/integration/`: sdist/wheel and installation-independent smoke tests.
 - `frontend/src/hooks/`: scan lifecycle, URL restoration, cancellation, and bounded polling retries.
 - `docs/` and `examples/`: architecture/reference documentation and pinned evidence.
+- `docs/development-plan-2026-11.md`: prioritized follow-up plan; check its baseline and distinguish proposed work from implemented behavior before using it.
 
 ## Build, Test, and Development Commands
 
@@ -52,6 +53,7 @@ Never execute scanned repository code in the Web service. Preserve runner confir
 Finding reviews are append-only annotations bound to scan/rule/path and must never suppress static findings or alter verification. CI baseline policies must reject mismatched repositories or analysis conditions. Web batch submission reuses scan admission limits and must not silently retry uncertain POST requests.
 
 Report changes must preserve legacy reports without occurrence/coverage metadata. Keep SARIF locations aligned with individual occurrences and document scan exclusions. Runner project commands require a clean commit-matching checkout before and after execution; environment inspection remains separate. See `docs/report-workflow.md`.
+Local CLI scans use a fresh execution ID and reserve all four output files exclusively; preserve existing reports and baseline files. Read and validate baseline policies before writing scan outputs.
 
 See `docs/architecture.md` for dependency directions and migration paths. Keep default rules and schemas inside package resources and verify installed artifacts outside the checkout. Task writes must preserve execution-token and lease checks; never mark all active jobs failed during application startup. Derive verification freshness when reading reports. Keep generated contracts synchronized with model changes and retain the dependency-free runner.
 

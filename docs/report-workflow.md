@@ -92,6 +92,11 @@ mxready-scan /path/to/source --repo-url https://github.com/owner/project \
 缺基线、超过 20 MiB、非法 JSON、不同仓库、缺少规则摘要或分析配置/规则/工具条件不同
 均退出 1，不能静默忽略。使用方应固定扫描器版本，不能以人工标注覆盖基线政策。
 
+本地 `mxready-scan` 在分析前有界读取并校验基线参数，比较条件通过校验后才写当前报告。
+基线与输出目录中的默认 JSON 同名时仍保留原文件；任一导出文件已存在，新的 JSON、Markdown、
+SVG、SARIF 统一追加本次扫描 ID（不含连字符）。每次执行具有独立 ID，终端打印实际文件名。
+基线缺失、内容无效、参数不配套或分析条件不一致时退出 1，不生成当前报告。
+
 CI 模板可设置 `MXREADY_BASELINE_RUN` 为同仓库已审核历史运行的 ID，从其
 `mxready-reports` artifact 下载唯一 JSON。未设置时仍检查全部 blocker；下载失败、
 artifact 过期或存在多份 JSON 会失败。不要接受 PR 作者提供或修改的基线来批准该 PR。

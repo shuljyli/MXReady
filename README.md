@@ -306,7 +306,9 @@ PowerShell 单行写法：
 mxready-scan tests/fixtures/repositories/cuda_extension --repo-url https://github.com/example/cuda-extension --commit dddddddddddddddddddddddddddddddddddddddd --output data/reports
 ```
 
-命令生成 `<仓库>-<commit12>.json`、`.md` 和 `.svg`。退出码为：`0` 表示通过或仅有警告，`2` 表示存在阻塞项，`1` 表示操作失败。
+命令生成 `<仓库>-<commit12>.json`、`.md`、`.svg` 和 `.sarif`。每次扫描具有独立的扫描 ID；
+任一种同名输出已存在时，四个文件统一改用 `<仓库>-<commit12>-<scan_id无连字符>`，保留旧文件。
+终端会打印本次实际文件名。退出码为：`0` 表示通过或仅有警告，`2` 表示存在阻塞项，`1` 表示操作失败。
 
 在 Git 仓库目录中运行时可省略 `--repo-url` 与 `--commit`，命令默认读取 `origin` 地址与当前 `HEAD`（SSH 形式的 `origin` 会转换为 HTTPS 地址）；探测不到时会在报错信息里指明需要显式传入的参数。
 
