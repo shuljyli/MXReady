@@ -7,6 +7,11 @@
 
 ### Fixed
 
+- 本地 `mxready-scan` 每次扫描生成独立 ID；四种导出中任一同名文件已存在时，整组文件追加
+  扫描 ID，使用独占创建保留旧报告，不跟随已有输出符号链接；失败时清理本次创建的文件。
+- 修复 `--baseline` 与当前输出同名时先覆盖可信基线、再比较而错误放行新增 blocker 的问题：
+  先有界读取并验证基线和策略，再生成输出；无效参数或不可比较基线不写出当前报告。
+
 - 所有对外命令支持 `--version`（`mxready-serve`、`mxready-scan`、`mxready-scan-public`、
   `mxready-scan-batch`、`mxready-build-bundle`、`mxready-mcp`、`mxready-runner`）：此前五个 CLI
   报 `unrecognized arguments` 并以退出码 2 退出，`mxready-mcp` 静默忽略该参数，现场核对版本只能

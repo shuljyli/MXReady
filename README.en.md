@@ -67,6 +67,11 @@ The web service never imports, installs, builds or executes code from the scanne
 remote runner only runs on a machine you control and requires explicit confirmation before any
 project command is executed.
 
+Each local `mxready-scan` execution gets a fresh scan ID. Its JSON, Markdown, SVG and SARIF outputs
+use `<repository>-<commit12>`; if any output name already exists, all four append the scan ID without
+hyphens, preserving earlier evidence. The terminal prints the actual names. Baseline policies are
+validated before output files are created, so an existing baseline cannot be replaced by the scan.
+
 ## Install
 
 Release bundles need no Node.js, no PyTorch and no GPU driver. All platforms require
