@@ -11,10 +11,12 @@ from mxready.models import (
     MigrationChecklistItem,
     ScanStatus,
     Severity,
+    SourceReference,
     StaticStatus,
     VerificationStatus,
 )
 from mxready.reporting.badge import COLORS, render_badge
+from mxready.reporting.html import render_html
 from mxready.reporting.markdown import render_markdown
 from mxready.reporting.terminal import render_terminal_summary
 
@@ -54,6 +56,68 @@ def test_reports_include_commit_and_escape_untrusted_evidence(
     assert "<script>" not in badge
     assert "warnings" in badge
     ElementTree.fromstring(badge)
+
+
+def test_html_report_escapes_untrusted_content_and_unsafe_reference_urls(report_factory) -> None:
+    report = report_factory(
+        repository_name="unsafe-project",
+        findings=[
+            Finding(
+                rule_id="MXR-PATH-001",
+                rule_version=1,
+                severity=Severity.WARNING,
+                category="path",
+                title="Unsafe <title> | table",
+                relative_path="setup`bad.py",
+                line_start=2,
+                line_end=2,
+                evidence="<script>alert(1)</script>",
+                message="Hard-coded <path>",
+                recommendation="Make the path configurable.",
+                references=[SourceReference(title="Ref", url="javascript:alert(1)")],
+            )
+        ],
+    )
+
+    html_text = render_html(report)
+
+    assert "<script>alert" not in html_text
+    assert "&lt;script&gt;" in html_text
+    assert "Unsafe &lt;title&gt;" in html_text
+    assert '<a href="javascript' not in html_text
+    assert "javascript:alert(1)" in html_text
+    assert "静态扫描不能替代" in html_text
+
+
+def test_html_report_handles_legacy_findings_and_coverage(report_factory) -> None:
+    report = report_factory(
+        findings=[_finding("MXR-LEGACY-001", Severity.BLOCKER).model_copy(update={"count": 3})],
+    )
+
+    html_text = render_html(report)
+
+    assert report.coverage is None
+    assert "旧报告未记录扫描范围" in html_text
+    assert "旧报告仅保留聚合证据" in html_text
+    assert "<script" not in html_text
+    assert "<link" not in html_text
+    assert "<img" not in html_text
+
+
+def test_html_download_route_serves_printable_attachment(client, report_factory) -> None:
+    report = _complete_report(client, report_factory)
+
+    response = client.get(f"/api/scans/{report.scan_id}/report.html")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert response.headers["cache-control"] == "no-store"
+    assert (
+        f'filename="project-{report.repository.commit[:12]}-mxready.html"'
+        in response.headers["content-disposition"]
+    )
+    assert response.text.lstrip().startswith("<!DOCTYPE html>")
+    assert "<script" not in response.text
 
 
 def test_markdown_contains_all_required_sections_and_grouped_findings(

@@ -74,6 +74,28 @@ class ScanPage(StrictModel):
     offset: int
 
 
+class ProgressTrendPoint(StrictModel):
+    scan_id: UUID
+    scanned_at: datetime
+    blocker_count: int = Field(ge=0)
+
+
+class RepositoryProgress(StrictModel):
+    repo_url: str
+    scan_count: int = Field(ge=0)
+    latest_scan_id: UUID
+    latest_status: ScanStatus
+    latest_created_at: datetime
+    blocker_trend: list[ProgressTrendPoint]
+
+
+class ProgressPage(StrictModel):
+    items: list[RepositoryProgress]
+    total: int
+    limit: int
+    offset: int
+
+
 class SourceReference(StrictModel):
     title: str
     url: str

@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- 新增「迁移进度」仪表盘（`GET /api/dashboard`）：按仓库聚合扫描次数、最近任务状态与阻塞项趋势，跨仓库查看迁移推进情况；趋势仅统计阻塞项数量变化，不代表兼容率或任何百分比指标。
+- 报告新增 HTML 导出（`GET /api/scans/{scan_id}/report.html`）：自包含、无外链的可打印文件，浏览器打开后可直接打印为 PDF；旧报告（无 occurrences / coverage 元数据）也能正常渲染。
+
 ### Fixed
 
 - 所有对外命令支持 `--version`（`mxready-serve`、`mxready-scan`、`mxready-scan-public`、

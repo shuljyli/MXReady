@@ -1,4 +1,4 @@
-import type { ApiErrorBody, RuleCatalog, ScanJob, ScanReport, ServiceHealth, ScanPage, VerificationPage, VerificationDetail } from "./types";
+import type { ApiErrorBody, ProgressPage, RuleCatalog, ScanJob, ScanReport, ServiceHealth, ScanPage, VerificationPage, VerificationDetail } from "./types";
 
 export class MxReadyApiError extends Error {
   readonly code: string;
@@ -88,6 +88,11 @@ export function listScans(options: { q: string; status: string; offset: number }
   const params = new URLSearchParams({ q: options.q, offset: String(options.offset), limit: "20" });
   if (options.status) params.set("status", options.status);
   return request<ScanPage>(`/api/scans?${params}`, { signal });
+}
+
+export function getDashboard(options: { q: string; offset: number }, signal?: AbortSignal) {
+  const params = new URLSearchParams({ q: options.q, offset: String(options.offset), limit: "20" });
+  return request<ProgressPage>(`/api/dashboard?${params}`, { signal });
 }
 
 export function listVerifications(scanId: string, offset: number, signal?: AbortSignal) {

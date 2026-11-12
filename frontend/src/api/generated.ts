@@ -53,6 +53,28 @@ export type MigrationChecklistItem = {
   completed: boolean;
 };
 
+export type ProgressPage = {
+  items: Array<RepositoryProgress>;
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export type ProgressTrendPoint = {
+  scan_id: string;
+  scanned_at: string;
+  blocker_count: number;
+};
+
+export type RepositoryProgress = {
+  repo_url: string;
+  scan_count: number;
+  latest_scan_id: string;
+  latest_status: ScanStatus;
+  latest_created_at: string;
+  blocker_trend: Array<ProgressTrendPoint>;
+};
+
 export type RepositorySnapshot = {
   provider: string;
   owner: string;

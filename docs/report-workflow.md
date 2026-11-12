@@ -3,7 +3,7 @@
 ## 完整命中与扫描范围
 
 JSON `findings[].occurrences` 保存每次命中的行号与证据，`count` 保留聚合次数。
-Web 按需展开全部命中并链接到报告固定提交；Markdown 与 SARIF 同步导出这些位置。
+Web 按需展开全部命中并链接到报告固定提交；Markdown、HTML 与 SARIF 同步导出这些位置。
 旧报告无 occurrences 时仅显示原有聚合证据，不虚构丢失的位置。
 
 `coverage` 记录分析文件数量、字节数、文件类型、跳过原因和排除目录数量。
@@ -11,6 +11,8 @@ Web 按需展开全部命中并链接到报告固定提交；Markdown 与 SARIF 
 符号链接、非支持文件类型、二进制、超限和不可读取文件不参与分析。
 无可分析文件时提供 `NO_ANALYZABLE_SOURCE` 警告；零命中不是兼容性证明。
 旧报告 coverage 为 null，需重新扫描才能补齐。
+
+`report.html` 是自包含、无外链的可打印报告，浏览器打开后可直接打印为 PDF。渲染对用户可控内容做转义，references 只对 `http(s)://` 链接生成 `<a>`。旧报告无 occurrences / coverage 时沿用上述回退文案，不虚构命中位置或扫描范围。
 
 ## 比较整改效果
 

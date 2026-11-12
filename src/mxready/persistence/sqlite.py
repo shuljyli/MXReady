@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -10,6 +11,9 @@ from mxready.models import (
     FindingReview,
     FindingReviewInput,
     FindingReviewPage,
+    ProgressPage,
+    ProgressTrendPoint,
+    RepositoryProgress,
     ScanJob,
     ScanPage,
     ScanReport,
@@ -69,6 +73,9 @@ _MIGRATIONS: list[str] = [
     "CREATE INDEX finding_reviews_lookup "
     "ON finding_reviews(scan_id, rule_id, relative_path, id DESC)",
 ]
+
+# 每个仓库趋势序列保留的最近数据点数量。
+_TREND_LIMIT = 20
 
 
 class SQLiteStore:
@@ -186,6 +193,87 @@ class SQLiteStore:
             ).fetchall()
         return ScanPage(
             items=[self._job_from_row(row) for row in rows], total=total, limit=limit, offset=offset
+        )
+
+    def list_scan_progress(
+        self,
+        *,
+        query: str = "",
+        limit: int = 20,
+        offset: int = 0,
+    ) -> ProgressPage:
+        where = "instr(lower(repo_url), lower(?)) > 0"
+        with self._connect() as connection:
+            connection.execute("BEGIN")
+            total = connection.execute(
+                f"SELECT COUNT(DISTINCT repo_url) FROM scan_jobs WHERE {where}", (query,)
+            ).fetchone()[0]
+            rows = connection.execute(
+                "SELECT id, repo_url, status, created_at, report_json FROM scan_jobs "
+                f"WHERE {where} ORDER BY created_at DESC, id DESC",
+                (query,),
+            ).fetchall()
+        # 按 repo_url 分组；行已按创建时间倒序，首次出现顺序即各仓库最近活跃顺序。
+        groups: dict[str, list[sqlite3.Row]] = {}
+        for row in rows:
+            groups.setdefault(row["repo_url"], []).append(row)
+        items = [
+            self._progress_from_group(repo_url, group)
+            for repo_url, group in list(groups.items())[offset : offset + max(limit, 0)]
+        ]
+        return ProgressPage(items=items, total=total, limit=limit, offset=offset)
+
+    @staticmethod
+    def _progress_from_group(repo_url: str, group: list[sqlite3.Row]) -> RepositoryProgress:
+        latest = group[0]
+        trend = sorted(
+            (
+                point
+                for point in (SQLiteStore._trend_point(row) for row in group)
+                if point is not None
+            ),
+            key=lambda point: point.scanned_at,
+        )
+        return RepositoryProgress(
+            repo_url=repo_url,
+            scan_count=len(group),
+            latest_scan_id=UUID(latest["id"]),
+            latest_status=ScanStatus(latest["status"]),
+            latest_created_at=datetime.fromisoformat(latest["created_at"]),
+            blocker_trend=trend[-_TREND_LIMIT:],
+        )
+
+    @staticmethod
+    def _trend_point(row: sqlite3.Row) -> ProgressTrendPoint | None:
+        raw = row["report_json"]
+        if raw is None:
+            return None
+        try:
+            payload = json.loads(raw)
+        except (TypeError, ValueError):
+            return None
+        if not isinstance(payload, dict):
+            return None
+        scanned_at = payload.get("scanned_at")
+        if not isinstance(scanned_at, str):
+            return None
+        try:
+            parsed_time = datetime.fromisoformat(scanned_at)
+        except ValueError:
+            return None
+        summary = payload.get("summary")
+        blocker_count = summary.get("blocker_count") if isinstance(summary, dict) else None
+        if not isinstance(blocker_count, int):
+            # 旧报告缺 summary 时按 findings 逐条统计 blocker。
+            blocker_count = sum(
+                1
+                for item in payload.get("findings", [])
+                if isinstance(item, dict) and item.get("severity") == "blocker"
+            )
+        return ProgressTrendPoint(
+            scan_id=UUID(row["id"]),
+            scanned_at=parsed_time,
+            blocker_count=max(blocker_count, 0),
         )
 
     def update_job(

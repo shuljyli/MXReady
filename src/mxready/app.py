@@ -10,6 +10,7 @@ from starlette.concurrency import run_in_threadpool
 
 from mxready import __version__
 from mxready.api import rules_router, scans_router
+from mxready.api.dashboard import router as dashboard_router
 from mxready.api.middleware import (
     RateLimitMiddleware,
     RequestBodyLimitMiddleware,
@@ -100,6 +101,7 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
     app.include_router(scans_router, prefix="/api")
     app.include_router(workspace_router, prefix="/api")
     app.include_router(rules_router, prefix="/api")
+    app.include_router(dashboard_router, prefix="/api")
 
     @app.get("/api/health")
     def health() -> dict[str, str]:

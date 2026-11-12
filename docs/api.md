@@ -167,11 +167,29 @@ curl -s http://127.0.0.1:8000/api/scans/2f9a1c1e-0000-0000-0000-000000000000/rep
 
 下载 JSON 版报告文件。
 
+### `GET /api/scans/{scan_id}/report.html`
+
+下载自包含 HTML 版报告（`Content-Disposition: attachment`），无外链脚本与资源，浏览器打开后可直接打印为 PDF。旧报告（无 occurrences / coverage 元数据）也能正常渲染。
+
 ### `GET /api/scans/{scan_id}/badge.svg`
 
 获取徽章 SVG（`Cache-Control: no-store`），可直接嵌入 README。
 
-## 6. 下载验证包
+## 6. 迁移进度仪表盘
+
+### `GET /api/dashboard`
+
+按仓库聚合扫描进度，返回每个仓库的扫描次数、最近任务状态与阻塞项趋势，用于跨仓库查看迁移推进情况。
+
+```bash
+curl -s 'http://127.0.0.1:8000/api/dashboard?q=extension&limit=20&offset=0'
+```
+
+查询参数：`q` 按仓库地址子串过滤（大小写不敏感，最长 200）；`limit` 默认 20、范围 1–50；`offset` 默认 0、范围 0–1,000,000。
+
+响应含 `items`、`total`、`limit`、`offset`；`items[]` 为 `repo_url`、`scan_count`、`latest_scan_id`、`latest_status`、`latest_created_at` 与 `blocker_trend[]`（每点为 `scan_id`、`scanned_at`、`blocker_count`，按时间升序、最多 20 点）。趋势只统计阻塞项数量变化，不代表兼容率，也不汇总任何百分比指标。旧报告（无 summary 元数据）按 findings 中的阻塞项回退计数。
+
+## 7. 下载验证包
 
 ### `GET /api/scans/{scan_id}/verification-bundle`
 
@@ -182,7 +200,7 @@ curl -sL -o verification.zip \
   http://127.0.0.1:8000/api/scans/2f9a1c1e-0000-0000-0000-000000000000/verification-bundle
 ```
 
-## 7. 上传验证结果
+## 8. 上传验证结果
 
 ### `POST /api/scans/{scan_id}/verification-runs`
 
@@ -219,7 +237,7 @@ curl -s -X POST \
 检查项与项目命令分开展示，每项含 `id`、`status`、`return_code`、`duration_ms`、`stdout`、`stderr`；不返回命令参数。
 日志再次脱敏并限制每流 16 KiB。记录 ID 必须属于路径中的扫描，否则返回 404；没有项目命令不代表项目功能已验证。
 
-## 8. 保存人工整改清单
+## 9. 保存人工整改清单
 
 ### `PATCH /api/scans/{scan_id}/checklist/{rule_id}`
 
@@ -233,7 +251,7 @@ curl -s -X PATCH \
 人工进度独立持久化，后续验证上传不会清空；重复设置同一值是幂等的，同一项并发修改以最后写入为准。
 该操作不重新执行扫描，也不改变静态风险或硬件验证结论。新扫描拥有独立清单。
 
-## 9. 防护行为说明（部署时）
+## 10. 防护行为说明（部署时）
 
 - 限流：`MXREADY_RATE_LIMIT_ENABLED=true` 时，按客户端 IP 限制写操作频率（默认每 IP 每分钟 20 次，`MXREADY_RATE_LIMIT_PER_MINUTE` 可调），超限返回 `429 RATE_LIMITED`；
 - 请求体上限：`MXREADY_MAX_REQUEST_BYTES` 全局限制（默认 1 MiB），验证结果上传走端点自身的 1 MiB 校验（错误码 `UPLOAD_TOO_LARGE`）；
