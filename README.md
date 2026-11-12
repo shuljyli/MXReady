@@ -21,16 +21,15 @@ MXReady 先把代码读一遍（只读，不运行），把可能出问题的地
 - 扫描 Python、C/C++、CUDA、CMake、Shell、TOML、YAML 等文本文件；
 - 内置 **35 条规则**（`MXR-*`），每条结果都带文件、行号、命中的代码、建议和权威参考；
 - 测试、示例和文档里出现的命中只算提示：仍然列进报告，但不会让整个项目被判成阻塞；
-- 输出 JSON、Markdown、SVG 徽章，以及一个只依赖标准库的远程验证包；
+- 输出 JSON、Markdown、SVG 徽章和可打印的 HTML 报告（浏览器打印转 PDF），以及一个只依赖标准库的远程验证包；
 - 静态结论和真机验证结论分开显示，不混在一起；
 - 提供只读的本地目录 CLI，便于离线回归和生成示例报告；
 - 可选 `mxready-mcp`：把扫描、任务状态、报告与规则查询暴露为 5 个 MCP 工具，供支持 Model Context Protocol 的编码 Agent 调用；
 - React 单页界面与 FastAPI 服务可以打包成同一个部署单元。
 
-网页侧栏提供“源码体检”“扫描历史”“规则库”“MCP 接入”和“命令行使用”。可在 MCP 接入页生成并复制
-stdio 配置，在报告中复制固定提交的 Agent 交接内容；MCP 与 Web 互相读取报告时需显式共用
-同一本地数据目录。报告支持优先文件定位、分页检索、会话内筛选恢复、人工清单保存、同仓库报告对比、分享和刷新。
-验证详情记录每次上传的执行时间、有效期、环境指纹及脱敏输出；环境检查与项目命令分别显示。
+网页界面提供“源码体检”“批量扫描”“扫描历史”“迁移进度”“规则库”“MCP 接入”和“命令行使用”页面；
+报告支持优先文件定位、分页检索、对比分享、人工复核清单与 HTML 打印导出。MCP 与 Web 互相读取
+报告时需显式共用同一本地数据目录。
 
 MVP 不包含私有仓库、自动修改源码、远程 GPU 服务器的 Docker 编排、云 GPU 调度、用户系统或百分比"兼容分数"。
 
@@ -53,13 +52,10 @@ MVP 不包含私有仓库、自动修改源码、远程 GPU 服务器的 Docker 
 
 另外两个固定提交的案例补上了阻断与修复闭环两侧的证据：
 
-- [`bitsandbytes`](https://github.com/bitsandbytes-foundation/bitsandbytes)（`a616886`）：27 条发现，其中 7 条阻断
-  （`MXR-PTX-001` 4 条、`MXR-WARP-001` 3 条），CLI 退出码 2。完整报告见
-  [examples/reports/bitsandbytes.md](examples/reports/bitsandbytes.md)。
-- [`causal-conv1d`](https://github.com/Dao-AILab/causal-conv1d)（`cd81f04`）：按报告修掉 `setup.py` 里硬编码的
-  `sm_75…sm_90` 架构列表后，发现从 10 条降到 9 条、`MXR-ARCH-002` 消失；在 MetaX C500 上用临时补丁构建，
-  并恢复干净 checkout 后由 runner 验证，五项环境检查与单卡 smoke 全部 `passed`。补丁、前后报告与结果见
-  [迁移案例记录](docs/migration-case-2026-11.md)。
+- [`bitsandbytes`](https://github.com/bitsandbytes-foundation/bitsandbytes)（`a616886`）：27 条发现、7 条阻断，
+  报告见 [examples/reports/bitsandbytes.md](examples/reports/bitsandbytes.md)。
+- [`causal-conv1d`](https://github.com/Dao-AILab/causal-conv1d)（`cd81f04`）：按报告修复后发现数下降、
+  在 MetaX C500 上真机验证全部 `passed`，详见 [迁移案例记录](docs/migration-case-2026-11.md)。
 
 ## 架构
 
@@ -85,7 +81,8 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | --- | --- | --- |
 | 公开仓库静态扫描（GitHub / Gitee，可指定分支、标签或 40 位提交） | 可用 | 端到端测试 + 示例报告 |
 | 35 条 `MXR-*` 检查规则 | 可用 | 每条规则含正例与相似反例夹具 |
-| 报告输出：JSON / Markdown / SVG 徽章 | 可用 | 契约测试 + `generate_contracts.py --check` |
+| 报告输出：JSON / Markdown / HTML / SVG 徽章 | 可用 | 契约测试 + `generate_contracts.py --check` |
+| 迁移进度仪表盘（跨仓库聚合、阻塞项趋势） | 可用 | 后端聚合测试 + Vitest |
 | 远程验证包与标准库 runner | 可用 | 安装包回归 + 安全边界测试 |
 | 三平台安装 ZIP 与含网页的 wheel/sdist | 可用 | 发布工作流在 Windows / Linux / macOS 实际安装并启动 |
 | React 单页界面 | 可用 | Vitest + TypeScript 严格模式 |
@@ -93,28 +90,27 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | MCP 工具（`mxready-mcp`，需 `.[mcp]`） | 可用 | 后端测试 + 实际 stdio 握手 |
 | 真机沐曦 GPU 验证 | 已完成两次脱敏验证（MetaX C500：`pytorch/extension-cpp` @ `1c325b2`、`causal-conv1d` @ `cd81f04`） | runner `inspect` 五项环境检查与单卡 smoke 全部 `passed`；causal-conv1d 的构建使用了未提交上游的临时补丁，其他项目仍需各自验证 |
 
-工程状态：`ruff check`、`ruff format --check`、`mypy`、契约校验与 `pytest` 用例全绿（当前 540 余条），
-分支覆盖率 90%（门槛 80%）；CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS，另有 Python 3.10 的 runner 作业。
+工程状态：`ruff`、`mypy`、契约校验与 `pytest` 全绿（540 余条用例，分支覆盖率 90%）；
+CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS，另有 Python 3.10 的 runner 作业。
 
 ## 已知限制
 
 - **不提供兼容性结论**。所有输出止步于静态风险提示与人工复核建议；"已在沐曦环境验证"必须绑定到具体提交、
   在受控沐曦 GPU 上跑出 `verified` 结果，且不超过 30 天。
-- **规则精度尚未用大规模真实项目统计**。内置规则集的正反例来自受控夹具，并在 `examples/reports` 的公开仓库上复核（0 误报）；系统性误报率与漏报率仍需在更多真实项目上统计。条目清单与判级口径见[规则说明](docs/rules.md)。
+- **规则精度尚未用大规模真实项目统计**。正反例来自受控夹具并在公开仓库上复核（0 误报），
+  系统性误报率与漏报率仍需更多真实项目统计，见[规则说明](docs/rules.md)。
 - **真机验证结果有 30 天有效期**，过期后报告状态转为 `stale`，需要重新上传。
 - **MVP 边界**：不支持私有仓库、不自动修改源码、不做云 GPU 调度、无用户系统、不给百分比兼容分数。
-- **环境要求**：安装包不附带 Python 与 Git，需预装 Python 3.11+ 与 Git。Docker 镜像的构建与启动由 CI 覆盖。
-- **前端未配置 ESLint / Prettier**，以 TypeScript 严格模式与 Vitest 兜底。
 
 > 公开项目示例报告见 [examples/reports](examples/reports)：`pytorch-extension-cpp` 全部通过（4 条提示），
-> `nvidia-apex`（12 条阻断）与 `bitsandbytes`（7 条阻断）为阻断状态，`causal-conv1d` 保留修复前/后两份。
+> `nvidia-apex`（12 条阻断）与 `bitsandbytes`（7 条阻断）为阻塞状态，`causal-conv1d` 保留修复前/后两份。
 > 放在一起是为了说明报告会真的判绿，也会真的判红。远程验证流程见
 > [examples/verification/README.md](examples/verification/README.md)。
 
-## 安装包（Windows / Linux / macOS）
+## 安装与启动
 
-普通使用者可直接安装包含网页的发布包，无需 Node.js，也无需安装 PyTorch 或 GPU 驱动。
-三平台均需预装 **Python 3.11+（含 pip/venv）和 Git**；首次安装默认联网下载 Python 依赖。
+普通使用者直接安装包含网页的发布包即可，无需 Node.js，也无需安装 PyTorch 或 GPU 驱动；
+三平台均需预装 **Python 3.11+（含 pip/venv）和 Git**，首次安装默认联网下载 Python 依赖。
 
 | 平台 | 安装包 | 完整解压后，在包目录中执行 |
 | --- | --- | --- |
@@ -124,73 +120,29 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | 自行管理 Python 环境 | PyPI 上的 `mxready` | `python -m pip install mxready`，然后 `mxready-serve` |
 | 已有 Python 环境 | `mxready-1.0.1-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
 
-启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。
-安装器在解压目录创建 `.venv/`，数据库保存在系统用户数据目录，升级替换程序时可保留历史报告。
-ZIP 为 Python 应用安装包，不附带 Python/Git，也不是原生 EXE、DMG 或系统包管理器安装程序。
+启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。ZIP 是 Python 应用安装包，
+不附带 Python/Git，也不是原生 EXE、DMG 或系统包管理器安装程序。已发布的附件见
+[GitHub Releases](https://github.com/shuljyli/MXReady/releases)；离线准备、摘要校验、升级、
+卸载与 Windows 问题排查见 [安装与发布方案](docs/installation.md)。
 
-本地构建后从 `dist/` 获取安装包；已公开发布的附件见
-[GitHub Releases](https://github.com/shuljyli/MXReady/releases)。若对应版本没有附件，按下文自行构建，
-或在 GitHub Actions 中手动运行 `Release packages` 下载构建附件。
-离线依赖准备、摘要校验、三平台详细步骤、数据迁移和卸载见
-[安装与发布方案](docs/installation.md)。服务器部署见 [部署文档](docs/deployment.md)。
+维护者构建安装包：安装开发依赖后执行 `make release`（Windows：`.\scripts\make.ps1 release`），
+产物在 Git 忽略的 `dist/`。服务器部署（裸机 / systemd / Docker / nginx）与 `MXREADY_*` 配置项
+见 [部署文档](docs/deployment.md) 与 [.env.example](.env.example)。
 
-### 维护者生成安装包
+### 源码开发
 
-先安装开发依赖，再执行：
+环境要求：Python 3.11+、Git、Node.js 22+（仅开发/构建前端时需要）。
 
-| 平台 | 命令 |
-| --- | --- |
-| Windows (PowerShell) | `.\scripts\make.ps1 release` |
-| Linux / macOS | `make release` |
-
-构建器会安装并构建前端，将网页合入临时 Python 包，生成三个平台 ZIP、通用 wheel、源码包和
-`SHA256SUMS.txt`，统一放在 Git 忽略的 `dist/`。
-发布工作流配置了 Python 3.11/3.12 × Windows/Linux/macOS 的实际安装与启动冒烟；
-本地验证结果与目标系统 CI 结果应分别确认。
-
-```text
-packaging/                安装模板（共享安装器、Windows / Unix 入口）
-scripts/build_release.py  发布构建编排
-scripts/smoke_release.py  离开源码目录后的安装与 HTTP 冒烟
-src/mxready/cli/          安装后的命令行入口，含 mxready-serve
-docs/installation.md      安装、升级、离线与发布方案
-dist/                    生成产物，不提交到仓库
+```bash
+make install                # 创建 .venv、安装开发依赖、npm ci（Windows：.\scripts\make.ps1 install）
+bash ./scripts/dev.sh       # 前后端一键启动（Windows：.\scripts\dev.ps1）
 ```
 
-## 源码开发（三平台统一命令入口）
+`dev.sh` / `dev.ps1` 同时启动前端 <http://localhost:5173>（`/api` 代理到后端）与后端
+<http://127.0.0.1:8000>（`--reload` 热重载）。开发模式请打开 5173；后端在已有
+`frontend/dist` 时提供完整界面，API 文档位于 `/docs`，中文接口手册见 [docs/api.md](docs/api.md)。
 
-### 环境要求
-
-- Python 3.11 或更高版本；
-- Git；
-- Node.js 22 或更高版本（只在开发或构建前端时需要）。
-
-### 安装开发依赖
-
-| 平台 | 命令 |
-| --- | --- |
-| Windows (PowerShell) | `.\scripts\make.ps1 install` |
-| Linux / macOS | `make install` |
-
-`install` 会创建 `.venv`、安装后端与开发依赖（`pip install -e ".[dev]"`）、执行 `npm ci`。
-
-### 一键启动（前后端同时）
-
-| 平台 | 命令 | 可选参数 |
-| --- | --- | --- |
-| Windows (PowerShell) | `.\scripts\dev.ps1` | `-SkipFrontend` / `-SkipBackend` |
-| Linux / macOS | `bash ./scripts/dev.sh` | `--skip-frontend` / `--skip-backend` |
-
-`dev.ps1` / `dev.sh` 会同时启动：
-
-- 前端 Vite 开发服务器：<http://localhost:5173>（开发代理把 `/api` 转发到后端）；
-- 后端 FastAPI：<http://127.0.0.1:8000>（`--reload` 热重载）。
-
-开发模式请打开 <http://localhost:5173>。后端的 <http://127.0.0.1:8000> 在已有 `frontend/dist` 时提供构建后的完整界面，否则以 API-only 模式启动；API 文档位于 `/docs`，中文接口手册见 [docs/api.md](docs/api.md)。
-
-### 命令入口总表
-
-统一 `install` / `dev` / `test` / `lint` / `typecheck` / `build` / `release` / `frontend` / `clean`：
+统一命令入口（`install` / `dev` / `frontend` / `test` / `lint` / `typecheck` / `build` / `release` / `clean`）：
 
 | 目标 | Windows (PowerShell) | Linux / macOS | 作用 |
 | --- | --- | --- | --- |
@@ -204,198 +156,11 @@ dist/                    生成产物，不提交到仓库
 | 生成安装包 | `.\scripts\make.ps1 release` | `make release` | 网页 + wheel/sdist + 三平台 ZIP，产出 `dist/` |
 | 清理 | `.\scripts\make.ps1 clean` | `make clean` | 删除 `.pytest-temp` |
 
-> **Windows 常见问题**：本仓库已在 [pyproject.toml](pyproject.toml) 中将 pytest 临时目录固定到项目本地 `.pytest-temp/`（已加入 `.gitignore`），因此正常测试不会写入 `%TEMP%\pytest-of-*`。
->
-> 若你看到 `%TEMP%\pytest-of-<用户名>` 报 `PermissionError`，通常是某个提权终端运行 pytest 时创建了带异常权限的残留目录。该目录普通权限无法删除，可改用固定 basetemp 运行（无需处理僵尸目录）：
->
-> ```powershell
-> .\.venv\Scripts\python.exe -m pytest --basetemp="$env:TEMP\mxr-pytest"
-> ```
->
-> 若确要清理僵尸目录，请在**管理员 PowerShell** 中执行：
->
-> ```powershell
-> takeown /f "$env:TEMP\pytest-of-*" /r /d y
-> icacls "$env:TEMP\pytest-of-*" /grant "$env:USERNAME:(OI)(CI)F" /t /c
-> Remove-Item -Recurse -Force "$env:TEMP\pytest-of-*"
-> ```
+## 命令行工具
 
-### Windows 安装问题排查
-
-如果他人运行 `.\scripts\make.ps1 install` 时失败，按下面顺序检查：
-
-1. **执行策略**：先运行 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`。
-2. **Python**：`py -3.11 --version` 或 `python --version` 应显示 3.11+。没有 `py` 启动器时，在 <https://www.python.org/downloads/> 安装时勾选 “Add python.exe to PATH”。
-3. **Node.js**：`node --version` 应为 20.19+ 或 22.12+，`npm --version` 可用；否则安装 Node.js 22 LTS。
-4. **Git**：扫描功能依赖 `git --version` 可用。
-5. **网络下载失败**：国内环境优先使用镜像：
-
-   ```powershell
-   $env:PIP_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
-   .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-
-   cd frontend
-   npm ci --registry=https://registry.npmmirror.com
-   cd ..
-   ```
-
-6. **重复安装**：`make.ps1 install` 可以安全重跑，会刷新 Python 可编辑安装并按锁文件重新执行 `npm ci`。
-7. **PowerShell 兼容性**：入口脚本保持 ASCII 源码，可由 Windows PowerShell 5.1 和 PowerShell 7 直接解析；项目运行日志仍使用 UTF-8。
-
-如果以上步骤仍失败，请让使用者把 `install` 的完整报错和 `py --version`、`node --version`、`npm --version`、`git --version` 输出一起发给项目维护者。
-
-## Docker 部署
-
-MXReady 自带多阶段 [Dockerfile](Dockerfile) 与 [docker-compose.yml](docker-compose.yml)，用于自身的演示/测试部署（不涉及远程 GPU 服务器的 Docker 编排）。
-
-```bash
-docker compose up -d --build
-# 打开 http://127.0.0.1:8000 ，健康检查：curl http://127.0.0.1:8000/api/health
-```
-
-- 镜像以非 root 用户 `mxready` 运行，SQLite 数据经命名卷 `mxready-data` 持久化到 `/app/data`；
-- 全部配置项通过 `MXREADY_*` 环境变量注入（见 [.env.example](.env.example)），例如：
-
-```bash
-MXREADY_LOG_LEVEL=DEBUG docker compose up -d
-```
-
-- 手动构建：`docker build -t mxready . && docker run -p 8000:8000 mxready`
-- 完整部署方案（裸机 / systemd / nginx / 备份 / 日志）见 [docs/deployment.md](docs/deployment.md)。
-
-## 配置
-
-后端配置支持 12-factor 风格的环境变量注入（见 [src/mxready/config.py](src/mxready/config.py)），常用项：
-
-| 环境变量 | 默认值 | 说明 |
-| --- | --- | --- |
-| `MXREADY_DATA_DIR` | `data` | SQLite 数据目录 |
-| `MXREADY_RULES_DIR` | 安装包内规则 | 可选覆盖规则目录 |
-| `MXREADY_TEMP_DIR` | `data/tmp` | 克隆与索引临时目录 |
-| `MXREADY_FRONTEND_DIR` | 发布包内网页；源码为 `frontend/dist` | 可覆盖前端静态资源目录 |
-| `MXREADY_LOG_LEVEL` | `INFO` | 日志级别 |
-| `MXREADY_ALLOWED_HOSTS` | `github.com,gitee.com` | 允许的代码托管平台白名单 |
-| `MXREADY_EXTRA_RULES_DIR` | 未设置 | 追加的自定义规则目录 |
-| `MXREADY_SCAN_RETENTION_DAYS` | `0` | 扫描记录保留天数（0 = 不自动清理，保留历史记录） |
-| `MXREADY_RATE_LIMIT_ENABLED` | 关闭 | 按 IP 的滑动窗口限流开关 |
-| `MXREADY_RATE_LIMIT_PER_MINUTE` | `20` | 每 IP 每分钟请求上限 |
-| `MXREADY_MAX_CONCURRENT_SCANS` | `2` | 原子并发扫描上限（0 表示不限制） |
-| `MXREADY_MAX_REQUEST_BYTES` | `1048576` | 按实际接收字节数执行的请求体上限 |
-| `MXREADY_SCAN_WORKER_THREADS` | `2` | 每进程消费者线程数 |
-| `MXREADY_TASK_LEASE_SECONDS` | `120` | 任务执行租约秒数，至少 3 |
-
-> 监听地址与端口由 uvicorn 的 `--host` / `--port`（或 `UVICORN_HOST` / `UVICORN_PORT`）控制，不在 `MXREADY_*` 中重复配置。完整模板见 [.env.example](.env.example)。
-
-`mxready-serve` 使用自身的 `--host` / `--port` 参数，数据默认保存在系统用户目录；
-上表的 `data` 与 `data/tmp` 是直接使用 uvicorn 的默认值，详见 [安装方案](docs/installation.md)。
-
-## 离线 fixture 扫描
-
-本地 CLI 只用于开发者信任的本地目录；公开 Web API 不接受本地路径。
-
-```bash
-mxready-scan tests/fixtures/repositories/cuda_extension \
-  --repo-url https://github.com/example/cuda-extension \
-  --commit dddddddddddddddddddddddddddddddddddddddd \
-  --output data/reports
-```
-
-PowerShell 单行写法：
-
-```powershell
-mxready-scan tests/fixtures/repositories/cuda_extension --repo-url https://github.com/example/cuda-extension --commit dddddddddddddddddddddddddddddddddddddddd --output data/reports
-```
-
-命令生成 `<仓库>-<commit12>.json`、`.md` 和 `.svg`。退出码为：`0` 表示通过或仅有警告，`2` 表示存在阻塞项，`1` 表示操作失败。
-
-在 Git 仓库目录中运行时可省略 `--repo-url` 与 `--commit`，命令默认读取 `origin` 地址与当前 `HEAD`（SSH 形式的 `origin` 会转换为 HTTPS 地址）；探测不到时会在报错信息里指明需要显式传入的参数。
-
-终端直接输出极简检查结果（命中按严重程度排序，最多列出 5 条，其余见报告文件）：
-
-```text
-MXReady: blocked | 阻断 1 · 警告 2 · 提示 3
-  阻断 MXR-TOOLCHAIN-001 检测直接 nvcc 工具调用 (setup.py:5)
-  警告 MXR-DEPENDENCY-001 检测 flash-attn 依赖 (requirements.txt:2)
-  警告 MXR-PATH-001 检测硬编码 CUDA 安装路径 (setup.py:4 x2)
-  提示 MXR-CMAKE-001 识别 CMake CUDA 语言 (CMakeLists.txt:2)
-  提示 MXR-HEADER-001 识别 cuda_runtime.h 头文件 (csrc/kernel.cu:1)
-  … 其余 1 项见报告文件
-报告: cuda-extension-dddddddddddd.json / cuda-extension-dddddddddddd.md / cuda-extension-dddddddddddd.svg
-```
-
-## 公开仓库证据与验证包
-
-需要生成固定文件名的公开报告时，可使用同一套主机白名单、Git 限制和只读分析器：
-
-```bash
-mxready-scan-public https://github.com/pytorch/extension-cpp \
-  --ref 1c325b202ae5e11de3cefb9a65be28f47949edd4 \
-  --label pytorch-extension-cpp \
-  --output examples/reports
-```
-
-GitHub 的 Git 传输超时或内部失败时，该本地证据命令可以改用提交锁定的安全归档；每个 HTTP 请求有 60 秒总时限，压缩与展开后的内容受 50 MiB 限制，归档中的目录和符号链接也计入 10,000 条目上限。Web API 仍使用受限 Git 获取路径。
-
-从 JSON 报告生成安全默认验证 ZIP：
-
-```bash
-mxready-build-bundle examples/reports/pytorch-extension-cpp.json \
-  --output examples/verification/pytorch-extension-cpp-verification.zip
-```
-
-生成清单默认不含项目命令（ZIP 内附 `project-commands.example.json` 模板，需人工审阅并替换为实际 smoke 命令后填入清单）。请先阅读 [真机验证交接](examples/verification/README.md)，再在自己控制的沐曦服务器上人工补充并执行命令。
-
-### 批量评估多个仓库
-
-迁移评估通常面对一批仓库。`mxready-scan-batch` 接收清单文件（每行一个仓库，
-可选分支/标签/40 位提交，`#` 注释）或直接传 URL，逐仓复用与单仓扫描相同的安全
-获取与只读分析管线，输出每仓报告和汇总总表：
-
-```bash
-mxready-scan-batch repos.txt --output data/batch
-# 或混合来源：mxready-scan-batch repos.txt https://github.com/pytorch/extension-cpp
-```
-
-```text
-[1/3] pytorch/extension-cpp → warnings（阻断 0 · 警告 2 · 提示 1）
-[2/3] example/missing-repo → 失败: REPOSITORY_NOT_FOUND: 未找到仓库或指定分支、标签、提交，请检查输入。
-[3/3] example/cuda-ext → blocked（阻断 1 · 警告 2 · 提示 3）
-汇总: 成功 2 · 失败 1（其中阻塞 1）
-报告: data/batch/batch-summary.csv 与 data/batch/batch-summary.md
-```
-
-`batch-summary.csv`（UTF-8 BOM，Excel 可直接打开）逐仓记录提交、状态、三档计数、
-主要规则与报告文件；`batch-summary.md` 生成带链接的汇总表，适合直接贴进评估结论。
-退出码：`0` 全部成功且无阻塞，`2` 成功但存在阻塞仓库，`1` 存在扫描失败。
-
-输入方式请按场景选择：Web 支持单仓和每批最多 10 个公开仓库 URL，提供进度、失败项新建重试与汇总 JSON；本地目录使用 `mxready-scan`，大型清单使用上述批量 CLI。Web 批量在文本框逐行输入，不上传清单文件或源码 ZIP。
-验证 runner 生成的 `result.json` 是真机验证结果，不是待扫描的源码输入。
-
-## MCP（供编码 Agent 调用）
-
-`mxready-mcp` 把同一套扫描管线暴露为 Model Context Protocol 工具。它的用途是让编码 Agent
-在动手改代码前拿到可核验的迁移事实，而不是凭模型记忆猜测 CUDA 与 MXMACA 的差异。
-
-它依赖可选的 `mcp` 包，不在核心运行时依赖内：
-
-```bash
-python -m pip install -e ".[mcp]"
-mxready-mcp
-```
-
-默认使用 stdio 传输；日志固定写 stderr，stdout 只承载协议消息。暴露的工具：
-
-| 工具 | 作用 |
-| --- | --- |
-| `scan_repository` | 扫描公开仓库，在超时内返回按严重度排序的发现（含 file:line、证据与建议） |
-| `get_report` | 按 `scan_id` 读取报告，支持 `cursor` 分页、`severity` 和 `file` 筛选 |
-| `get_scan` | 查询原任务的进度或失败原因，不重复创建扫描 |
-| `list_rules` | 列出内置规则，可按 `category` / `severity` 过滤 |
-| `explain_rule` | 返回单条规则的判据、建议与一手引用 |
-
-边界与 CLI 完全一致：仅接受公开 GitHub / Gitee 仓库、不执行被扫描代码、结果绑定到具体提交。
-静态结论仍然不是真机验证结论——`verification_status` 保持 `not-run`，除非上传了同提交的
-沐曦 GPU 验证结果。
+`mxready-scan`（本地目录）、`mxready-scan-public`（公开仓库证据）、`mxready-build-bundle`（验证包）、
+`mxready-scan-batch`（批量评估）与 `mxready-mcp`（供编码 Agent）的详细用法与退出码约定见
+[命令行使用](docs/cli.md)。所有 CLI 只读分析，不执行被扫描代码。
 
 ## 状态含义
 
@@ -425,20 +190,22 @@ npm test
 npm run build
 ```
 
-压力测试脚本（locust，本地 mock Git、不依赖公网）见 [tests/load/](tests/load/)，先执行 `pip install -e ".[load]"`，再运行 `python tests/load/serve_mock.py` 与 `locust`。
+压力测试脚本（locust，本地 mock Git、不依赖公网）见 [tests/load/](tests/load/)。
 
 ## 文档导航
 
 | 文档 | 内容 |
 | --- | --- |
 | [docs/architecture.md](docs/architecture.md) | 目录层级、依赖方向、任务生命周期与包资源约定 |
-| [docs/deployment.md](docs/deployment.md) | 生产部署：裸机 / systemd / Docker / nginx / 备份 / 日志 |
+| [docs/deployment.md](docs/deployment.md) | 生产部署：裸机 / systemd / Docker / nginx / 备份 / 日志 / 配置项 |
 | [docs/api.md](docs/api.md) | 中文 API 手册（含 curl 示例） |
-| [docs/installation.md](docs/installation.md) | 三平台安装包、离线准备、升级与发布构建 |
+| [docs/cli.md](docs/cli.md) | 命令行工具与 MCP 详细用法 |
+| [docs/installation.md](docs/installation.md) | 三平台安装包、离线准备、升级、发布构建与 Windows 排查 |
+| [docs/report-workflow.md](docs/report-workflow.md) | 完整命中、扫描范围、报告对比、SARIF 与 CI 接入 |
 | [docs/security.md](docs/security.md) | 安全模型 |
 | [docs/rules.md](docs/rules.md) | 规则开发指南 |
 | [docs/runner.md](docs/runner.md) | 远程验证 runner 指南 |
-| [docs/migration-case-2026-11.md](docs/migration-case-2026-11.md) | 真实仓库案例：阻断诊断、修复与真机复验、否定路径 |
+| [docs/migration-case-2026-11.md](docs/migration-case-2026-11.md) | 真实仓库案例：阻断诊断、修复与真机复验 |
 | [examples/verification/README.md](examples/verification/README.md) | 真机验证交接 SOP |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 贡献流程与质量门 |
@@ -446,14 +213,10 @@ npm run build
 
 ## 安全边界
 
-- 仅允许 `github.com` 与 `gitee.com` 的公开 HTTPS 仓库（`MXREADY_ALLOWED_HOSTS` 可扩展，但维持 URL 规范化、无凭据、无私有地址校验）；
-- Git 不读取凭据、不弹出登录提示、不下载 LFS 对象、不初始化子模块；
-- Git 获取超时 60 秒；克隆完成后的工作树最多 50 MiB、10,000 个文件；归档后备路径在下载及展开阶段分别执行 50 MiB、10,000 条目上限；
-- 单个索引文本文件最多 1 MiB，不跟随符号链接；
-- Web 扫描不执行仓库代码；
-- 验证结果最多 1 MiB，使用严格版本化模型并绑定扫描提交；
-- runner 不使用 `sudo`、不安装软件、不修改驱动，命令以参数数组和 `shell=False` 执行；
-- 公共部署前应开启 `MXREADY_RATE_LIMIT_ENABLED` 限流（按 IP 滑动窗口）与请求体大小限制。
+- 仅允许 `github.com` 与 `gitee.com` 的公开 HTTPS 仓库；Git 不读取凭据、不下载 LFS、不初始化子模块，获取有超时与体积/条目上限；
+- Web 扫描从不执行仓库代码；验证结果上限 1 MiB 并绑定扫描提交；
+- runner 不使用 `sudo`、不安装软件，命令以 `shell=False` 执行，项目命令执行前要求人工确认；
+- 公共部署前应开启限流与请求体大小限制。
 
 部署前请完整阅读 [安全模型](docs/security.md) 与 [runner 指南](docs/runner.md)。
 
@@ -481,4 +244,9 @@ npm run build
 
 本项目采用 [Apache License 2.0](LICENSE) 许可证。欢迎在遵守许可证条款的前提下使用、修改和分发。
 
-完整命中、扫描范围、报告差异、runner 版本核对与 SARIF/CI 接入见 [报告工作流](docs/report-workflow.md)。
+## 联系方式
+
+问题、建议与合作欢迎提交 GitHub Issue，或邮件联系：
+
+- shuli_ljy@outlook.com
+- 2199553510@qq.com

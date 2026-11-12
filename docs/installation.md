@@ -282,3 +282,54 @@ twine upload dist/mxready-1.0.1-py3-none-any.whl dist/mxready-1.0.1.tar.gz
 完整安全约束见 `docs/security.md`；硬件验证流程见 `docs/runner.md`。
 打包依据：[PyPA 打包指南](https://packaging.python.org/en/latest/tutorials/packaging-projects/)、
 [setuptools 包资源说明](https://setuptools.pypa.io/en/latest/userguide/datafiles.html)。
+
+## Windows 开发环境问题排查
+
+从源码安装开发依赖（`.\scripts\make.ps1 install`）时的常见问题如下。
+
+### pytest 临时目录
+
+仓库已在 `pyproject.toml` 中将 pytest 临时目录固定到项目本地 `.pytest-temp/`（已加入 `.gitignore`），
+因此正常测试不会写入 `%TEMP%\pytest-of-*`。
+
+若看到 `%TEMP%\pytest-of-<用户名>` 报 `PermissionError`，通常是某个提权终端运行 pytest 时创建了
+带异常权限的残留目录。该目录普通权限无法删除，可改用固定 basetemp 运行（无需处理僵尸目录）：
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest --basetemp="$env:TEMP\mxr-pytest"
+```
+
+若确要清理僵尸目录，请在**管理员 PowerShell** 中执行：
+
+```powershell
+takeown /f "$env:TEMP\pytest-of-*" /r /d y
+icacls "$env:TEMP\pytest-of-*" /grant "$env:USERNAME:(OI)(CI)F" /t /c
+Remove-Item -Recurse -Force "$env:TEMP\pytest-of-*"
+```
+
+### 安装失败排查
+
+如果运行 `.\scripts\make.ps1 install` 时失败，按下面顺序检查：
+
+1. **执行策略**：先运行 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`。
+2. **Python**：`py -3.11 --version` 或 `python --version` 应显示 3.11+。没有 `py` 启动器时，
+   在 <https://www.python.org/downloads/> 安装时勾选 “Add python.exe to PATH”。
+3. **Node.js**：`node --version` 应为 20.19+ 或 22.12+，`npm --version` 可用；否则安装 Node.js 22 LTS。
+4. **Git**：扫描功能依赖 `git --version` 可用。
+5. **网络下载失败**：国内环境优先使用镜像：
+
+   ```powershell
+   $env:PIP_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
+   .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+
+   cd frontend
+   npm ci --registry=https://registry.npmmirror.com
+   cd ..
+   ```
+
+6. **重复安装**：`make.ps1 install` 可以安全重跑，会刷新 Python 可编辑安装并按锁文件重新执行 `npm ci`。
+7. **PowerShell 兼容性**：入口脚本保持 ASCII 源码，可由 Windows PowerShell 5.1 和 PowerShell 7
+   直接解析；项目运行日志仍使用 UTF-8。
+
+如果以上步骤仍失败，请把 `install` 的完整报错和 `py --version`、`node --version`、`npm --version`、
+`git --version` 输出一起发给项目维护者（shuli_ljy@outlook.com / 2199553510@qq.com）。
