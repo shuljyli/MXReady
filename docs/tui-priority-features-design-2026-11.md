@@ -457,3 +457,16 @@ Python 与 TypeScript 仍使用同一文件。隔离生产构建、六项 Python
 未执行操作系统断网安装，不将在线安装称为断网或 `pip --no-index` 验收。
 Linux/macOS 安装、其他 Python 版本、三系统真实终端字体/按键/缩放、历史生产库、
 真实进程故障及 MetaX 硬件仍需各自执行证据；远端 CI 结果与本机结果分开核对。
+
+### 远端 CI 并发回归补充
+
+提交 `a0bb248` 的 [CI 运行](https://github.com/shuljyli/MXReady/actions/runs/43892703102)
+中，五个 Linux/macOS Python 作业在同一迟到结果回归失败，Windows 三个 Python 作业及
+其余前端、浏览器、Docker、依赖和 MCP 检查通过。失败原因为启动恢复与报告登记并发写入
+共享内存 SQLite，返回 `SQLITE_LOCKED`；该错误不会等待连接设置的 busy timeout。
+
+新增八线程同时恢复、登记报告和写历史的回归：修复前，无状态和降级内存模式均复现表锁异常；
+磁盘模式通过。修复将同一 StateStore 的短事务串行化，保留多实例磁盘库的 SQLite 协调方式。
+本机状态库 13 项、TUI/源码外安装 15 项通过，Ruff 与 mypy win32/linux 通过。
+本节修复后的远端结果以新提交的 Checks 为准；上文候选包摘要和安装证据保留为原先快照，
+不能作为包含此后续修复的安装包证据。

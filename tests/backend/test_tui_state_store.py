@@ -1,4 +1,5 @@
 import sqlite3
+import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -48,6 +49,37 @@ def test_multiple_instances_short_transactions_and_history_privacy(tmp_path):
     first.add_history(tmp_path, Command("public", "https://user:secret@github.com/a/b?q=token#x"))
     assert len(first.initialize(tmp_path).history) == 30
     assert b"secret" not in db.read_bytes()
+
+
+@pytest.mark.parametrize("mode", ["disabled", "degraded", "persistent"])
+def test_concurrent_startup_report_registration_and_history(tmp_path, report_factory, mode):
+    database = tmp_path / "state.db"
+    if mode == "degraded":
+        with sqlite3.connect(database) as conn:
+            conn.execute("PRAGMA user_version=999")
+    store = StateStore(None if mode == "disabled" else database)
+    store.initialize(tmp_path)
+    path = tmp_path / "report.json"
+    path.write_text(report_factory().model_dump_json(), encoding="utf-8")
+    loaded = load_report(path)
+    barrier = threading.Barrier(8)
+
+    def operate(index):
+        barrier.wait(timeout=5)
+        if index % 2:
+            store.register(tmp_path, loaded)
+        else:
+            store.initialize(tmp_path)
+        store.add_history(tmp_path, Command("report", f"{index}.json"))
+
+    try:
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            list(executor.map(operate, range(8)))
+        assert len(store.initialize(tmp_path).history) == 8
+        assert len(store.entries(tmp_path)) == 1
+        assert store.persistent == (mode == "persistent")
+    finally:
+        store.close()
 
 
 def test_future_corrupt_disabled_and_locked_state_degrade_without_overwrite(tmp_path):

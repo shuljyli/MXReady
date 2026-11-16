@@ -140,6 +140,13 @@ class StateStore:
                 conn.close()
 
     def _run(self, operation: Callable[[sqlite3.Connection], T], *, write: bool = True) -> T:
+        # Shared-memory SQLite returns SQLITE_LOCKED without honoring busy_timeout.
+        # Serialize this session's short transactions, including startup recovery;
+        # separate persistent instances still coordinate through SQLite's timeout.
+        with self._lock:
+            return self._transaction(operation, write=write)
+
+    def _transaction(self, operation: Callable[[sqlite3.Connection], T], *, write: bool) -> T:
         was_persistent = self.persistent
         try:
             self._prepare()

@@ -2,6 +2,13 @@
   "date": "2026-11-16",
   "base_commit": "852e0f264f58ecccb2f6fb3e215d7d7ec8b62109",
   "candidate_source": "working tree after base commit; no release tag or PyPI publication",
+  "followup_ci_fix": {
+    "failed_run": "https://github.com/shuljyli/MXReady/actions/runs/43892703102",
+    "cause": "Concurrent startup and report registration hit SQLITE_LOCKED in shared-memory SQLite",
+    "before_fix": "New concurrent regression failed in disabled and degraded modes; persistent mode passed",
+    "after_fix_local": "13 state-store tests and 15 TUI/installed-wheel tests passed; Ruff and mypy win32/linux passed",
+    "artifact_scope": "Candidate hashes and installation results below predate this follow-up fix"
+  },
   "platform": "Windows-11-10.0.26300-SP0",
   "python": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
   "textual": "8.2.8",
