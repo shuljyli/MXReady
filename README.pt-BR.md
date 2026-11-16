@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.3-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -107,11 +107,11 @@ nas três plataformas é preciso ter **Python 3.11+ (com pip/venv) e Git** pré-
 
 | Plataforma | Pacote | Após extrair completamente, execute no diretório do pacote |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.2-windows.zip` | PowerShell: `.\install.ps1`, depois `.\start.ps1` |
-| Linux | `mxready-1.0.2-linux.zip` | `bash install.sh`, depois `bash start.sh` |
-| macOS (Apple Silicon / Intel) | `mxready-1.0.2-macos.zip` | `bash install.sh`, depois `bash start.sh` |
+| Windows 10/11 | `mxready-1.0.3-windows.zip` | PowerShell: `.\install.ps1`, depois `.\start.ps1` |
+| Linux | `mxready-1.0.3-linux.zip` | `bash install.sh`, depois `bash start.sh` |
+| macOS (Apple Silicon / Intel) | `mxready-1.0.3-macos.zip` | `bash install.sh`, depois `bash start.sh` |
 | Gerencia o próprio ambiente Python | `mxready` no PyPI | `python -m pip install mxready`, depois `mxready-serve` |
-| Já tem ambiente Python | `mxready-1.0.2-py3-none-any.whl` | em um venv dedicado: `python -m pip install <caminho-do-wheel>`, depois `mxready-serve` |
+| Já tem ambiente Python | `mxready-1.0.3-py3-none-any.whl` | em um venv dedicado: `python -m pip install <caminho-do-wheel>`, depois `mxready-serve` |
 
 Após iniciar, abra <http://127.0.0.1:8000> e pressione `Ctrl+C` no terminal para parar o serviço. O ZIP é um pacote de instalação de aplicação Python,
 não inclui Python/Git e não é um EXE, DMG nativo nem instalador de gerenciador de pacotes do sistema. Os anexos publicados:

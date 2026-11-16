@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.3-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -109,7 +109,7 @@ CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS，另有 Python 3
 
 ## 安装与启动
 
-当前源码为 **1.0.2 候选**，尚未发布到 PyPI。PyPI 1.0.1 不包含本轮修复；
+当前源码为 **1.0.3 候选**，尚未发布到 PyPI。PyPI 1.0.1 不包含本轮修复；
 测试候选请使用本地构建的 wheel/ZIP，安装前核对其版本与摘要。
 
 普通使用者直接安装包含网页的发布包即可，无需 Node.js，也无需安装 PyTorch 或 GPU 驱动；
@@ -117,11 +117,11 @@ CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS，另有 Python 3
 
 | 平台 | 安装包 | 完整解压后，在包目录中执行 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.2-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
-| Linux | `mxready-1.0.2-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
-| macOS（Apple Silicon / Intel） | `mxready-1.0.2-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
+| Windows 10/11 | `mxready-1.0.3-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
+| Linux | `mxready-1.0.3-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
+| macOS（Apple Silicon / Intel） | `mxready-1.0.3-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
 | 自行管理 Python 环境 | PyPI 上的 `mxready` | `python -m pip install mxready`，然后 `mxready-serve` |
-| 已有 Python 环境 | `mxready-1.0.2-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
+| 已有 Python 环境 | `mxready-1.0.3-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
 
 启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。ZIP 是 Python 应用安装包，
 不附带 Python/Git，也不是原生 EXE、DMG 或系统包管理器安装程序。已发布的附件见

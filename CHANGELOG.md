@@ -5,22 +5,26 @@
 
 ## [Unreleased]
 
-### Fixed
-
-- 串行化同一 TUI 会话的状态库事务，修复启动恢复与报告登记并发访问内存库时的 SQLite 表锁异常；
-  多实例磁盘库仍使用独立连接、短事务及原有锁等待上限。
+## [1.0.3] - 未发布
 
 ### Added
 
+- 新增全屏交互终端（TUI，可选 `.[tui]`）：通过 `mxready` / `python -m mxready` 进入命令工作区；
+  支持本地/公开/批量扫描、后台取消、报告浏览与验证 ZIP，帮助和版本查询无需安装终端依赖。
 - TUI 报告多条件筛选与完整证据搜索、稳定分页和内容摘要绑定的浏览状态恢复；无参数 `/findings` 保持当前页。
 - 独立 `tui/state.db` 保存结构化历史、输出偏好、报告索引与批次结果；支持 `--no-state`、容量淘汰和异常降级。
 - `/reports` 可搜索选择报告与批次结果，批次完成后等待显式选择；失败、取消和未知失败数量分别呈现。
 - `/compare` 浏览同仓库离线报告的新增、消失、保留、级别与次数变化，保留严格 CI 基线策略。
 - TUI / Web 来源详情及完整提交/摘要展示，区分工作区、声明目录、未知与异常记录；源码链接补充来源范围说明。
 
+### Fixed
+
+- 串行化同一 TUI 会话的状态库事务，修复启动恢复与报告登记并发访问内存库时的 SQLite 表锁异常；
+  多实例磁盘库仍使用独立连接、短事务及原有锁等待上限。
+
 ## [1.0.2] - 候选，尚未发布
 
-本节描述当前源码与本地候选包；PyPI 上的 1.0.1 不会自动获得这些修复。
+本节保留 1.0.2 候选阶段的源码与本地构建记录；该候选未发布到 PyPI。
 
 
 ### Added
@@ -392,7 +396,8 @@ MXMACA；正式版本将在后续发布。
 - Web 扫描路径永不执行被扫描仓库中的代码。
 - 仓库地址主机白名单、受限 Git 获取、只读索引与上传结果严格校验。
 
-[Unreleased]: https://github.com/shuljyli/MXReady/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/shuljyli/MXReady/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/shuljyli/MXReady/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/shuljyli/MXReady/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/shuljyli/MXReady/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/shuljyli/MXReady/compare/v0.3.1...v1.0.0
