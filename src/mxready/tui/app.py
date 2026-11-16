@@ -33,6 +33,7 @@ from mxready.tui.commands import (
     safe_text,
 )
 from mxready.tui.process import run_tool
+from mxready.tui.screenshot import align_svg_cells
 from mxready.verification.bundle import build_verification_bundle
 
 _ACCENT = "#76ddc2"
@@ -527,3 +528,7 @@ class MXReadyApp(App[None]):
         yield from super().get_system_commands(screen)
         for name, (_, description) in COMMANDS.items():
             yield SystemCommand(f"/{name}", description, partial(self._prefill, name))
+
+    def export_screenshot(self, *, title: str | None = None, simplify: bool = False) -> str:
+        svg = super().export_screenshot(title=title, simplify=simplify)
+        return align_svg_cells(svg, columns=self.size.width)

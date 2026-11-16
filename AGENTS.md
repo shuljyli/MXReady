@@ -17,6 +17,7 @@ MXReady statically assesses PyTorch CUDA extensions for migration to MetaX MXMAC
 - `docs/` and `examples/`: architecture/reference documentation and pinned evidence.
 - `docs/cli.md`: detailed CLI usage and local scan output naming; keep the README overview aligned when updating these behaviors.
 - `src/mxready/tui/`: optional Textual full-screen `mxready` / `python -m mxready` command workspace; launcher in `cli/terminal.py` must keep help/version usable without the `tui` extra.
+- TUI screenshot exports must use terminal cell widths and preserve combining characters; verify mixed CJK/Latin text visually rather than treating codepoint counts as glyph widths.
 - `docs/development-plan-2026-11.md`: prioritized follow-up plan; check its baseline and distinguish proposed work from implemented behavior before using it.
 
 ## Build, Test, and Development Commands
