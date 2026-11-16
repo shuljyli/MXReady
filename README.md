@@ -162,6 +162,8 @@ bash ./scripts/dev.sh       # 前后端一键启动（Windows：.\scripts\dev.ps
 `mxready-scan-batch`（批量评估）与 `mxready-mcp`（供编码 Agent）的详细用法与退出码约定见
 [命令行使用](docs/cli.md)。所有 CLI 只读分析，不执行被扫描代码。
 
+本地扫描每次使用独立 ID；同名输出会整组追加扫描 ID，保留旧报告与可信基线。
+
 ## 状态含义
 
 | 状态 | 含义 |

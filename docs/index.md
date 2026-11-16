@@ -14,6 +14,7 @@
 | 新增或修改检查规则 | [规则开发指南](rules.md) | [架构说明](architecture.md) |
 | 集成 API 或写前端 | [API 手册](api.md) | [契约生成](../README.md) |
 | 打发布包 / 排查安装问题 | [安装与发布方案](installation.md) | [变更记录](../CHANGELOG.md) |
+| 继续开发与确定优先级 | [后续完善计划](development-plan-2026-11.md) | [发布验收](release-acceptance.md) |
 
 ## 文档清单
 
@@ -24,6 +25,7 @@
 | [deployment.md](deployment.md) | 裸机 / systemd / Docker / nginx / 备份 / 日志 |
 | [installation.md](installation.md) | 三平台安装包、离线准备、升级与发布构建 |
 | [release-acceptance.md](release-acceptance.md) | 发布候选、安装/故障/旧库/真机验收门槛与证据留存 |
+| [development-plan-2026-11.md](development-plan-2026-11.md) | 基于同步后主分支的来源追溯、发布验收、规则质量与运行保障计划 |
 | [migration-case-2026-11.md](migration-case-2026-11.md) | 真实仓库案例：bitsandbytes 阻断诊断、causal-conv1d 修复→重扫→真机复验、runner 否定路径 |
 | [gitlink-mirror.md](gitlink-mirror.md) | GitLink 镜像策略、建立镜像与发版同步、链接保留判断 |
 | [rules.md](rules.md) | 规则 YAML 结构、三种匹配模式、预过滤契约、正反例要求 |

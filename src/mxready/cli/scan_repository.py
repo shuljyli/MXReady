@@ -5,8 +5,9 @@ import re
 import subprocess
 import sys
 from collections.abc import Sequence
+from contextlib import ExitStack
 from pathlib import Path
-from uuid import NAMESPACE_URL, uuid5
+from uuid import uuid4
 
 from mxready import __version__
 from mxready.config import Settings
@@ -33,6 +34,7 @@ _SSH_URL_REMOTE = re.compile(
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = _build_parser().parse_args(argv)
     try:
+        baseline = _load_baseline(arguments.baseline, fail_on=arguments.fail_on)
         repository_root = _local_repository(arguments.local_path)
         commit = _commit_sha(arguments.commit or _detect_commit(repository_root))
         identity = parse_repository_url(
@@ -49,25 +51,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             repository_root,
             repository_url=identity.clone_url,
             commit=commit,
-            scan_id=uuid5(NAMESPACE_URL, f"{identity.clone_url}@{commit}"),
+            scan_id=uuid4(),
             stage_callback=lambda status: None,
         )
+        blockers = [f for f in report.findings if f.severity.value == "blocker"]
+        if baseline is not None:
+            blockers = new_blockers(baseline, report)
+
         output_dir = Path(arguments.output)
         output_dir.mkdir(parents=True, exist_ok=True)
-        stem = f"{identity.name}-{commit[:12]}"
-        _write_outputs(output_dir, stem, report)
-        blockers = [f for f in report.findings if f.severity.value == "blocker"]
-        if arguments.fail_on == "new-blockers":
-            if arguments.baseline is None:
-                raise ValueError("--baseline is required with --fail-on new-blockers")
-            baseline_path = Path(arguments.baseline)
-            if baseline_path.stat().st_size > 20 * 1024 * 1024:
-                raise ValueError("Baseline exceeds 20 MiB")
-            baseline = ScanReport.model_validate_json(baseline_path.read_bytes())
-            blockers = new_blockers(baseline, report)
+        stem = _write_outputs(output_dir, f"{identity.name}-{commit[:12]}", report)
+        if baseline is not None:
             print(f"New or increased blocker groups: {len(blockers)}")
-        elif arguments.baseline is not None:
-            raise ValueError("--baseline requires --fail-on new-blockers")
     except (MxReadyError, OSError, ValueError) as error:
         print(f"MXReady scan error: {error}", file=sys.stderr)
         return 1
@@ -78,6 +73,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     )
     return 2 if blockers else 0
+
+
+def _load_baseline(value: str | None, *, fail_on: str) -> ScanReport | None:
+    if fail_on != "new-blockers":
+        if value is not None:
+            raise ValueError("--baseline requires --fail-on new-blockers")
+        return None
+    if value is None:
+        raise ValueError("--baseline is required with --fail-on new-blockers")
+    maximum = 20 * 1024 * 1024
+    with Path(value).open("rb") as stream:
+        content = stream.read(maximum + 1)
+    if len(content) > maximum:
+        raise ValueError("Baseline exceeds 20 MiB")
+    return ScanReport.model_validate_json(content)
 
 
 def _terminal_summary(report: ScanReport, *, output_note: str) -> str:
@@ -194,20 +204,34 @@ def _normalize_remote_url(value: str) -> str:
     return f"https://{match.group('host')}/{match.group('path')}"
 
 
-def _write_outputs(output_dir: Path, stem: str, report: ScanReport) -> None:
-    (output_dir / f"{stem}.sarif").write_text(render_sarif(report), encoding="utf-8")
-    (output_dir / f"{stem}.json").write_text(
-        report.model_dump_json(indent=2) + "\n",
-        encoding="utf-8",
-    )
-    (output_dir / f"{stem}.md").write_text(
-        render_markdown(report),
-        encoding="utf-8",
-    )
-    (output_dir / f"{stem}.svg").write_text(
-        render_badge(report),
-        encoding="utf-8",
-    )
+def _write_outputs(output_dir: Path, stem: str, report: ScanReport) -> str:
+    """Reserve all four files without replacing evidence or following existing symlinks."""
+    outputs = {
+        "json": report.model_dump_json(indent=2) + "\n",
+        "md": render_markdown(report),
+        "svg": render_badge(report),
+        "sarif": render_sarif(report),
+    }
+    for candidate in (stem, f"{stem}-{report.scan_id.hex}"):
+        created: list[Path] = []
+        try:
+            with ExitStack() as stack:
+                streams = []
+                for extension, content in outputs.items():
+                    path = output_dir / f"{candidate}.{extension}"
+                    stream = stack.enter_context(path.open("x", encoding="utf-8"))
+                    created.append(path)
+                    streams.append((stream, content))
+                for stream, content in streams:
+                    stream.write(content)
+        except BaseException as error:
+            for path in created:
+                path.unlink(missing_ok=True)
+            if isinstance(error, FileExistsError):
+                continue
+            raise
+        return candidate
+    raise FileExistsError("Report output names already exist; use a different output directory")
 
 
 if __name__ == "__main__":

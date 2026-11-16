@@ -4,6 +4,8 @@ import json
 import sqlite3
 from datetime import UTC, datetime
 
+import pytest
+
 from mxready.models import Finding, ScanStatus, ScanSummary, Severity
 from mxready.persistence.sqlite import SQLiteStore
 
@@ -94,6 +96,75 @@ def test_dashboard_exposes_counts_not_percentage_scores(client, report_factory) 
     assert "%" not in text
     for banned in ("percent", "percentage", "score", "compat", "ratio", "rate"):
         assert banned not in text
+
+
+@pytest.mark.parametrize("status", [ScanStatus.ANALYZING, ScanStatus.FAILED])
+def test_dashboard_excludes_uncompleted_reports_from_blocker_trends(
+    client, report_factory, status
+) -> None:
+    report = _persist(
+        client,
+        report_factory,
+        repo_url="https://github.com/example/alpha",
+        repository_name="alpha",
+        summary=_summary(3),
+    )
+    client.app.state.store.update_job(report.scan_id, status=status, stage_message="Not complete")
+
+    response = client.get("/api/dashboard")
+
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["scan_count"] == 1
+    assert item["latest_status"] == status.value
+    assert item["blocker_trend"] == []
+
+
+def test_dashboard_skips_timestamps_without_timezone_instead_of_guessing(client, report_factory):
+    _persist(
+        client,
+        report_factory,
+        repo_url="https://github.com/example/alpha",
+        repository_name="alpha",
+        scanned_at=datetime(2026, 1, 1),
+    )
+    valid = _persist(
+        client,
+        report_factory,
+        repo_url="https://github.com/example/alpha",
+        repository_name="alpha",
+        scanned_at=datetime(2026, 2, 1, tzinfo=UTC),
+    )
+
+    response = client.get("/api/dashboard")
+
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["scan_count"] == 2
+    assert [point["scan_id"] for point in item["blocker_trend"]] == [str(valid.scan_id)]
+
+
+@pytest.mark.parametrize("findings", [None, 42])
+def test_dashboard_skips_malformed_legacy_findings(client, report_factory, findings):
+    report = _persist(
+        client,
+        report_factory,
+        repo_url="https://github.com/example/legacy",
+        repository_name="legacy",
+    )
+    payload = {"scanned_at": "2026-01-01T00:00:00+00:00", "findings": findings}
+    with client.app.state.store._connect() as connection:
+        connection.execute(
+            "UPDATE scan_jobs SET report_json = ? WHERE id = ?",
+            (json.dumps(payload), str(report.scan_id)),
+        )
+
+    response = client.get("/api/dashboard")
+
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["scan_count"] == 1
+    assert item["blocker_trend"] == []
 
 
 def test_trend_point_derives_counts_from_summary_and_legacy_findings() -> None:

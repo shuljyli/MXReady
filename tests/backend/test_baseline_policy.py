@@ -71,3 +71,137 @@ def test_cli_baseline_keeps_full_report_and_changes_only_exit_policy(tmp_path):
     assert current["summary"]["blocker_count"] > 0
     assert current["static_status"] == "blocked"
     assert main([*args, "--fail-on", "new-blockers"]) == 1
+
+
+def test_cli_cannot_overwrite_its_baseline_before_comparing(tmp_path):
+    import json
+
+    from mxready.cli.scan_repository import main
+
+    source = tmp_path / "source"
+    source.mkdir()
+    kernel = source / "kernel.cu"
+    kernel.write_text("int value = 0;\n", encoding="utf-8")
+    output = tmp_path / "reports"
+    arguments = [
+        str(source),
+        "--repo-url",
+        "https://github.com/example/project",
+        "--commit",
+        "a" * 40,
+        "--output",
+        str(output),
+    ]
+    assert main(arguments) == 0
+    baseline = next(output.glob("*.json"))
+    original = baseline.read_bytes()
+    kernel.write_text("#define WARP_SIZE 32\n", encoding="utf-8")
+
+    assert main([*arguments, "--baseline", str(baseline), "--fail-on", "new-blockers"]) == 2
+    assert baseline.read_bytes() == original
+    reports = [json.loads(path.read_text(encoding="utf-8")) for path in output.glob("*.json")]
+    assert sorted(report["summary"]["blocker_count"] for report in reports) == [0, 1]
+
+
+@pytest.mark.parametrize(
+    "policy_arguments",
+    [
+        ["--fail-on", "new-blockers"],
+        ["--baseline", "missing.json"],
+        ["--baseline", "missing.json", "--fail-on", "new-blockers"],
+    ],
+)
+def test_cli_rejects_invalid_baseline_options_without_writing_reports(tmp_path, policy_arguments):
+    from mxready.cli.scan_repository import main
+
+    output = tmp_path / "reports"
+    assert (
+        main(
+            [
+                "tests/fixtures/repositories/cuda_extension",
+                "--repo-url",
+                "https://github.com/example/project",
+                "--commit",
+                "a" * 40,
+                "--output",
+                str(output),
+                *policy_arguments,
+            ]
+        )
+        == 1
+    )
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("kind", ["invalid-json", "repository", "analysis"])
+def test_cli_rejects_invalid_or_incompatible_baselines_before_output(
+    tmp_path, report_factory, kind
+):
+    from mxready.cli.scan_repository import main
+
+    baseline = tmp_path / "baseline.json"
+    report = report_factory()
+    if kind == "repository":
+        report = report.model_copy(
+            update={
+                "repository": report.repository.model_copy(
+                    update={"url": "https://github.com/other/project"}
+                )
+            }
+        )
+    baseline.write_text(
+        "{" if kind == "invalid-json" else report.model_dump_json(), encoding="utf-8"
+    )
+    original = baseline.read_bytes()
+    output = tmp_path / "reports"
+
+    assert (
+        main(
+            [
+                "tests/fixtures/repositories/cuda_extension",
+                "--repo-url",
+                "https://github.com/example/project",
+                "--commit",
+                "a" * 40,
+                "--output",
+                str(output),
+                "--baseline",
+                str(baseline),
+                "--fail-on",
+                "new-blockers",
+            ]
+        )
+        == 1
+    )
+    assert not output.exists()
+    assert baseline.read_bytes() == original
+
+
+def test_cli_rejects_oversized_baseline_without_output(tmp_path, capsys):
+    from mxready.cli.scan_repository import main
+
+    baseline = tmp_path / "large.json"
+    with baseline.open("wb") as stream:
+        stream.truncate(20 * 1024 * 1024 + 1)
+    output = tmp_path / "reports"
+
+    assert (
+        main(
+            [
+                "tests/fixtures/repositories/cuda_extension",
+                "--repo-url",
+                "https://github.com/example/project",
+                "--commit",
+                "a" * 40,
+                "--output",
+                str(output),
+                "--baseline",
+                str(baseline),
+                "--fail-on",
+                "new-blockers",
+            ]
+        )
+        == 1
+    )
+    assert "Baseline exceeds 20 MiB" in capsys.readouterr().err
+    assert not output.exists()

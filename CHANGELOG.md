@@ -12,6 +12,15 @@
 
 ### Fixed
 
+- 迁移仪表盘的阻塞项趋势仅纳入已完成任务，避免将分析中或失败任务的残留报告计入整改趋势；
+  缺少时区或结构异常的旧趋势记录被跳过，仍保留仓库扫描次数与最新任务状态，避免整页报错。
+- 人工复核分页在同一数据库快照中读取总数和记录，修复并发追加导致页内数量与总数不一致的问题。
+
+- 本地 `mxready-scan` 每次扫描生成独立 ID；四种导出中任一同名文件已存在时，整组文件追加
+  扫描 ID，使用独占创建保留旧报告，不跟随已有输出符号链接；失败时清理本次创建的文件。
+- 修复 `--baseline` 与当前输出同名时先覆盖可信基线、再比较而错误放行新增 blocker 的问题：
+  先有界读取并验证基线和策略，再生成输出；无效参数或不可比较基线不写出当前报告。
+
 - 所有对外命令支持 `--version`（`mxready-serve`、`mxready-scan`、`mxready-scan-public`、
   `mxready-scan-batch`、`mxready-build-bundle`、`mxready-mcp`、`mxready-runner`）：此前五个 CLI
   报 `unrecognized arguments` 并以退出码 2 退出，`mxready-mcp` 静默忽略该参数，现场核对版本只能

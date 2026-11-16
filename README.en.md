@@ -202,6 +202,10 @@ Detailed usage and exit-code conventions for `mxready-scan` (local directories),
 `mxready-scan-batch` (batch assessment) and `mxready-mcp` (for coding agents) are in the
 [CLI guide](docs/cli.md). All CLIs analyze read-only and never execute scanned code.
 
+Each local scan gets a fresh ID. If an output name already exists, all four exports append the
+scan ID without hyphens, preserving earlier reports and trusted baselines. The terminal prints
+the actual names; baseline policies are validated before output files are created.
+
 ## Status meanings
 
 | Status | Meaning |

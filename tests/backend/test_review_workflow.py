@@ -1,6 +1,9 @@
+from contextlib import contextmanager
+
 from test_scan_api import _persist_completed_report
 
-from mxready.models import Finding, Severity
+from mxready.models import Finding, FindingReviewInput, Severity
+from mxready.persistence.sqlite import SQLiteStore
 
 
 def test_reviews_append_history_without_changing_findings(client, report_factory):
@@ -91,3 +94,37 @@ def test_review_storage_upgrades_old_schema_and_preserves_reports(tmp_path, repo
     store.initialize()
     assert store.get_report(job.id).scan_id == report.scan_id
     assert store.review_history(job.id, "rule", payload.relative_path, limit=1, offset=0).total == 1
+
+
+def test_review_page_uses_one_snapshot_during_concurrent_append(tmp_path, monkeypatch):
+    store = SQLiteStore(tmp_path / "reviews.sqlite")
+    store.initialize()
+    writer = SQLiteStore(store.path)
+    job = store.create_job("https://github.com/example/project", None)
+    payload = FindingReviewInput(
+        rule_id="rule", relative_path="a.cu", status="confirmed", reason="first review"
+    )
+    first = store.append_review(job.id, payload)
+    original_connect = store._connect
+
+    @contextmanager
+    def interleaved_connection():
+        with original_connect() as connection:
+
+            class InterleavedConnection:
+                def execute(self, sql, parameters=()):
+                    cursor = connection.execute(sql, parameters)
+                    if sql.startswith("SELECT COUNT(*) FROM finding_reviews"):
+                        writer.append_review(
+                            job.id, payload.model_copy(update={"reason": "concurrent review"})
+                        )
+                    return cursor
+
+            yield InterleavedConnection()
+
+    monkeypatch.setattr(store, "_connect", interleaved_connection)
+    page = store.review_history(job.id, "rule", "a.cu", limit=20, offset=0)
+
+    assert page.total == len(page.items) == 1
+    assert page.items[0].id == first.id
+    assert writer.review_history(job.id, "rule", "a.cu", limit=20, offset=0).total == 2
