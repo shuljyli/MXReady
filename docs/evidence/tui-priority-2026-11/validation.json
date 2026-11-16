@@ -30,6 +30,13 @@
     "mypy_linux": "passed",
     "contracts": "passed"
   },
+  "isolated_frontend_build": {
+    "status": "passed",
+    "layout": "Only the frontend tree was copied; existing dependencies were reused",
+    "shared_fixture": "frontend/src/test/report-comparison-cases.json",
+    "regression": "TS2307 before fixture relocation; isolated production build passed after relocation",
+    "supplementary_checks": "6 Python comparison tests and all 92 frontend tests passed"
+  },
   "installation": {
     "status": "passed",
     "archive": "mxready-1.0.2-windows.zip",

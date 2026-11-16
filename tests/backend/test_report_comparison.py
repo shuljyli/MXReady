@@ -47,7 +47,7 @@ def test_ambiguous_keys_repository_and_scan_identity_are_rejected(report_factory
 
 @pytest.mark.parametrize(
     "case",
-    json.loads(Path("tests/fixtures/report-comparison-cases.json").read_text()),
+    json.loads(Path("frontend/src/test/report-comparison-cases.json").read_text()),
     ids=lambda case: case["name"],
 )
 def test_shared_web_comparison_semantics(case, report_factory):

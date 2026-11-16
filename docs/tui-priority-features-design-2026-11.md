@@ -426,6 +426,11 @@ Python 完整回归 **683 项通过、2 项因本机符号链接权限跳过**�
 Chromium 桌面及 320px 窄屏 **10 项通过**，包括来源摘要、完整摘要复制入口与无横向撑破。
 既有 Starlette 弃用警告和测试数据库 ResourceWarning 仍单列在原始日志中。
 
+补充验证了 Docker 第一阶段仅复制 `frontend` 的构建边界：先在隔离目录复现跨目录 JSON
+夹具导致的 TS2307，再将共享夹具移到 `frontend/src/test/report-comparison-cases.json`，
+Python 与 TypeScript 仍使用同一文件。隔离生产构建、六项 Python 对比及全部 92 项前端回归通过；
+生产 JS/CSS 摘要保持与已验收候选一致。未在本机执行 Docker 引擎构建。
+
 新增行为回归覆盖惰性重启、同路径 upsert、并发历史、锁超时/只读/损坏/超前 schema 降级、
 事务迁移回滚、淘汰索引不删除文件/不改批次成功状态、敏感 URL 不落历史、引号往返、
 混合批次/缺 CSV/路径越界/元数据不一致、旧页码收敛、迟到读取/筛选拒绝、Ctrl+C 与退出。

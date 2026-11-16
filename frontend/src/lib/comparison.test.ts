@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { blockedReportFixture } from "../test/fixtures";
 import { compareReports } from "./comparison";
-import cases from "../../../tests/fixtures/report-comparison-cases.json";
+import cases from "../test/report-comparison-cases.json";
 import type { ScanReport, Severity } from "../api/types";
 
 it.each(cases)("shared Python semantics: $name", (example) => {
