@@ -73,6 +73,24 @@ test("report exposes scope, occurrence source links and SARIF export", async ({ 
   const sarif = await page.request.get(await page.getByRole("link", { name: "SARIF", exact: true }).getAttribute("href") as string);
   expect(sarif.ok()).toBeTruthy();
   expect((await sarif.json()).version).toBe("2.1.0");
+  await page.getByText("报告详情", { exact: true }).click();
+  await expect(page.getByRole("heading", { name: "扫描来源", exact: true })).toBeVisible();
+  await expect(page.getByText("未记录来源元数据", { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+});
+
+test("working tree source details and full digest fit a narrow viewport", async ({ page }) => {
+  await page.route("**/api/scans/00000000-0000-0000-0000-000000000099/report", async route => {
+    const response = await route.fetch();
+    const report = await response.json();
+    await route.fulfill({ json: { ...report, source: { kind: "working-tree", actual_commit: "a".repeat(40),
+      dirty: true, input_digest: "sha256:" + "f".repeat(64) } } });
+  });
+  await page.goto("/?scan=00000000-0000-0000-0000-000000000099");
+  await page.getByText("报告详情", { exact: true }).click();
+  await expect(page.getByText("工作区快照", { exact: true })).toBeVisible();
+  await expect(page.getByText("sha256:" + "f".repeat(64), { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "复制已索引文件集合摘要", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });
 

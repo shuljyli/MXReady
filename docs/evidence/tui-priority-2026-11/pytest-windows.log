@@ -1,0 +1,260 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-8.4.2, pluggy-1.7.0
+rootdir: E:\MXReady-Umbrasyl-opencode-tui
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.15.1, platformdirs-4.14.5, cov-7.1.0
+collected 685 items
+
+tests\backend\test_analyzer.py .......                                   [  1%]
+tests\backend\test_app.py .                                              [  1%]
+tests\backend\test_architecture_regressions.py ..                        [  1%]
+tests\backend\test_baseline_policy.py ..........                         [  2%]
+tests\backend\test_build_verification_bundle_cli.py ..                   [  3%]
+tests\backend\test_cli_version_flag.py ...........                       [  4%]
+tests\backend\test_config.py ........                                    [  5%]
+tests\backend\test_contract_generation.py .                              [  6%]
+tests\backend\test_core_rules.py ....................................... [ 11%]
+.................................                                        [ 16%]
+tests\backend\test_dashboard_api.py .........                            [ 17%]
+tests\backend\test_docstring_scope.py ...........                        [ 19%]
+tests\backend\test_end_to_end.py ...                                     [ 20%]
+tests\backend\test_facts.py ........................                     [ 23%]
+tests\backend\test_generate_public_report.py ........                    [ 24%]
+tests\backend\test_git_client.py .........                               [ 25%]
+tests\backend\test_github_archive.py ................................... [ 31%]
+.............................                                            [ 35%]
+tests\backend\test_indexer.py ................                           [ 37%]
+tests\backend\test_logging.py .....                                      [ 38%]
+tests\backend\test_mcp_server.py ..................                      [ 41%]
+tests\backend\test_middleware.py ..........                              [ 42%]
+tests\backend\test_models.py ......                                      [ 43%]
+tests\backend\test_npm_lockfile_registry.py ..                           [ 43%]
+tests\backend\test_path_context.py ............................          [ 47%]
+tests\backend\test_prefilter_literals.py ........................        [ 51%]
+tests\backend\test_report_comparison.py ......                           [ 52%]
+tests\backend\test_report_source.py ....                                 [ 52%]
+tests\backend\test_report_workflow.py .....                              [ 53%]
+tests\backend\test_reporting.py ..................                       [ 56%]
+tests\backend\test_repository_identity.py .............................. [ 60%]
+....                                                                     [ 61%]
+tests\backend\test_review_workflow.py ...                                [ 61%]
+tests\backend\test_rule_corpus.py .                                      [ 61%]
+tests\backend\test_rule_deadline.py ...                                  [ 62%]
+tests\backend\test_rule_engine.py ..............                         [ 64%]
+tests\backend\test_rule_loader.py ...........                            [ 65%]
+tests\backend\test_scan_api.py .......                                   [ 66%]
+tests\backend\test_scan_batch.py ..........                              [ 68%]
+tests\backend\test_scan_cli.py ...............s.....                     [ 71%]
+tests\backend\test_scan_service.py ....                                  [ 71%]
+tests\backend\test_security_boundaries.py ...                            [ 72%]
+tests\backend\test_serve_cli.py ..........                               [ 73%]
+tests\backend\test_storage.py ..........                                 [ 75%]
+tests\backend\test_terminal_cli.py ......                                [ 76%]
+tests\backend\test_toolchain_profile.py .......................          [ 79%]
+tests\backend\test_tui_app.py ........                                   [ 80%]
+tests\backend\test_tui_commands.py ..............                        [ 82%]
+tests\backend\test_tui_process.py ....                                   [ 83%]
+tests\backend\test_tui_report_browser.py ..........                      [ 84%]
+tests\backend\test_tui_report_catalog.py .......s.                       [ 85%]
+tests\backend\test_tui_screenshot.py ..                                  [ 86%]
+tests\backend\test_tui_state_store.py ..........                         [ 87%]
+tests\backend\test_tui_workflows.py .....                                [ 88%]
+tests\backend\test_verification_bundle.py ...                            [ 88%]
+tests\backend\test_verification_validation.py ..............             [ 90%]
+tests\backend\test_version_consistency.py .......                        [ 91%]
+tests\backend\test_worker.py .....                                       [ 92%]
+tests\backend\test_workspace_api.py ......                               [ 93%]
+tests\integration\test_distribution.py ..                                [ 93%]
+tests\integration\test_installer.py ..                                   [ 94%]
+tests\integration\test_mcp_stdio.py .                                    [ 94%]
+tests\integration\test_release_smoke.py .....                            [ 95%]
+tests\runner\test_cli.py ....                                            [ 95%]
+tests\runner\test_execute.py .....                                       [ 96%]
+tests\runner\test_inspect.py ...                                         [ 96%]
+tests\runner\test_process.py ....                                        [ 97%]
+tests\runner\test_redact.py ..                                           [ 97%]
+tests\runner\test_repository.py ...                                      [ 98%]
+tests\runner\test_schema.py .............                                [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/backend/test_end_to_end.py::test_fixture_scan_to_report_badge_and_verification_bundle
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\yaml\scanner.py:286: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE3F34C0>
+    for level in list(self.possible_simple_keys):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_end_to_end.py::test_fixture_scan_to_report_badge_and_verification_bundle
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\yaml\scanner.py:286: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE3F36A0>
+    for level in list(self.possible_simple_keys):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_end_to_end.py::test_fixture_scan_to_report_badge_and_verification_bundle
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\yaml\scanner.py:286: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE3F35B0>
+    for level in list(self.possible_simple_keys):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_rule_corpus.py::test_reviewed_source_excerpts_have_no_labeled_regressions
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\yaml\error.py:6: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE627B50>
+    def __init__(self, name, index, line, column, buffer, pointer):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_terminal_cli.py::test_launcher_passes_project_and_output
+  C:\Python314\Lib\unittest\mock.py:495: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE3F18A0>
+    __dict__['_mock_mock_calls'] = _CallList()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_terminal_cli.py::test_launcher_passes_project_and_output
+  C:\Python314\Lib\unittest\mock.py:495: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE3F1030>
+    __dict__['_mock_mock_calls'] = _CallList()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_tui_workflows.py::test_quit_command_with_memory_state_closes_cleanly
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\textual\css\tokenizer.py:289: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE81A020>
+    match = expect.match(line, col_no)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_tui_workflows.py::test_quit_command_with_memory_state_closes_cleanly
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\textual\css\tokenizer.py:289: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE81B2E0>
+    match = expect.match(line, col_no)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_tui_workflows.py::test_quit_command_with_memory_state_closes_cleanly
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\textual\css\tokenizer.py:289: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE818F40>
+    match = expect.match(line, col_no)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_tui_workflows.py::test_quit_command_with_memory_state_closes_cleanly
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\textual\css\tokenizer.py:289: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE81BA60>
+    match = expect.match(line, col_no)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_tui_workflows.py::test_quit_command_with_memory_state_closes_cleanly
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\textual\css\tokenizer.py:289: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE819300>
+    match = expect.match(line, col_no)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_tui_workflows.py::test_quit_command_with_memory_state_closes_cleanly
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\textual\css\tokenizer.py:289: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE81B970>
+    match = expect.match(line, col_no)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_tui_workflows.py::test_quit_command_with_memory_state_closes_cleanly
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\textual\css\tokenizer.py:289: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE81BE20>
+    match = expect.match(line, col_no)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_tui_workflows.py::test_quit_command_with_memory_state_closes_cleanly
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\textual\css\tokenizer.py:289: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE81BD30>
+    match = expect.match(line, col_no)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/backend/test_tui_workflows.py::test_quit_command_with_memory_state_closes_cleanly
+  E:\MXReady-Umbrasyl-opencode-tui\.venv\Lib\site-packages\textual\css\tokenizer.py:289: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001E1BE81B010>
+    match = expect.match(line, col_no)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.14.0-final-0 _______________
+
+Name                                           Stmts   Miss Branch BrPart  Cover
+--------------------------------------------------------------------------------
+src\mxready\__init__.py                            1      0      0      0   100%
+src\mxready\__main__.py                            1      1      0      0     0%
+src\mxready\api\__init__.py                        3      0      0      0   100%
+src\mxready\api\dashboard.py                       6      0      0      0   100%
+src\mxready\api\middleware.py                     84      4     28      2    95%
+src\mxready\api\rules.py                           6      0      0      0   100%
+src\mxready\api\scans.py                          81      3     10      3    93%
+src\mxready\api\workspace.py                      49      0      6      0   100%
+src\mxready\app.py                                91      3     18      3    93%
+src\mxready\cli\__init__.py                        0      0      0      0   100%
+src\mxready\cli\build_verification_bundle.py      31      2      0      0    94%
+src\mxready\cli\generate_public_report.py         64      1      4      1    97%
+src\mxready\cli\scan_batch.py                    184     15     50      8    89%
+src\mxready\cli\scan_repository.py               148      9     50      5    92%
+src\mxready\cli\serve.py                          36      0      8      0   100%
+src\mxready\cli\terminal.py                       33      1      6      1    95%
+src\mxready\config.py                             64      7     14      5    85%
+src\mxready\errors.py                              6      0      0      0   100%
+src\mxready\logging_setup.py                      37      0      6      0   100%
+src\mxready\mcp\__init__.py                        0      0      0      0   100%
+src\mxready\mcp\server.py                        179     54     40      6    68%
+src\mxready\models.py                            212     11     52     11    92%
+src\mxready\persistence\__init__.py                0      0      0      0   100%
+src\mxready\persistence\sqlite.py                222     10     42      6    94%
+src\mxready\reporting\__init__.py                  3      0      0      0   100%
+src\mxready\reporting\badge.py                    12      0      0      0   100%
+src\mxready\reporting\comparison.py               51      0     20      1    99%
+src\mxready\reporting\html.py                     69     15     28      4    76%
+src\mxready\reporting\markdown.py                 67      0     30      0   100%
+src\mxready\reporting\sarif.py                    15      0      4      0   100%
+src\mxready\reporting\source.py                   19      0      8      0   100%
+src\mxready\reporting\terminal.py                 49      2     16      0    97%
+src\mxready\repository\__init__.py                 3      0      0      0   100%
+src\mxready\repository\git_client.py             104     11     30      6    87%
+src\mxready\repository\github_archive.py         293      9    110     13    95%
+src\mxready\repository\identity.py                64      5     24      3    91%
+src\mxready\resources\__init__.py                  9      0      0      0   100%
+src\mxready\scanning\__init__.py                   3      0      0      0   100%
+src\mxready\scanning\analyzer.py                  54      0      8      0   100%
+src\mxready\scanning\facts.py                    350     34    178     20    86%
+src\mxready\scanning\indexer.py                  124     20     32      5    84%
+src\mxready\scanning\path_context.py              52      2     16      2    94%
+src\mxready\scanning\python_source.py             30      2     12      3    88%
+src\mxready\scanning\regex_process.py             83     22     28      7    70%
+src\mxready\scanning\rule_engine.py              267     14     94      9    94%
+src\mxready\scanning\rule_loader.py              181     15     54     13    88%
+src\mxready\scanning\toolchain.py                 32      1     10      1    95%
+src\mxready\services\__init__.py                   2      0      0      0   100%
+src\mxready\services\scans.py                    105     14     18      4    82%
+src\mxready\services\worker.py                    29      3     10      1    90%
+src\mxready\tui\__init__.py                        0      0      0      0   100%
+src\mxready\tui\app.py                           560     51    174     36    87%
+src\mxready\tui\commands.py                      163     14     80     13    89%
+src\mxready\tui\process.py                        74      8     22      7    84%
+src\mxready\tui\report_browser.py                 37      2     14      2    92%
+src\mxready\tui\report_catalog.py                124     14     36      8    86%
+src\mxready\tui\screens.py                       164     18     26      6    87%
+src\mxready\tui\screenshot.py                     38      2     22      4    90%
+src\mxready\tui\state_store.py                   225     11     38      4    94%
+src\mxready\verification\__init__.py               3      0      0      0   100%
+src\mxready\verification\bundle.py                29      0      4      0   100%
+src\mxready\verification\validation.py            56      2     18      2    95%
+src\mxready_runner\__init__.py                     1      0      0      0   100%
+src\mxready_runner\__main__.py                     2      2      0      0     0%
+src\mxready_runner\_windows_job.py                51     51     14      0     0%
+src\mxready_runner\cli.py                         53      2     10      1    95%
+src\mxready_runner\contracts.py                    2      0      0      0   100%
+src\mxready_runner\execute.py                     74      6     16      2    91%
+src\mxready_runner\inspect.py                     43      1      8      1    96%
+src\mxready_runner\process.py                     62      4     18      3    91%
+src\mxready_runner\redact.py                      24      0      2      0   100%
+src\mxready_runner\schema.py                     173     23     48     17    82%
+--------------------------------------------------------------------------------
+TOTAL                                           5566    501   1614    249    89%
+Coverage JSON written to file work/tui-priority-final-coverage.json
+Required test coverage of 80% reached. Total coverage: 88.55%
+=========================== short test summary info ===========================
+SKIPPED [1] tests\backend\test_scan_cli.py:317: Symlink creation is not available: [WinError 1314] �ͻ���û���������Ȩ��: 'E:\\MXReady-Umbrasyl-opencode-tui\\.pytest-temp\\test_cli_does_not_follow_an_ex0\\evidence.md' -> 'E:\\MXReady-Umbrasyl-opencode-tui\\.pytest-temp\\test_cli_does_not_follow_an_ex0\\reports\\project.md'
+SKIPPED [1] tests\backend\test_tui_report_catalog.py:56: Creating symlinks requires Windows developer mode or elevated rights
+=========== 683 passed, 2 skipped, 16 warnings in 106.89s (0:01:46) ===========

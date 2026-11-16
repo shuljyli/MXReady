@@ -1,0 +1,17 @@
+{
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "python": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
+  "textual": "8.2.8",
+  "findings": 10000,
+  "report_bytes": 3138559,
+  "catalog_entries": 2000,
+  "first_read_ms": 64.46729999879608,
+  "warm_read_median_ms": 70.70129999920027,
+  "filter_median_ms": 48.89109999930952,
+  "cached_page_median_ms": 0.005900001269765198,
+  "catalog_read_median_ms": 66.07359999907203,
+  "python_tracemalloc_peak_bytes": 56758786,
+  "notes": "Application-first read; OS cache was not evicted. Tracemalloc measures Python allocations; timing includes tracing overhead."
+}

@@ -1,0 +1,24 @@
+[
+  {
+    "name": "relocated evidence retains identity",
+    "before": [{"rule_id":"MXR-WARP-001","relative_path":"csrc/kernel.cu","severity":"blocker","count":1,"line_start":1}],
+    "after": [{"rule_id":"MXR-WARP-001","relative_path":"csrc/kernel.cu","severity":"blocker","count":1,"line_start":90}],
+    "conditions_before": {"analysis_config":{"a":1,"b":2}},
+    "conditions_after": {"analysis_config":{"b":2,"a":1}},
+    "expected": {"added":0,"removed":0,"retained":1,"severity":0,"count":0,"conditions_changed":false}
+  },
+  {
+    "name": "overlapping severity and count changes",
+    "before": [{"rule_id":"MXR-WARP-001","relative_path":"kernel.cu","severity":"blocker","count":3,"line_start":1}],
+    "after": [{"rule_id":"MXR-WARP-001","relative_path":"kernel.cu","severity":"info","count":1,"line_start":1}],
+    "conditions_before": {}, "conditions_after": {},
+    "expected": {"added":0,"removed":0,"retained":1,"severity":1,"count":1,"conditions_changed":false}
+  },
+  {
+    "name": "case sensitive paths and different conditions",
+    "before": [{"rule_id":"MXR-WARP-001","relative_path":"Kernel.cu","severity":"info","count":1,"line_start":1}],
+    "after": [{"rule_id":"MXR-WARP-001","relative_path":"kernel.cu","severity":"warning","count":2,"line_start":1}],
+    "conditions_before": {}, "conditions_after": {"tool_version":"different"},
+    "expected": {"added":1,"removed":1,"retained":0,"severity":0,"count":0,"conditions_changed":true}
+  }
+]

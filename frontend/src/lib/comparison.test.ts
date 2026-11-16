@@ -1,6 +1,22 @@
 import { expect, it } from "vitest";
 import { blockedReportFixture } from "../test/fixtures";
 import { compareReports } from "./comparison";
+import cases from "../../../tests/fixtures/report-comparison-cases.json";
+import type { ScanReport, Severity } from "../api/types";
+
+it.each(cases)("shared Python semantics: $name", (example) => {
+  const report = (side: "before" | "after", conditions: "conditions_before" | "conditions_after"): ScanReport => ({
+    ...blockedReportFixture, ruleset_digest: "sha256:" + "d".repeat(64), ...example[conditions],
+    findings: example[side].map(item => ({ ...blockedReportFixture.findings[0], ...item,
+      severity: item.severity as Severity, line_end: item.line_start })),
+  });
+  const result = compareReports(report("before", "conditions_before"), report("after", "conditions_after"));
+  expect([result.added.length, result.removed.length, result.retained.length]).toEqual([
+    example.expected.added, example.expected.removed, example.expected.retained]);
+  expect(result.severityChanged).toHaveLength(example.expected.severity);
+  expect(result.countChanged).toHaveLength(example.expected.count);
+  expect(result.conditionsChanged).toBe(example.expected.conditions_changed);
+});
 
 it("keeps relocated evidence and flags changed analysis conditions", () => {
   const shifted = { ...blockedReportFixture, ruleset_version: "new", findings:

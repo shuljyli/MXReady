@@ -7,6 +7,15 @@ import { FindingCard } from "./FindingCard";
 
 const finding = blockedReportFixture.findings[0];
 
+it.each([
+  ["working-tree", "查看关联提交（可能与工作区不同）"],
+  ["declared-directory", "声明提交（未核对来源）"],
+] as const)("qualifies remote links for %s", (kind, label) => {
+  render(<FindingCard finding={finding} repository={blockedReportFixture.repository}
+    source={{ kind, actual_commit: null, dirty: null, input_digest: null }} />);
+  expect(screen.getByRole("link", { name: new RegExp(label.replace(/[（）]/g, ".")) })).toBeInTheDocument();
+});
+
 it("collapses and expands details with a click", async () => {
   render(<FindingCard finding={finding} />);
   expect(screen.getByText("compiler = 'nvcc'")).toBeInTheDocument();

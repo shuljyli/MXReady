@@ -174,6 +174,11 @@ python -m mxready
 也可用 `mxready /path/to/project` 指定项目；报告默认写入用户数据目录下的 `reports`，
 `--output-dir ./reports` 可覆盖。开发环境安装 `.[dev]` 已包含终端依赖。
 
+终端支持 `/findings --severity blocker --query warp` 筛选、`/reports` 选择报告与批次结果，
+以及 `/compare baseline.json` 对比当前报告。重启可恢复历史、输出偏好与摘要索引；
+`--no-state` 关闭本次持久化。TUI / Web 详情展示报告记录的源码来源，缺失或矛盾值会明确提示。
+状态目录、隐私与对比边界见 [CLI 文档](docs/cli.md)。
+
 终端按 **macOS、Windows、Linux** 三平台实现，需要 Git 和支持 ANSI / Unicode 的交互终端；
 终端功能本身无需 Node.js、PyTorch 或 GPU 驱动。当前平台验证证据如下：
 

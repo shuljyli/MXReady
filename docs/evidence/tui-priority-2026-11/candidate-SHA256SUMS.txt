@@ -1,0 +1,6 @@
+126f943802c4c1bf0ec50db00cd59e95dac7f44355c3fdda9eab9b9353971523  build-provenance.json
+3498657d7cf602422b659289fc7f3eaca186eef5a0a6ad16ff0047d88a6b3fcf  mxready-1.0.2-linux.zip
+21cfe39e8ead08db2b5d89fe43dc3bdb2c82b64d50f91f78568d796c68d4883c  mxready-1.0.2-macos.zip
+6d502f3d94f2d70bc636004508edb8ba14c342c41c156bddf12c7435a198fabc  mxready-1.0.2-py3-none-any.whl
+c26ac416a403fd457e061344ee09b5728dab4eef71ae0b6013ca46f836fda191  mxready-1.0.2-windows.zip
+c79a263548866c9c0cb6aa0a86ff6b53366353434a08bf035c1da2f57809ca4a  mxready-1.0.2.tar.gz

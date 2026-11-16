@@ -1,0 +1,150 @@
+{
+  "date": "2026-11-16",
+  "base_commit": "852e0f264f58ecccb2f6fb3e215d7d7ec8b62109",
+  "candidate_source": "working tree after base commit; no release tag or PyPI publication",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "python": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
+  "textual": "8.2.8",
+  "python_tests": {
+    "passed": 683,
+    "skipped": 2,
+    "skip_reason": "Windows symlink privileges unavailable",
+    "coverage_percent": 88.55153203342618
+  },
+  "frontend_tests": {
+    "passed": 92,
+    "typescript": "passed",
+    "production_build": "passed"
+  },
+  "browser_tests": {
+    "passed": 10,
+    "viewports": [
+      "1440x960",
+      "320x720"
+    ]
+  },
+  "checks": {
+    "ruff": "passed",
+    "ruff_format": "passed",
+    "mypy_win32": "passed",
+    "mypy_linux": "passed",
+    "contracts": "passed"
+  },
+  "installation": {
+    "status": "passed",
+    "archive": "mxready-1.0.2-windows.zip",
+    "archive_sha256": "c26ac416a403fd457e061344ee09b5728dab4eef71ae0b6013ca46f836fda191",
+    "dependency_mode": "online",
+    "network_disconnected": false,
+    "commands": [
+      {
+        "name": "install",
+        "returncode": 0
+      },
+      {
+        "name": "installed-runtime",
+        "returncode": 0
+      },
+      {
+        "name": "cli-versions",
+        "returncode": 0
+      },
+      {
+        "name": "resources-scan-bundle",
+        "returncode": 0
+      },
+      {
+        "name": "runner-help",
+        "returncode": 0
+      },
+      {
+        "name": "installed-packages",
+        "returncode": 0
+      },
+      {
+        "name": "seed-report",
+        "returncode": 0
+      },
+      {
+        "name": "server-0",
+        "returncode": 1
+      },
+      {
+        "name": "server-1",
+        "returncode": 1
+      }
+    ],
+    "server_exit_note": "Servers intentionally terminated after HTTP/restart validation; shutdown codes are expected."
+  },
+  "installed_tui_extra": {
+    "status": "passed",
+    "wheel_sha256": "6d502f3d94f2d70bc636004508edb8ba14c342c41c156bddf12c7435a198fabc",
+    "commands": [
+      {
+        "name": "create-venv",
+        "returncode": 0
+      },
+      {
+        "name": "install-base",
+        "returncode": 0
+      },
+      {
+        "name": "without-tui",
+        "returncode": 0
+      },
+      {
+        "name": "base-help",
+        "returncode": 0
+      },
+      {
+        "name": "base-version",
+        "returncode": 0
+      },
+      {
+        "name": "install-tui",
+        "returncode": 0
+      },
+      {
+        "name": "tui-help",
+        "returncode": 0
+      },
+      {
+        "name": "tui-version",
+        "returncode": 0
+      },
+      {
+        "name": "installed-tui-recovery",
+        "returncode": 0
+      }
+    ]
+  },
+  "visual_checks": {
+    "method": "Completed-refresh SVG exports rendered by Chromium and visually inspected",
+    "sizes": [
+      "120x40",
+      "55x22"
+    ],
+    "files": [
+      "combining.png",
+      "details-narrow.png",
+      "compare-narrow.png"
+    ],
+    "real_terminal_acceptance": false
+  },
+  "raw_local_evidence": [
+    "work/tui-priority-final-pytest.log",
+    "work/tui-priority-install-final",
+    "work/tui-priority-installed-extra",
+    "work/tui-priority-release-final",
+    "work/tui-priority-visuals"
+  ],
+  "not_validated": [
+    "Linux/macOS installation",
+    "other Python versions",
+    "real terminal fonts/keyboard/resize on all OSes",
+    "OS-level disconnected installation",
+    "historical production database upgrades",
+    "real process fault drills",
+    "MetaX hardware"
+  ]
+}

@@ -20,8 +20,14 @@ def test_launcher_passes_project_and_output(monkeypatch, tmp_path):
     monkeypatch.setattr(app, "MXReadyApp", launch)
     monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
     monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    monkeypatch.setenv("MXREADY_DATA_DIR", str(tmp_path / "data"))
     assert terminal.main([str(tmp_path), "--output-dir", str(tmp_path / "results")]) == 0
-    launch.assert_called_once_with(project_dir=tmp_path, output_dir=tmp_path / "results")
+    launch.assert_called_once_with(
+        project_dir=tmp_path,
+        output_dir=tmp_path / "results",
+        default_output_dir=tmp_path / "data" / "reports",
+        state_path=tmp_path / "data" / "tui" / "state.db",
+    )
     launch.return_value.run.assert_called_once_with()
 
 
@@ -54,3 +60,16 @@ def test_help_works_without_terminal(capsys):
         terminal.main(["--help"])
     assert result.value.code == 0
     assert "--output-dir" in capsys.readouterr().out
+
+
+def test_no_state_does_not_create_user_data(monkeypatch, tmp_path):
+    from mxready.tui import app
+
+    launch = Mock()
+    monkeypatch.setattr(app, "MXReadyApp", launch)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    monkeypatch.setenv("MXREADY_DATA_DIR", str(tmp_path / "private"))
+    assert terminal.main([str(tmp_path), "--no-state"]) == 0
+    assert launch.call_args.kwargs["state_path"] is None
+    assert not (tmp_path / "private").exists()

@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 
-import type { Finding } from "../api/types";
+import type { Finding, ScanReport } from "../api/types";
+import { sourceLinkLabel } from "../lib/source";
 import { referenceUrl, toolExample } from "../lib/integration";
 import { RemediationGuide } from "./RemediationGuide";
 import { CopyButton } from "./CopyButton";
@@ -9,6 +10,7 @@ import { Icon } from "./Icon";
 type FindingCardProps = {
   finding: Finding;
   repository?: { url: string; commit: string };
+  source?: ScanReport["source"];
   onOpenRule?: (id: string, version: number) => void;
 };
 
@@ -25,7 +27,7 @@ function lineLabel(finding: Finding) {
   return `${finding.relative_path}:${finding.line_start}-${finding.line_end}`;
 }
 
-export function FindingCard({ finding, onOpenRule, repository }: FindingCardProps) {
+export function FindingCard({ finding, onOpenRule, repository, source }: FindingCardProps) {
   const occurrences = finding.occurrences?.length ? finding.occurrences : [finding];
   const sourceUrl = (line: number) => {
     if (!repository || !/^[0-9a-f]{40}$/.test(repository.commit)) return undefined;
@@ -79,7 +81,7 @@ export function FindingCard({ finding, onOpenRule, repository }: FindingCardProp
           <p className="finding-message">{finding.message}</p>
           <details open={occurrences.length === 1}><summary>命中位置与证据（{occurrences.length}）</summary>
           {occurrences.map((occurrence, index) => <div key={index}>
-            <p>{sourceUrl(occurrence.line_start) ? <a href={sourceUrl(occurrence.line_start)} target="_blank" rel="noreferrer">{finding.relative_path}:{occurrence.line_start}-{occurrence.line_end} · 查看固定提交源码</a> : `${finding.relative_path}:${occurrence.line_start}-${occurrence.line_end}`}</p>
+            <p>{sourceUrl(occurrence.line_start) ? <a href={sourceUrl(occurrence.line_start)} target="_blank" rel="noreferrer">{finding.relative_path}:{occurrence.line_start}-{occurrence.line_end} · {sourceLinkLabel(source, repository?.commit)}</a> : `${finding.relative_path}:${occurrence.line_start}-${occurrence.line_end}`}</p>
             <pre className="evidence-block"><code>{occurrence.evidence}</code></pre>
           </div>)}
           </details>

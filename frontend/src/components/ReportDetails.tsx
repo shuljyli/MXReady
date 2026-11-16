@@ -1,5 +1,6 @@
 import type { ScanReport } from "../api/types";
 import { CopyButton } from "./CopyButton";
+import { ReportSource } from "./ReportSource";
 
 export function ReportDetails({ report }: { report: ScanReport }) {
   return <details className="report-section report-details"><summary>报告详情</summary>
@@ -14,6 +15,7 @@ export function ReportDetails({ report }: { report: ScanReport }) {
         ? <pre className="technical-output"><code>{JSON.stringify(report.analysis_config, null, 2)}</code></pre>
         : "未记录分析配置"}</dd></div>
     </dl>
+    <ReportSource report={report} />
     {report.analysis_config.prefilter ? <p className="muted">预过滤状态：on 为启用，off 为配置关闭，unavailable 为不可用而退回完整匹配；这是分析时的实际状态。</p> : null}
   </details>;
 }
