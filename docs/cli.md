@@ -11,14 +11,19 @@
 任务和最近报告；终端变窄时侧栏自动隐藏。使用确定的扫描命令，不接入语言模型。
 
 ```bash
-# 安装终端可选依赖（Web / 单次 CLI 不需要它）
-python -m pip install "mxready[tui]"
+# 当前全屏终端尚未发布：在包含本功能的源码目录、已激活的虚拟环境中安装
+python -m pip install -e ".[tui]"
 mxready
 mxready /path/to/project --output-dir ./reports
 # 源码开发环境（Windows 使用 .venv\Scripts\python.exe）
 python -m pip install -e ".[dev]"
 .venv/bin/python -m mxready
 ```
+
+发布包含该功能的新版本后，才可用 `python -m pip install "mxready[tui]"` 从包索引安装。
+三平台均需 Python 3.11+、Git 与支持 ANSI / Unicode 的交互终端。macOS Apple Silicon
+已完成本机交互检查；Windows / Linux 已实现平台适配并通过相应类型检查，实际终端交互验收仍待执行。
+CI 三系统自动化结果以对应提交的 Checks 为准，不替代目标终端的字体、按键和缩放检查。
 
 已有开发环境需重新安装以注册新增入口。启动时项目目录默认为当前目录；在界面内输入：
 

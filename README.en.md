@@ -197,11 +197,33 @@ Unified command entry points (`install` / `dev` / `frontend` / `test` / `lint` /
 
 ## Command-line tools
 
-Install `python -m pip install "mxready[tui]"`, then run `mxready [project-directory]` for the
-full-screen terminal workspace. It provides a persistent command input, scrollable results,
+The full-screen terminal is currently unreleased. From a checkout containing this feature,
+install it in an activated Python 3.11+ virtual environment:
+
+```bash
+python -m pip install -e ".[tui]"
+python -m mxready
+```
+
+You can also run `mxready [project-directory]`. The workspace provides a persistent command input, scrollable results,
 project/task sidebar, `/` command suggestions, Tab completion, command history and Ctrl+P palette.
 Use `/scan .`, `/public URL`, `/batch FILE`, `/report` or `/bundle`; Ctrl+C cancels a task and
 Ctrl+Q exits. The existing one-shot tools remain available without the terminal extra.
+
+The terminal targets **macOS, Windows and Linux** and requires Git and an interactive terminal
+with ANSI / Unicode support. It does not require Node.js, PyTorch or a GPU driver.
+The current platform validation evidence is:
+
+| Platform | Full-screen terminal validation |
+| --- | --- |
+| macOS Apple Silicon | Actual terminal launch; local UI tests cover scans, cancellation, reports and keyboard controls; CJK previews visually checked |
+| Windows | Platform paths and process-tree cleanup implemented; Windows type checks pass; interactive terminal acceptance pending |
+| Linux | Unix process groups and user data paths implemented; Linux type checks pass; interactive terminal acceptance pending |
+
+CI is configured for Python 3.11 / 3.12 / 3.13 on all three systems; consult the relevant commit's
+Checks for actual results. Automated checks and terminal font, keyboard and resize acceptance
+are recorded separately. JSON reports can be opened across platforms; tasks, command history
+and report files do not sync automatically, and terminal scans do not populate Web scan history.
 
 Detailed usage and exit-code conventions for `mxready-scan` (local directories),
 `mxready-scan-public` (public repository evidence), `mxready-build-bundle` (verification bundle),

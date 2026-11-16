@@ -158,12 +158,31 @@ bash ./scripts/dev.sh       # 前后端一键启动（Windows：.\scripts\dev.ps
 
 ## 命令行工具
 
-安装 `python -m pip install "mxready[tui]"` 后运行 `mxready`（也可 `python -m mxready`），
-进入全屏终端工作区：底部持续输入 `/scan .`、`/public URL`、`/report` 等命令，
+全屏终端目前属于未发布功能，请在包含本功能的源码目录、已激活的 Python 3.11+ 虚拟环境中安装：
+
+```bash
+python -m pip install -e ".[tui]"
+python -m mxready
+```
+
+也可运行 `mxready` 进入全屏终端工作区：底部持续输入 `/scan .`、`/public URL`、`/report` 等命令，
 中间查看扫描输出与整改建议，侧栏显示项目、任务和最近报告。
 支持 `/` 命令提示、Tab 补全、↑↓ 历史、Ctrl+P 命令面板；Ctrl+C 取消任务，Ctrl+Q 退出。
 也可用 `mxready /path/to/project` 指定项目；报告默认写入用户数据目录下的 `reports`，
 `--output-dir ./reports` 可覆盖。开发环境安装 `.[dev]` 已包含终端依赖。
+
+终端按 **macOS、Windows、Linux** 三平台实现，需要 Git 和支持 ANSI / Unicode 的交互终端；
+终端功能本身无需 Node.js、PyTorch 或 GPU 驱动。当前平台验证证据如下：
+
+| 平台 | 全屏终端验证情况 |
+| --- | --- |
+| macOS Apple Silicon | 终端已实际启动；本机交互测试覆盖扫描、取消、报告与键盘操作，中文预览已目视检查 |
+| Windows | 已处理路径和进程树清理，对应类型检查通过；目标终端交互显示仍待实机验收 |
+| Linux | 已处理 Unix 进程组和用户数据目录，对应类型检查通过；目标终端交互显示仍待实际验收 |
+
+CI 配置覆盖三系统的 Python 3.11 / 3.12 / 3.13 自动化测试，实际结果见对应提交的 Checks；
+自动化结果与目标终端的字体、按键、缩放验收分别记录。JSON 报告可以跨系统打开，
+各机器的任务、命令历史与报告文件不会自动同步；终端输出也不会自动写入 Web 扫描历史。
 
 `mxready-scan`（本地目录）、`mxready-scan-public`（公开仓库证据）、`mxready-build-bundle`（验证包）、
 `mxready-scan-batch`（批量评估）与 `mxready-mcp`（供编码 Agent）的详细用法与退出码约定见
