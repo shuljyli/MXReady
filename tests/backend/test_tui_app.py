@@ -2,7 +2,7 @@ import asyncio
 
 from textual.widgets import Input, OptionList, RichLog
 
-from mxready.tui.app import MXReadyApp
+from mxready.tui.app import MXReadyApp, TranscriptLog
 from mxready.tui.process import ToolResult
 
 
@@ -156,5 +156,17 @@ def test_report_snapshot_and_bundle_workflow(tmp_path, report_factory):
             with zipfile.ZipFile(bundles[0]) as bundle:
                 assert "mxready.yml" in bundle.namelist()
             assert path.read_text(encoding="utf-8-sig") == payload
+
+    asyncio.run(scenario())
+
+
+def test_queued_resize_after_transcript_removal_does_not_crash(tmp_path):
+    async def scenario():
+        app = MXReadyApp(project_dir=tmp_path, output_dir=tmp_path / "reports")
+        async with app.run_test() as pilot:
+            log = app.query_one("#transcript", TranscriptLog)
+            await log.remove()
+            app.post_message(TranscriptLog.Resized())
+            await pilot.pause()
 
     asyncio.run(scenario())

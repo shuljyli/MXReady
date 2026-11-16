@@ -210,11 +210,12 @@ class MXReadyApp(App[None]):
         self._reflow()
 
     def _reflow(self) -> None:
-        log = self.query_one("#transcript", RichLog)
-        if log.display:
-            log.clear()
-            for value in self._transcript:
-                log.write(value)
+        # A resize message may outlive the widget while the screen is unmounting.
+        for log in self.query(TranscriptLog):
+            if log.is_mounted and log.display:
+                log.clear()
+                for value in self._transcript:
+                    log.write(value)
 
     def _responsive(self, width: int, height: int) -> None:
         self.query_one("#sidebar").display = width >= 100 and height >= 24
