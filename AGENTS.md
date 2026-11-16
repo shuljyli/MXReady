@@ -52,6 +52,7 @@ Use short conventional subjects: `feat:`, `fix:`, `docs:`, `test:`, or `chore:`;
 Never execute scanned repository code in the Web service. Preserve runner confirmation, command allowlists, `shell=False`, timeouts, redaction, and output limits. Keep static findings separate from hardware verification; never introduce percentage compatibility scores. See `CONTRIBUTING.md` and `docs/security.md`. Synchronize `AGENTS.md` and `CLAUDE.md` when both exist.
 
 Finding reviews are append-only annotations bound to scan/rule/path and must never suppress static findings or alter verification. CI baseline policies must reject mismatched repositories or analysis conditions. Web batch submission reuses scan admission limits and must not silently retry uncertain POST requests.
+Keep review pagination counts and rows in one read snapshot. Dashboard blocker trends include only completed scans with usable counts and timezone-aware timestamps; preserve total scan counts and latest task status when skipping invalid trend records.
 
 Report changes must preserve legacy reports without occurrence/coverage metadata. Keep SARIF locations aligned with individual occurrences and document scan exclusions. Runner project commands require a clean commit-matching checkout before and after execution; environment inspection remains separate. See `docs/report-workflow.md`.
 Local CLI scans use a fresh execution ID and reserve all four output files exclusively; preserve existing reports and baseline files. Read and validate baseline policies before writing scan outputs.

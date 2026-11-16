@@ -229,7 +229,11 @@ class SQLiteStore:
         trend = sorted(
             (
                 point
-                for point in (SQLiteStore._trend_point(row) for row in group)
+                for point in (
+                    SQLiteStore._trend_point(row)
+                    for row in group
+                    if row["status"] == ScanStatus.COMPLETED.value
+                )
                 if point is not None
             ),
             key=lambda point: point.scanned_at,
@@ -261,13 +265,18 @@ class SQLiteStore:
             parsed_time = datetime.fromisoformat(scanned_at)
         except ValueError:
             return None
+        if parsed_time.tzinfo is None or parsed_time.utcoffset() is None:
+            return None
         summary = payload.get("summary")
         blocker_count = summary.get("blocker_count") if isinstance(summary, dict) else None
         if not isinstance(blocker_count, int):
             # 旧报告缺 summary 时按 findings 逐条统计 blocker。
+            findings = payload.get("findings")
+            if not isinstance(findings, list):
+                return None
             blocker_count = sum(
                 1
-                for item in payload.get("findings", [])
+                for item in findings
                 if isinstance(item, dict) and item.get("severity") == "blocker"
             )
         return ProgressTrendPoint(
@@ -519,6 +528,7 @@ class SQLiteStore:
         args = (str(scan_id), rule_id, relative_path)
         where = " WHERE scan_id = ? AND rule_id = ? AND relative_path = ?"
         with self._connect() as connection:
+            connection.execute("BEGIN")
             total = connection.execute(
                 "SELECT COUNT(*) FROM finding_reviews" + where, args
             ).fetchone()[0]

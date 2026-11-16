@@ -189,6 +189,9 @@ curl -s 'http://127.0.0.1:8000/api/dashboard?q=extension&limit=20&offset=0'
 
 响应含 `items`、`total`、`limit`、`offset`；`items[]` 为 `repo_url`、`scan_count`、`latest_scan_id`、`latest_status`、`latest_created_at` 与 `blocker_trend[]`（每点为 `scan_id`、`scanned_at`、`blocker_count`，按时间升序、最多 20 点）。趋势只统计阻塞项数量变化，不代表兼容率，也不汇总任何百分比指标。旧报告（无 summary 元数据）按 findings 中的阻塞项回退计数。
 
+趋势只纳入任务状态为 `completed` 的报告。时间缺少时区、无法解析，或缺少可用计数与 findings
+列表的旧记录不生成趋势点，不猜测时区或计数；仓库扫描次数与最近任务状态仍包含这些任务。
+
 ## 7. 下载验证包
 
 ### `GET /api/scans/{scan_id}/verification-bundle`
