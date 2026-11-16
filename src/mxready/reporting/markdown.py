@@ -44,6 +44,17 @@ def render_markdown(report: ScanReport) -> str:
         "",
     ]
 
+    if report.source:
+        lines.extend(
+            [
+                f"本地来源：`{report.source.kind}`；实际 HEAD："
+                f"`{report.source.actual_commit or '未核对'}`；"
+                f"工作区有改动：`{report.source.dirty}`。",
+                f"纳入分析的文件集合摘要：`{report.source.input_digest or '未记录'}`。",
+                "该摘要仅覆盖已索引文件，不是完整仓库或构建产物的证明。",
+                "",
+            ]
+        )
     lines.extend(["## 扫描范围", ""])
     if report.coverage:
         c = report.coverage

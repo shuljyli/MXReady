@@ -76,6 +76,14 @@ def render_html(report: ScanReport) -> str:
         "</tr></tbody></table>",
         "<h2>扫描范围</h2>",
     ]
+    if report.source:
+        body.append(
+            f"<p>本地来源：{_e(report.source.kind)}；实际 HEAD："
+            f"{_e(report.source.actual_commit or '未核对')}；"
+            f"工作区有改动：{report.source.dirty}。</p>"
+            f"<p>纳入分析的文件集合摘要：{_e(report.source.input_digest or '未记录')}。"
+            "该摘要不是完整仓库或构建产物的证明。</p>"
+        )
     if report.coverage:
         c = report.coverage
         body.append(

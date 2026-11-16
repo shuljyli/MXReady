@@ -6,8 +6,10 @@ import os
 import signal
 import subprocess
 import sys
+import time
 from collections.abc import Sequence
 from contextlib import suppress
+from pathlib import Path
 from subprocess import CompletedProcess, TimeoutExpired
 from threading import Thread
 from typing import BinaryIO
@@ -22,10 +24,12 @@ class _Capture:
 
     def read(self, stream: BinaryIO) -> None:
         try:
-            while chunk := stream.read(4096):
+            while chunk := os.read(stream.fileno(), 4096):
                 remaining = MAX_OUTPUT_BYTES - len(self.data)
                 self.data.extend(chunk[:remaining])
                 self.truncated |= len(chunk) > remaining
+        except OSError:
+            pass  # The owning process may close the pipe during bounded cleanup.
         finally:
             stream.close()
 
@@ -45,16 +49,7 @@ def _terminate_tree(process: subprocess.Popen[bytes]) -> None:
         with suppress(ProcessLookupError):
             os.killpg(process.pid, signal.SIGKILL)
     else:
-        # Fixed system command, never interpolated project input or a shell command.
-        with suppress(OSError, TimeoutExpired):
-            subprocess.run(
-                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                shell=False,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                timeout=5,
-                check=False,
-            )
+        # Killing our supervisor closes its job handle and terminates every descendant.
         if process.poll() is None:
             process.kill()
 
@@ -66,8 +61,18 @@ def run_command(
     cwd: str | os.PathLike[str] | None = None,
     env: dict[str, str] | None = None,
 ) -> CompletedProcess[str]:
+    deadline = time.monotonic() + timeout
+    actual_command = list(command)
+    if sys.platform == "win32":
+        actual_command = [
+            sys.executable,
+            "-I",
+            "-S",
+            str(Path(__file__).with_name("_windows_job.py")),
+            *actual_command,
+        ]
     with subprocess.Popen(
-        list(command),
+        actual_command,
         shell=False,
         cwd=cwd,
         env=env,
@@ -86,18 +91,18 @@ def run_command(
             reader.start()
         timed_out = False
         try:
-            process.wait(timeout=timeout)
+            process.wait(timeout=max(0, deadline - time.monotonic()))
+            for reader in readers:
+                reader.join(timeout=max(0, deadline - time.monotonic()))
+            timed_out = any(reader.is_alive() for reader in readers)
         except TimeoutExpired:
             timed_out = True
-            _terminate_tree(process)
-            process.wait()
         finally:
-            for reader in readers:
-                reader.join(timeout=0.1)
-            if any(reader.is_alive() for reader in readers):
+            if timed_out:
                 _terminate_tree(process)
+                process.wait(timeout=5)
                 for reader in readers:
-                    reader.join(timeout=5)
+                    reader.join(timeout=1)
         if timed_out:
             raise TimeoutExpired(command, timeout, output=stdout.text(), stderr=stderr.text())
         return CompletedProcess(list(command), process.returncode, stdout.text(), stderr.text())

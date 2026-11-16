@@ -307,3 +307,16 @@ def test_batch_writes_each_commit_and_csv_points_to_real_reports(
         payload = json.loads(markdown.with_suffix(".json").read_text(encoding="utf-8"))
         assert payload["repository"]["commit"] == row["commit"]
     assert len(list(output.glob("*.json"))) == 2
+
+
+def test_batch_cli_handles_legacy_output_encoding(tmp_path, monkeypatch):
+    monkeypatch.setattr("mxready.cli.scan_batch.generate_public_report", _fake_scan_one({}))
+    buffer = io.BytesIO()
+    stream = io.TextIOWrapper(buffer, encoding="cp1252")
+    monkeypatch.setattr("sys.stdout", stream)
+    output = tmp_path / "reports"
+    assert main(["https://github.com/example/project", "--output", str(output)]) == 0
+    stream.flush()
+    assert b"[1/1]" in buffer.getvalue()
+    assert (output / "batch-summary.csv").is_file()
+    assert (output / "batch-summary.md").is_file()

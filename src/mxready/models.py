@@ -200,6 +200,15 @@ class AnalysisWarning(StrictModel):
     message: str
 
 
+class ScanSource(StrictModel):
+    """Local provenance; the digest covers indexed files, not the entire checkout."""
+
+    kind: Literal["git-commit", "working-tree", "declared-directory"]
+    actual_commit: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    dirty: bool | None = None
+    input_digest: str | None = Field(default=None, pattern=r"^sha256:[0-9a-f]{64}$")
+
+
 class ScanReport(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     scan_id: UUID
@@ -213,6 +222,7 @@ class ScanReport(StrictModel):
     summary: ScanSummary
     findings: list[Finding]
     coverage: ScanCoverage | None = None
+    source: ScanSource | None = None
     migration_checklist: list[MigrationChecklistItem]
     analysis_warnings: list[AnalysisWarning]
     static_status: StaticStatus

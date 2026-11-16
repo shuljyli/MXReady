@@ -1,5 +1,6 @@
 import hashlib
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 
@@ -81,3 +82,21 @@ def test_failed_checksum_writes_failed_evidence(smoke, tmp_path):
     assert "checksum" in result["error"]
     with pytest.raises(SystemExit):
         smoke.main(["--dist", str(dist), "--evidence-dir", str(evidence)])
+
+
+def test_resource_smoke_reads_utf8_reports_under_a_legacy_default(smoke, tmp_path):
+    probe = (
+        """
+from pathlib import Path
+original_read = Path.read_text
+def legacy_read(self, encoding=None, errors=None):
+    return original_read(self, encoding=encoding or 'cp1252', errors=errors)
+Path.read_text = legacy_read
+"""
+        + smoke.RESOURCE_SMOKE
+        + "\nassert '本地目录' in report.analysis_warnings[-1].message\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", probe], cwd=tmp_path, capture_output=True, timeout=20
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

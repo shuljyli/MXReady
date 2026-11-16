@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -141,17 +141,20 @@ runner job.
 
 ## Installation and startup
 
+The current source is a **1.0.2 release candidate**, not yet published to PyPI.
+PyPI 1.0.1 does not contain these fixes; test the locally built wheel/ZIP and verify its hash.
+
 Regular users can just install the UI-enabled release bundle: no Node.js, no PyTorch and no GPU
 driver needed. All three platforms require **Python 3.11+ (with pip/venv) and Git** to be
 pre-installed; the first install downloads Python dependencies from the network by default.
 
 | Platform | Artifact | After extracting, run in the bundle directory |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.1-windows.zip` | PowerShell: `.\install.ps1`, then `.\start.ps1` |
-| Linux | `mxready-1.0.1-linux.zip` | `bash install.sh`, then `bash start.sh` |
-| macOS (Apple Silicon / Intel) | `mxready-1.0.1-macos.zip` | `bash install.sh`, then `bash start.sh` |
+| Windows 10/11 | `mxready-1.0.2-windows.zip` | PowerShell: `.\install.ps1`, then `.\start.ps1` |
+| Linux | `mxready-1.0.2-linux.zip` | `bash install.sh`, then `bash start.sh` |
+| macOS (Apple Silicon / Intel) | `mxready-1.0.2-macos.zip` | `bash install.sh`, then `bash start.sh` |
 | Managed Python environment | `mxready` on PyPI | `python -m pip install mxready`, then `mxready-serve` |
-| Existing Python environment | `mxready-1.0.1-py3-none-any.whl` | in a dedicated venv: `python -m pip install <wheel path>`, then `mxready-serve` |
+| Existing Python environment | `mxready-1.0.2-py3-none-any.whl` | in a dedicated venv: `python -m pip install <wheel path>`, then `mxready-serve` |
 
 After starting, open <http://127.0.0.1:8000>; press `Ctrl+C` in the terminal to stop the service.
 The ZIPs are Python application bundles: they do not bundle Python or Git, and they are not native
@@ -196,6 +199,34 @@ Unified command entry points (`install` / `dev` / `frontend` / `test` / `lint` /
 | Clean | `.\scripts\make.ps1 clean` | `make clean` | removes `.pytest-temp` |
 
 ## Command-line tools
+
+The full-screen terminal is currently unreleased. From a checkout containing this feature,
+install it in an activated Python 3.11+ virtual environment:
+
+```bash
+python -m pip install -e ".[tui]"
+python -m mxready
+```
+
+You can also run `mxready [project-directory]`. The workspace provides a persistent command input, scrollable results,
+project/task sidebar, `/` command suggestions, Tab completion, command history and Ctrl+P palette.
+Use `/scan .`, `/public URL`, `/batch FILE`, `/report` or `/bundle`; Ctrl+C cancels a task and
+Ctrl+Q exits. The existing one-shot tools remain available without the terminal extra.
+
+The terminal targets **macOS, Windows and Linux** and requires Git and an interactive terminal
+with ANSI / Unicode support. It does not require Node.js, PyTorch or a GPU driver.
+The current platform validation evidence is:
+
+| Platform | Full-screen terminal validation |
+| --- | --- |
+| macOS Apple Silicon | Actual terminal launch; local UI tests cover scans, cancellation, reports and keyboard controls; CJK previews visually checked |
+| Windows | Platform paths and process-tree cleanup implemented; Windows type checks pass; interactive terminal acceptance pending |
+| Linux | Unix process groups and user data paths implemented; Linux type checks pass; interactive terminal acceptance pending |
+
+CI is configured for Python 3.11 / 3.12 / 3.13 on all three systems; consult the relevant commit's
+Checks for actual results. Automated checks and terminal font, keyboard and resize acceptance
+are recorded separately. JSON reports can be opened across platforms; tasks, command history
+and report files do not sync automatically, and terminal scans do not populate Web scan history.
 
 Detailed usage and exit-code conventions for `mxready-scan` (local directories),
 `mxready-scan-public` (public repository evidence), `mxready-build-bundle` (verification bundle),

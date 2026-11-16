@@ -16,6 +16,10 @@ MXReady statically assesses PyTorch CUDA extensions for migration to MetaX MXMAC
 - `frontend/src/hooks/`: scan lifecycle, URL restoration, cancellation, and bounded polling retries.
 - `docs/` and `examples/`: architecture/reference documentation and pinned evidence.
 - `docs/cli.md`: detailed CLI usage and local scan output naming; keep the README overview aligned when updating these behaviors.
+- `src/mxready/tui/`: optional Textual full-screen `mxready` / `python -m mxready` command workspace; launcher in `cli/terminal.py` must keep help/version usable without the `tui` extra.
+- TUI screenshot exports must use terminal cell widths and preserve combining characters; verify mixed CJK/Latin text visually rather than treating codepoint counts as glyph widths.
+- TUI resize messages may arrive after a widget unmounts; ignore those stale notifications. Screenshot tests must capture after a completed refresh rather than relying on a timer delay or CPU-idle pause alone.
+- Modal screens must retain their Escape handling. Resize tests must wait for the screen's target size as well as refresh completion because Textual debounces resize delivery.
 - `docs/development-plan-2026-11.md`: prioritized follow-up plan; check its baseline and distinguish proposed work from implemented behavior before using it.
 
 ## Build, Test, and Development Commands
@@ -56,6 +60,7 @@ Keep review pagination counts and rows in one read snapshot. Dashboard blocker t
 
 Report changes must preserve legacy reports without occurrence/coverage metadata. Keep SARIF locations aligned with individual occurrences and document scan exclusions. Runner project commands require a clean commit-matching checkout before and after execution; environment inspection remains separate. See `docs/report-workflow.md`.
 Local CLI scans use a fresh execution ID and reserve all four output files exclusively; preserve existing reports and baseline files. Read and validate baseline policies before writing scan outputs.
+Interactive scans and verification bundles use fresh output directories. TUI scan processes use argument arrays, bounded streamed output and process-tree cleanup on cancellation/exit; never execute arbitrary shell input or redirect process-global stdout from background threads. Offline JSON report viewing must label hardware status as an export snapshot because report JSON has no verification execution timestamp; do not claim current freshness from it. Escape terminal controls in displayed report text and bound report reads.
 
 See `docs/architecture.md` for dependency directions and migration paths. Keep default rules and schemas inside package resources and verify installed artifacts outside the checkout. Task writes must preserve execution-token and lease checks; never mark all active jobs failed during application startup. Derive verification freshness when reading reports. Keep generated contracts synchronized with model changes and retain the dependency-free runner.
 

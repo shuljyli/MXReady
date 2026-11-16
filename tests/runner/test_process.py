@@ -1,4 +1,5 @@
 import sys
+import time
 from subprocess import TimeoutExpired
 
 import pytest
@@ -25,3 +26,31 @@ def test_timeout_preserves_partial_output_and_stops_the_command():
             timeout=1,
         )
     assert "started" in raised.value.stdout
+
+
+def test_timeout_includes_children_after_the_parent_exits(tmp_path):
+    marker = tmp_path / "child-finished.txt"
+    child = f"import time; from pathlib import Path; time.sleep(4); Path({str(marker)!r}).touch()"
+    parent = (
+        f"import subprocess,sys; subprocess.Popen([sys.executable,'-c',{child!r}]); "
+        "print('parent-finished',flush=True)"
+    )
+    started = time.monotonic()
+    with pytest.raises(TimeoutExpired) as raised:
+        run_command([sys.executable, "-c", parent], timeout=1)
+    assert time.monotonic() - started < 3
+    assert "parent-finished" in raised.value.stdout
+    time.sleep(4)
+    assert not marker.exists(), "A timed-out descendant must not keep running"
+
+
+def test_successful_children_are_drained_after_parent_exit():
+    child = "import time; time.sleep(0.4); print('child-finished',flush=True)"
+    parent = (
+        f"import subprocess,sys; subprocess.Popen([sys.executable,'-c',{child!r}]); "
+        "print('parent-finished',flush=True)"
+    )
+    result = run_command([sys.executable, "-c", parent], timeout=5)
+    assert result.returncode == 0
+    assert "parent-finished" in result.stdout
+    assert "child-finished" in result.stdout

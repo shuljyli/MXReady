@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,6 +16,7 @@ from mxready.models import (
     MigrationChecklistItem,
     RepositorySnapshot,
     ScanReport,
+    ScanSource,
     ScanStatus,
     Severity,
     VerificationStatus,
@@ -53,6 +56,7 @@ class ScanAnalyzer:
         commit: str,
         scan_id: UUID,
         stage_callback: Callable[[ScanStatus], None],
+        source: ScanSource | None = None,
     ) -> ScanReport:
         stage_callback(ScanStatus.INDEXING)
         index = build_file_index(repository_root)
@@ -104,6 +108,22 @@ class ScanAnalyzer:
             summary=summary,
             findings=findings,
             coverage=index.coverage,
+            source=(
+                source.model_copy(
+                    update={
+                        "input_digest": "sha256:"
+                        + hashlib.sha256(
+                            json.dumps(
+                                [(f.relative_path, f.sha256) for f in index.files],
+                                ensure_ascii=False,
+                                separators=(",", ":"),
+                            ).encode("utf-8")
+                        ).hexdigest()
+                    }
+                )
+                if source is not None
+                else None
+            ),
             migration_checklist=_build_migration_checklist(findings),
             analysis_warnings=[
                 AnalysisWarning(

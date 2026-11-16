@@ -1,9 +1,72 @@
 # MXReady 命令行使用
 
-`mxready-scan`、`mxready-scan-public`、`mxready-build-bundle`、`mxready-scan-batch`、`mxready-mcp`
+`mxready`、`mxready-scan`、`mxready-scan-public`、`mxready-build-bundle`、`mxready-scan-batch`、`mxready-mcp`
 与 `mxready-runner` 随安装包和开发环境提供（安装方式见[安装与发布方案](installation.md)）。
 本地 CLI 只用于开发者信任的本地目录；公开 Web API 不接受本地路径。
 所有命令只读分析被扫描代码，不导入、安装、构建或执行它；分析边界与 Web 服务一致。
+
+## 全屏交互终端（mxready）
+
+这是一个持续命令输入的终端工作区：中间滚动查看输出与建议，底部输入命令，右侧显示项目、
+任务和最近报告；终端变窄时侧栏自动隐藏。使用确定的扫描命令，不接入语言模型。
+
+```bash
+# 当前全屏终端尚未发布：在包含本功能的源码目录、已激活的虚拟环境中安装
+python -m pip install -e ".[tui]"
+mxready
+mxready /path/to/project --output-dir ./reports
+# 源码开发环境（Windows 使用 .venv\Scripts\python.exe）
+python -m pip install -e ".[dev]"
+.venv/bin/python -m mxready
+```
+
+发布包含该功能的新版本后，才可用 `python -m pip install "mxready[tui]"` 从包索引安装。
+三平台均需 Python 3.11+、Git 与支持 ANSI / Unicode 的交互终端。macOS Apple Silicon
+已完成本机交互检查；Windows / Linux 已实现平台适配并通过相应类型检查，实际终端交互验收仍待执行。
+CI 三系统自动化结果以对应提交的 Checks 为准，不替代目标终端的字体、按键和缩放检查。
+
+已有开发环境需重新安装以注册新增入口。启动时项目目录默认为当前目录；在界面内输入：
+
+| 命令 | 用途 |
+| --- | --- |
+| `/scan [目录] [--repo-url URL] [--commit SHA]` | 扫描本地项目，目录默认 `.`，身份默认读取 origin / HEAD |
+| `/public <URL> [--ref 分支/标签/提交]` | 扫描公开 GitHub / Gitee 仓库 |
+| `/batch <清单文件或URL>` | 批量扫描，清单沿用下方 `mxready-scan-batch` 格式 |
+| `/report [JSON路径]` | 打开报告，默认最近一次结果 |
+| `/findings [页码]` | 每页五项发现、证据和建议 |
+| `/bundle [JSON路径]` | 生成验证 ZIP，默认最近一次报告 |
+| `/output [目录]` | 查看或设置后续任务的输出目录 |
+| `/help` | 查看全部命令 |
+| `/clear` | 清空屏幕，保留文件与命令历史 |
+| `/cancel` | 取消当前任务并终止子进程树 |
+| `/quit` | 停止运行中任务并退出 |
+
+直接输入目录或 HTTPS URL 也可以开始扫描。带空格的路径请加引号，如
+`/scan "C:\source code\extension"`。相对命令路径以启动时的项目目录为基准，`~` 展开为用户目录；
+启动参数 `--output-dir` 的相对路径以启动命令所在目录为基准。
+无 Git 身份的本地目录需要显式传入仓库 URL 与 40 位提交。这里的命令只调用现有扫描器，
+不支持任意 shell 命令，不会安装依赖、构建或执行被扫描项目代码。
+
+键盘操作：输入 `/` 显示命令建议，↑↓ 选择、Tab 补全；无建议时 ↑↓ 浏览本次会话的命令历史。
+Enter 执行命令，Ctrl+P 打开可搜索命令面板，PgUp/PgDn 滚动结果，Esc 收起建议。
+Ctrl+C 中断当前任务（空闲时清空输入），Ctrl+L 清屏，Ctrl+Q 退出。
+命令历史仅保留在本次进程内。扫描在后台子进程中执行，界面可继续操作；一次只运行一个任务，
+重复提交会提示等待或取消，不自动重试。取消不回滚已生成的文件；再次扫描会创建新目录。
+
+默认报告与安装目录分离：macOS 为 `~/Library/Application Support/MXReady/reports`，
+Linux 为 `${XDG_DATA_HOME:-~/.local/share}/mxready/reports`，Windows 为
+`%LOCALAPPDATA%\MXReady\reports`；`MXREADY_DATA_DIR` 可覆盖数据目录，`--output-dir` 优先。
+每次扫描与验证 ZIP 使用独立的 `scan-<ID>`、`public-<ID>`、`batch-<ID>` 或 `bundle-<ID>`
+子目录，保留旧文件。本地扫描仍使用原有的独占文件与扫描 ID 规则。
+终端输出最多显示 256 KiB，达到上限后继续排空子进程输出，完整发现保存在报告文件中。
+
+JSON 报告最多读取 20 MiB，兼容缺少 coverage / occurrences 的旧报告；来源文本中的终端控制字符
+会转义，Rich 标记作为普通文本显示。硬件状态标为“导出时快照”：JSON 不含验证执行时间，
+无法据此重新计算有效期，当前状态需从持有验证记录的 Web 服务读取。
+终端扫描文件与 Web 数据库分开，结果不会自动出现在 Web 历史里。生成验证包不会运行 runner。
+
+全屏入口要求 stdin / stdout 为终端。CI、管道与脚本请继续使用下方单次命令；
+`mxready --help` 与 `mxready --version` 可在非交互环境使用，且无需安装 Textual。
 
 ## 离线 fixture 扫描（mxready-scan）
 
@@ -23,6 +86,16 @@ mxready-scan tests/fixtures/repositories/cuda_extension --repo-url https://githu
 命令生成 `<仓库>-<commit12>.json`、`.md`、`.svg` 和 `.sarif`。每次扫描具有独立的扫描 ID；
 任一种同名输出已存在时，四个文件统一改用 `<仓库>-<commit12>-<scan_id无连字符>`，保留旧文件。
 终端会打印本次实际文件名。退出码为：`0` 表示通过或仅有警告，`2` 表示存在阻塞项，`1` 表示操作失败。
+
+本地报告新增可选的 `source` 元数据：`git-commit` 表示核对过 HEAD 且工作区干净，
+`working-tree` 表示包含未提交或未跟踪的内容，`declared-directory` 表示未核对 Git 的显式声明目录。
+`actual_commit` 与 `dirty` 记录探测状态，`input_digest` 为排序后的已索引路径及文件摘要集合的 SHA-256。
+它只描述参与分析的文件，不是完整仓库、构建产物或可信执行证明。旧报告无此字段时继续读取。
+显式 `--commit` 与可探测的 HEAD 不同，或扫描前后 HEAD/工作区状态变化时，退出 1 且不写报告。
+工作区扫描仍然可用，报告会显式提示其提交号不包含未提交改动。
+
+公开仓库和批量 CLI 与本地 CLI 共用终端编码回退，西文旧代码页使用英文摘要；
+编码无法表示的用户路径以转义字符输出，不会因打印结果而中断扫描或漏写批量汇总。
 
 在 Git 仓库目录中运行时可省略 `--repo-url` 与 `--commit`，命令默认读取 `origin` 地址与当前 `HEAD`（SSH 形式的 `origin` 会转换为 HTTPS 地址）；探测不到时会在报错信息里指明需要显式传入的参数。
 

@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from mxready import __version__
 from mxready.errors import MxReadyError
 from mxready.models import ScanReport
+from mxready.reporting.terminal import print_terminal
 from mxready.verification.bundle import build_verification_bundle
 
 
@@ -25,10 +26,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         build_bundle_from_report(arguments.report, arguments.output)
     except (MxReadyError, OSError, UnicodeError, ValidationError, ValueError) as error:
-        print(f"MXReady bundle error: {error}", file=sys.stderr)
+        print_terminal(f"MXReady bundle error: {error}", file=sys.stderr)
         return 1
 
-    print(f"MXReady: wrote verification bundle to {arguments.output}")
+    print_terminal(f"MXReady: wrote verification bundle to {arguments.output}")
     return 0
 
 

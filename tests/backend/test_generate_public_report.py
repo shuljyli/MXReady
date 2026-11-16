@@ -1,3 +1,4 @@
+import io
 import json
 import shutil
 from pathlib import Path
@@ -119,3 +120,27 @@ def test_public_report_cli_reports_operational_errors_without_traceback(
     assert exit_code == 1
     assert "MXReady public scan error:" in captured.err
     assert "Traceback" not in captured.err
+
+
+def test_public_report_cli_handles_legacy_output_encoding(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "mxready.cli.generate_public_report.GitClient",
+        lambda: FixtureGitClient(Path("tests/fixtures/repositories/cuda_extension"), "a" * 40),
+    )
+    buffer = io.BytesIO()
+    stream = io.TextIOWrapper(buffer, encoding="cp1252")
+    monkeypatch.setattr("sys.stdout", stream)
+    code = main(
+        [
+            "https://github.com/example/project",
+            "--label",
+            "project",
+            "--output",
+            str(tmp_path / "reports"),
+            "--work-dir",
+            str(tmp_path / "work"),
+        ]
+    )
+    assert code == 2
+    stream.flush()
+    assert b"MXReady: blocked" in buffer.getvalue()

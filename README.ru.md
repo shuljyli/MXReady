@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -153,11 +153,11 @@ Python-код целиком расположен в `src/`; правила по
 
 | Платформа | Пакет | После распаковки выполнить в каталоге пакета |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.1-windows.zip` | PowerShell: `.\install.ps1`, затем `.\start.ps1` |
-| Linux | `mxready-1.0.1-linux.zip` | `bash install.sh`, затем `bash start.sh` |
-| macOS (Apple Silicon / Intel) | `mxready-1.0.1-macos.zip` | `bash install.sh`, затем `bash start.sh` |
+| Windows 10/11 | `mxready-1.0.2-windows.zip` | PowerShell: `.\install.ps1`, затем `.\start.ps1` |
+| Linux | `mxready-1.0.2-linux.zip` | `bash install.sh`, затем `bash start.sh` |
+| macOS (Apple Silicon / Intel) | `mxready-1.0.2-macos.zip` | `bash install.sh`, затем `bash start.sh` |
 | Управляемое окружение Python | `mxready` на PyPI | `python -m pip install mxready`, затем `mxready-serve` |
-| Существующее окружение Python | `mxready-1.0.1-py3-none-any.whl` | в выделенном venv: `python -m pip install <путь к wheel>`, затем `mxready-serve` |
+| Существующее окружение Python | `mxready-1.0.2-py3-none-any.whl` | в выделенном venv: `python -m pip install <путь к wheel>`, затем `mxready-serve` |
 
 После запуска откройте <http://127.0.0.1:8000>; для остановки сервиса нажмите `Ctrl+C` в терминале.
 ZIP-архивы — это пакеты приложения на Python: они не включают Python или Git и не являются

@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -113,11 +113,11 @@ CI는 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS를 커버하며, Pyth
 
 | 플랫폼 | 설치 패키지 | 압축을 완전히 푼 뒤, 패키지 디렉터리에서 실행 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.1-windows.zip` | PowerShell: `.\install.ps1`, 그다음 `.\start.ps1` |
-| Linux | `mxready-1.0.1-linux.zip` | `bash install.sh`, 그다음 `bash start.sh` |
-| macOS (Apple Silicon / Intel) | `mxready-1.0.1-macos.zip` | `bash install.sh`, 그다음 `bash start.sh` |
+| Windows 10/11 | `mxready-1.0.2-windows.zip` | PowerShell: `.\install.ps1`, 그다음 `.\start.ps1` |
+| Linux | `mxready-1.0.2-linux.zip` | `bash install.sh`, 그다음 `bash start.sh` |
+| macOS (Apple Silicon / Intel) | `mxready-1.0.2-macos.zip` | `bash install.sh`, 그다음 `bash start.sh` |
 | Python 환경을 직접 관리 | PyPI의 `mxready` | `python -m pip install mxready`, 그다음 `mxready-serve` |
-| Python 환경 보유 | `mxready-1.0.1-py3-none-any.whl` | 전용 venv에서 `python -m pip install <wheel 경로>`, 그다음 `mxready-serve` |
+| Python 환경 보유 | `mxready-1.0.2-py3-none-any.whl` | 전용 venv에서 `python -m pip install <wheel 경로>`, 그다음 `mxready-serve` |
 
 실행 후 <http://127.0.0.1:8000>을 열고, 터미널에서 `Ctrl+C`로 서비스를 중지합니다. ZIP은 Python 애플리케이션 설치 패키지이며,
 Python/Git이 붙어 있지 않고, 네이티브 EXE, DMG, 시스템 패키지 관리자 설치 프로그램도 아닙니다. 게시된 첨부 파일은

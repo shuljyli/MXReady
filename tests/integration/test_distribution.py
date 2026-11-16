@@ -125,12 +125,25 @@ from mxready.models import ScanReport
 from mxready.scanning.rule_loader import load_rule_catalog
 from mxready.verification.bundle import build_verification_bundle
 from mxready.cli.scan_repository import main
+from mxready.cli.terminal import main as terminal_main
+from importlib.metadata import distribution
+from importlib.util import find_spec
+from unittest.mock import patch
 from fastapi.testclient import TestClient
+entry = next(item for item in distribution('mxready').entry_points if item.name == 'mxready')
+assert entry.value == 'mxready.cli.terminal:main'
+with patch('sys.stdin.isatty', return_value=True), patch('sys.stdout.isatty', return_value=True):
+    if find_spec('textual') is not None:
+        with patch('mxready.tui.app.MXReadyApp.run') as run:
+            assert terminal_main([]) == 0
+            run.assert_called_once()
+    else:
+        assert terminal_main([]) == 1
 installed_ids = ','.join(rule.id for rule in load_rule_catalog(Settings().rules_dir).rules)
 assert installed_ids == sys.argv[3], installed_ids
 with TestClient(create_app()) as client:
     assert client.get('/api/health').status_code == 200
-report = ScanReport.model_validate_json(Path(sys.argv[2]).read_text())
+report = ScanReport.model_validate_json(Path(sys.argv[2]).read_text(encoding='utf-8'))
 with zipfile.ZipFile(io.BytesIO(build_verification_bundle(report))) as bundle:
     assert 'schemas/verification-result-v1.json' in bundle.namelist()
     bundle.extractall('bundle')

@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -109,16 +109,19 @@ CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS，另有 Python 3
 
 ## 安装与启动
 
+当前源码为 **1.0.2 候选**，尚未发布到 PyPI。PyPI 1.0.1 不包含本轮修复；
+测试候选请使用本地构建的 wheel/ZIP，安装前核对其版本与摘要。
+
 普通使用者直接安装包含网页的发布包即可，无需 Node.js，也无需安装 PyTorch 或 GPU 驱动；
 三平台均需预装 **Python 3.11+（含 pip/venv）和 Git**，首次安装默认联网下载 Python 依赖。
 
 | 平台 | 安装包 | 完整解压后，在包目录中执行 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.1-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
-| Linux | `mxready-1.0.1-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
-| macOS（Apple Silicon / Intel） | `mxready-1.0.1-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
+| Windows 10/11 | `mxready-1.0.2-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
+| Linux | `mxready-1.0.2-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
+| macOS（Apple Silicon / Intel） | `mxready-1.0.2-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
 | 自行管理 Python 环境 | PyPI 上的 `mxready` | `python -m pip install mxready`，然后 `mxready-serve` |
-| 已有 Python 环境 | `mxready-1.0.1-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
+| 已有 Python 环境 | `mxready-1.0.2-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
 
 启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。ZIP 是 Python 应用安装包，
 不附带 Python/Git，也不是原生 EXE、DMG 或系统包管理器安装程序。已发布的附件见
@@ -158,11 +161,39 @@ bash ./scripts/dev.sh       # 前后端一键启动（Windows：.\scripts\dev.ps
 
 ## 命令行工具
 
+全屏终端目前属于未发布功能，请在包含本功能的源码目录、已激活的 Python 3.11+ 虚拟环境中安装：
+
+```bash
+python -m pip install -e ".[tui]"
+python -m mxready
+```
+
+也可运行 `mxready` 进入全屏终端工作区：底部持续输入 `/scan .`、`/public URL`、`/report` 等命令，
+中间查看扫描输出与整改建议，侧栏显示项目、任务和最近报告。
+支持 `/` 命令提示、Tab 补全、↑↓ 历史、Ctrl+P 命令面板；Ctrl+C 取消任务，Ctrl+Q 退出。
+也可用 `mxready /path/to/project` 指定项目；报告默认写入用户数据目录下的 `reports`，
+`--output-dir ./reports` 可覆盖。开发环境安装 `.[dev]` 已包含终端依赖。
+
+终端按 **macOS、Windows、Linux** 三平台实现，需要 Git 和支持 ANSI / Unicode 的交互终端；
+终端功能本身无需 Node.js、PyTorch 或 GPU 驱动。当前平台验证证据如下：
+
+| 平台 | 全屏终端验证情况 |
+| --- | --- |
+| macOS Apple Silicon | 终端已实际启动；本机交互测试覆盖扫描、取消、报告与键盘操作，中文预览已目视检查 |
+| Windows | 已处理路径和进程树清理，对应类型检查通过；目标终端交互显示仍待实机验收 |
+| Linux | 已处理 Unix 进程组和用户数据目录，对应类型检查通过；目标终端交互显示仍待实际验收 |
+
+CI 配置覆盖三系统的 Python 3.11 / 3.12 / 3.13 自动化测试，实际结果见对应提交的 Checks；
+自动化结果与目标终端的字体、按键、缩放验收分别记录。JSON 报告可以跨系统打开，
+各机器的任务、命令历史与报告文件不会自动同步；终端输出也不会自动写入 Web 扫描历史。
+
 `mxready-scan`（本地目录）、`mxready-scan-public`（公开仓库证据）、`mxready-build-bundle`（验证包）、
 `mxready-scan-batch`（批量评估）与 `mxready-mcp`（供编码 Agent）的详细用法与退出码约定见
 [命令行使用](docs/cli.md)。所有 CLI 只读分析，不执行被扫描代码。
 
 本地扫描每次使用独立 ID；同名输出会整组追加扫描 ID，保留旧报告与可信基线。
+本地报告会标明干净提交、未提交工作区或显式声明目录，并记录纳入分析的文件集合摘要；
+指定提交与实际 HEAD 不符时拒绝输出，旧报告缺少来源字段时仍可读取。
 
 ## 状态含义
 
