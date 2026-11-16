@@ -23,6 +23,7 @@ from mxready.cli import (
     scan_batch,
     scan_repository,
     serve,
+    terminal,
 )
 from mxready_runner import __version__ as runner_version
 from mxready_runner import cli as runner_cli
@@ -30,6 +31,7 @@ from mxready_runner import cli as runner_cli
 EXPECTED_OUTPUT = f"MXReady {__version__}"
 
 HOST_ENTRY_POINTS: list[tuple[str, Callable[[list[str]], int]]] = [
+    ("mxready", terminal.main),
     ("mxready-serve", serve.main),
     ("mxready-scan", scan_repository.main),
     ("mxready-scan-public", generate_public_report.main),
@@ -62,6 +64,7 @@ def test_no_host_entry_point_is_dropped_from_the_table() -> None:
     """五个宿主 CLI 一个都不能少，防止有人从参数表里悄悄删掉一项。"""
     progs = {prog for prog, _ in HOST_ENTRY_POINTS}
     assert {
+        "mxready",
         "mxready-serve",
         "mxready-scan",
         "mxready-scan-public",

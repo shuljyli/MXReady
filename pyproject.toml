@@ -42,6 +42,7 @@ dev = [
   "pytest-cov>=6,<8",
   "ruff>=0.11,<1",
   "types-PyYAML>=6.0.12",
+  "textual>=8.2,<9",
 ]
 load = [
   "locust>=2.32,<3",
@@ -51,6 +52,10 @@ load = [
 mcp = [
   "mcp>=1.2,<2",
 ]
+# Optional full-screen terminal; Web, one-shot CLIs and runner do not import it.
+tui = [
+  "textual>=8.2,<9",
+]
 
 [project.urls]
 Homepage = "https://github.com/shuljyli/MXReady"
@@ -59,6 +64,7 @@ Issues = "https://github.com/shuljyli/MXReady/issues"
 Changelog = "https://github.com/shuljyli/MXReady/blob/main/CHANGELOG.md"
 
 [project.scripts]
+mxready = "mxready.cli.terminal:main"
 mxready-serve = "mxready.cli.serve:main"
 mxready-build-bundle = "mxready.cli.build_verification_bundle:main"
 mxready-scan = "mxready.cli.scan_repository:main"

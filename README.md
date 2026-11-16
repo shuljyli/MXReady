@@ -158,6 +158,13 @@ bash ./scripts/dev.sh       # 前后端一键启动（Windows：.\scripts\dev.ps
 
 ## 命令行工具
 
+安装 `python -m pip install "mxready[tui]"` 后运行 `mxready`（也可 `python -m mxready`），
+进入全屏终端工作区：底部持续输入 `/scan .`、`/public URL`、`/report` 等命令，
+中间查看扫描输出与整改建议，侧栏显示项目、任务和最近报告。
+支持 `/` 命令提示、Tab 补全、↑↓ 历史、Ctrl+P 命令面板；Ctrl+C 取消任务，Ctrl+Q 退出。
+也可用 `mxready /path/to/project` 指定项目；报告默认写入用户数据目录下的 `reports`，
+`--output-dir ./reports` 可覆盖。开发环境安装 `.[dev]` 已包含终端依赖。
+
 `mxready-scan`（本地目录）、`mxready-scan-public`（公开仓库证据）、`mxready-build-bundle`（验证包）、
 `mxready-scan-batch`（批量评估）与 `mxready-mcp`（供编码 Agent）的详细用法与退出码约定见
 [命令行使用](docs/cli.md)。所有 CLI 只读分析，不执行被扫描代码。

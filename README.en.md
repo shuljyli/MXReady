@@ -197,6 +197,12 @@ Unified command entry points (`install` / `dev` / `frontend` / `test` / `lint` /
 
 ## Command-line tools
 
+Install `python -m pip install "mxready[tui]"`, then run `mxready [project-directory]` for the
+full-screen terminal workspace. It provides a persistent command input, scrollable results,
+project/task sidebar, `/` command suggestions, Tab completion, command history and Ctrl+P palette.
+Use `/scan .`, `/public URL`, `/batch FILE`, `/report` or `/bundle`; Ctrl+C cancels a task and
+Ctrl+Q exits. The existing one-shot tools remain available without the terminal extra.
+
 Detailed usage and exit-code conventions for `mxready-scan` (local directories),
 `mxready-scan-public` (public repository evidence), `mxready-build-bundle` (verification bundle),
 `mxready-scan-batch` (batch assessment) and `mxready-mcp` (for coding agents) are in the
