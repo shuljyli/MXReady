@@ -1,5 +1,7 @@
 import asyncio
 
+import pytest
+from textual.geometry import Size
 from textual.widgets import Input, OptionList, RichLog
 
 from mxready.tui.app import MXReadyApp, TranscriptLog
@@ -12,12 +14,22 @@ async def _after_refresh(app: MXReadyApp) -> None:
     await asyncio.wait_for(refreshed.wait(), timeout=5)
 
 
-def test_keyboard_completion_history_and_narrow_layout(tmp_path):
+async def _after_resize(app: MXReadyApp, width: int, height: int) -> None:
+    # App resize events are debounced: a refresh may finish before screen resize.
+    async with asyncio.timeout(5):
+        while app.screen.region.size != Size(width, height):
+            await _after_refresh(app)
+        await _after_refresh(app)
+
+
+@pytest.mark.parametrize("resize_delay", [0, 0.1])
+def test_keyboard_completion_history_and_narrow_layout(tmp_path, monkeypatch, resize_delay):
     async def scenario():
         app = MXReadyApp(project_dir=tmp_path, output_dir=tmp_path / "reports")
         async with app.run_test(size=(110, 36)) as pilot:
             await _after_refresh(app)
             entry = app.query_one("#command", Input)
+            workspace = app.screen
             assert app.focused is entry
             await pilot.press("/", "h")
             await _after_refresh(app)
@@ -35,8 +47,14 @@ def test_keyboard_completion_history_and_narrow_layout(tmp_path):
             await _after_refresh(app)
             assert app.screen.__class__.__name__ == "CommandPalette"
             await pilot.press("escape")
+            assert app.screen is workspace
+            if resize_delay:
+                check_resize = app._check_resize
+                monkeypatch.setattr(
+                    app, "_check_resize", lambda: app.set_timer(resize_delay, check_resize)
+                )
             await pilot.resize_terminal(55, 22)
-            await _after_refresh(app)
+            await _after_resize(app, 55, 22)
             assert not app.query_one("#sidebar").display
             assert entry.region.width <= 55
             await pilot.press("ctrl+q")
@@ -136,7 +154,7 @@ def test_existing_output_reflows_after_terminal_resize(tmp_path):
             app._write("source 中文内容 " * 40)
             await pilot.pause()
             await pilot.resize_terminal(55, 22)
-            await _after_refresh(app)
+            await _after_resize(app, 55, 22)
             log = app.query_one("#transcript", RichLog)
             assert log.virtual_size.width <= log.scrollable_content_region.width
 

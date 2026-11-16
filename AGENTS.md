@@ -19,6 +19,7 @@ MXReady statically assesses PyTorch CUDA extensions for migration to MetaX MXMAC
 - `src/mxready/tui/`: optional Textual full-screen `mxready` / `python -m mxready` command workspace; launcher in `cli/terminal.py` must keep help/version usable without the `tui` extra.
 - TUI screenshot exports must use terminal cell widths and preserve combining characters; verify mixed CJK/Latin text visually rather than treating codepoint counts as glyph widths.
 - TUI resize messages may arrive after a widget unmounts; ignore those stale notifications. Screenshot tests must capture after a completed refresh rather than relying on a timer delay or CPU-idle pause alone.
+- Modal screens must retain their Escape handling. Resize tests must wait for the screen's target size as well as refresh completion because Textual debounces resize delivery.
 - `docs/development-plan-2026-11.md`: prioritized follow-up plan; check its baseline and distinguish proposed work from implemented behavior before using it.
 
 ## Build, Test, and Development Commands

@@ -76,7 +76,7 @@ class MXReadyApp(App[None]):
         Binding("ctrl+q", "quit", "退出", priority=True),
         Binding("ctrl+c", "interrupt", "取消 / 清空", priority=True),
         Binding("ctrl+l", "clear", "清屏", priority=True),
-        Binding("escape", "dismiss", "", show=False, priority=True),
+        Binding("escape", "dismiss", "", show=False),
         Binding("pageup", "scroll_up", "", show=False),
         Binding("pagedown", "scroll_down", "", show=False),
     ]
