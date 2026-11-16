@@ -79,6 +79,8 @@ def test_cli_writes_four_commit_pinned_outputs(tmp_path: Path, capsys) -> None:
     }
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["repository"]["commit"] == commit
+    assert payload["source"]["kind"] == "declared-directory"
+    assert payload["source"]["input_digest"].startswith("sha256:")
     assert payload["summary"]["total_count"] > 0
     assert markdown_path.read_text(encoding="utf-8").startswith("# MXReady 适配体检报告")
     assert badge_path.read_text(encoding="utf-8").startswith("<svg")
@@ -161,6 +163,76 @@ def test_cli_detects_identity_from_a_local_clone(tmp_path: Path, capsys) -> None
     )
     assert payload["repository"]["url"] == "https://github.com/example/cuda-extension"
     assert payload["repository"]["commit"] == commit
+
+
+def test_cli_rejects_a_declared_commit_that_does_not_match_head(tmp_path: Path, capsys):
+    repository = tmp_path / "clone"
+    _make_git_clone(repository, "https://github.com/example/cuda-extension")
+    output = tmp_path / "reports"
+    assert main([str(repository), "--commit", "f" * 40, "--output", str(output)]) == 1
+    assert "HEAD" in capsys.readouterr().err
+    assert not output.exists()
+
+
+def test_explicit_fixture_directory_does_not_inherit_the_containing_repository_head(tmp_path):
+    container = tmp_path / "containing-checkout"
+    _make_git_clone(container, "https://github.com/example/container")
+    fixture = container / "nested-fixture"
+    fixture.mkdir()
+    (fixture / "kernel.cu").write_text("#define WARP_SIZE 32\n")
+    output = tmp_path / "reports"
+    assert (
+        main(
+            [
+                str(fixture),
+                "--repo-url",
+                "https://github.com/example/fixture",
+                "--commit",
+                "d" * 40,
+                "--output",
+                str(output),
+            ]
+        )
+        == 2
+    )
+    report = json.loads(next(output.glob("*.json")).read_text(encoding="utf-8"))
+    assert report["source"]["kind"] == "declared-directory"
+    assert report["source"]["actual_commit"] is None
+
+
+def test_cli_records_worktree_provenance_and_indexed_content_digest(tmp_path: Path):
+    repository = tmp_path / "clone"
+    _make_git_clone(repository, "https://github.com/example/cuda-extension")
+    records = []
+    for label in ("clean", "dirty"):
+        if label == "dirty":
+            (repository / "new-kernel.cu").write_text("#define WARP_SIZE 32\n")
+        output = tmp_path / label
+        assert main([str(repository), "--output", str(output)]) == 2
+        records.append(json.loads(next(output.glob("*.json")).read_text(encoding="utf-8")))
+    assert records[0]["source"]["kind"] == "git-commit"
+    assert records[0]["source"]["dirty"] is False
+    assert records[1]["source"]["kind"] == "working-tree"
+    assert records[1]["source"]["dirty"] is True
+    assert records[1]["source"]["actual_commit"] == records[1]["repository"]["commit"]
+    assert records[0]["source"]["input_digest"] != records[1]["source"]["input_digest"]
+    assert any(w["code"] == "LOCAL_WORKTREE_SNAPSHOT" for w in records[1]["analysis_warnings"])
+
+
+def test_cli_rejects_a_worktree_that_changes_from_clean_during_analysis(tmp_path, monkeypatch):
+    repository = tmp_path / "clone"
+    _make_git_clone(repository, "https://github.com/example/cuda-extension")
+    analyze = scan_repository.ScanAnalyzer.analyze
+
+    def mutate_after_read(self, *args, **kwargs):
+        report = analyze(self, *args, **kwargs)
+        (repository / "new-kernel.cu").write_text("#define WARP_SIZE 32\n")
+        return report
+
+    monkeypatch.setattr(scan_repository.ScanAnalyzer, "analyze", mutate_after_read)
+    output = tmp_path / "reports"
+    assert main([str(repository), "--output", str(output)]) == 1
+    assert not output.exists()
 
 
 def test_cli_preserves_previous_scan_when_worktree_changes(tmp_path: Path) -> None:

@@ -17,6 +17,7 @@ from mxready.models import Finding, Severity
 from mxready.scanning.facts import ProjectFacts, SourceLocation
 from mxready.scanning.indexer import FileIndex, IndexedFile
 from mxready.scanning.python_source import docstring_spans, is_inside_docstring
+from mxready.scanning.regex_process import RegexMatcher
 from mxready.scanning.rule_loader import (
     RuleCatalog,
     RuleDefinition,
@@ -153,10 +154,32 @@ def evaluate_rules(
     enable_prefilter: bool = True,
 ) -> list[Finding]:
     """Evaluate trusted rule data deterministically against a static index."""
-    findings: dict[tuple[str, str, int, str, int | None, int | None], Finding] = {}
     if max_findings < 1 or timeout_seconds <= 0:
         raise ValueError("Rule evaluation budgets must be positive")
     deadline = time.monotonic() + timeout_seconds
+    with RegexMatcher(deadline, max_findings + 1) as matcher:
+        return _evaluate_rules(
+            catalog,
+            index,
+            facts,
+            max_findings=max_findings,
+            deadline=deadline,
+            enable_prefilter=enable_prefilter,
+            matcher=matcher,
+        )
+
+
+def _evaluate_rules(
+    catalog: RuleCatalog,
+    index: FileIndex,
+    facts: ProjectFacts,
+    *,
+    max_findings: int,
+    deadline: float,
+    enable_prefilter: bool,
+    matcher: RegexMatcher,
+) -> list[Finding]:
+    findings: dict[tuple[str, str, int, str, int | None, int | None], Finding] = {}
     folded_cache = _FoldedCache()
     files_by_path = {item.relative_path: item for item in index.files}
     docstring_cache: dict[str, tuple[tuple[int, int], ...]] = {}
@@ -189,6 +212,7 @@ def evaluate_rules(
                 check_budget,
                 folded_cache,
                 enable_prefilter,
+                matcher,
             ):
                 check_budget()
                 severity = rule.severity
@@ -250,6 +274,7 @@ def _evaluate_pattern(
     check_budget: Callable[[], None],
     folded_cache: _FoldedCache,
     enable_prefilter: bool,
+    matcher: RegexMatcher,
 ) -> Iterable[_RuleMatch]:
     if pattern.type == "regex":
         return _evaluate_regex(
@@ -259,6 +284,7 @@ def _evaluate_pattern(
             check_budget,
             folded_cache,
             enable_prefilter,
+            matcher,
         )
     if pattern.type == "dependency":
         return _evaluate_dependency(rule, pattern, facts)
@@ -272,12 +298,12 @@ def _evaluate_regex(
     check_budget: Callable[[], None],
     folded_cache: _FoldedCache,
     enable_prefilter: bool,
+    matcher: RegexMatcher,
 ) -> Iterator[_RuleMatch]:
     expression = pattern.expression
     if expression is None:
         return
     flags = regex_flags(pattern.flags)
-    compiled = re.compile(expression, flags)
     prefilter = _required_prefilter(expression, flags) if enable_prefilter else None
 
     for indexed_file in index.files:
@@ -290,9 +316,12 @@ def _evaluate_regex(
             folded_cache,
         ):
             continue
-        for regex_match in compiled.finditer(indexed_file.text):
-            line_start = bisect_right(indexed_file.line_offsets, regex_match.start())
-            last_character = max(regex_match.start(), regex_match.end() - 1)
+        for offset_start, offset_end in matcher.search(
+            expression, flags, indexed_file.text, (indexed_file.relative_path, indexed_file.sha256)
+        ):
+            check_budget()
+            line_start = bisect_right(indexed_file.line_offsets, offset_start)
+            last_character = max(offset_start, offset_end - 1)
             line_end = bisect_right(indexed_file.line_offsets, last_character)
             yield _RuleMatch(
                 location=SourceLocation(
@@ -305,8 +334,8 @@ def _evaluate_regex(
                     ),
                 ),
                 line_end=line_end,
-                offset_start=regex_match.start(),
-                offset_end=regex_match.end(),
+                offset_start=offset_start,
+                offset_end=offset_end,
             )
 
 

@@ -14,7 +14,7 @@ from mxready.errors import MxReadyError
 from mxready.models import ScanReport, StaticStatus
 from mxready.reporting.markdown import render_markdown
 from mxready.reporting.sarif import render_sarif
-from mxready.reporting.terminal import render_terminal_summary
+from mxready.reporting.terminal import print_terminal, terminal_summary
 from mxready.repository.git_client import GitClient
 from mxready.repository.github_archive import GitHubArchiveClient
 from mxready.repository.identity import parse_repository_url
@@ -101,11 +101,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             requested_ref=arguments.ref,
         )
     except (MxReadyError, OSError, ValueError) as error:
-        print(f"MXReady public scan error: {error}", file=sys.stderr)
+        print_terminal(f"MXReady public scan error: {error}", file=sys.stderr)
         return 1
 
     print(
-        render_terminal_summary(
+        terminal_summary(
             report,
             output_note=f"{arguments.label}.json / {arguments.label}.md",
         )

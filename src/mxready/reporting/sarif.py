@@ -81,6 +81,7 @@ def render_sarif(report: ScanReport) -> str:
                         "properties": {
                             "scanId": str(report.scan_id),
                             "coverage": report.coverage.model_dump() if report.coverage else None,
+                            "source": report.source.model_dump() if report.source else None,
                             "analysisWarnings": [w.model_dump() for w in report.analysis_warnings],
                             "scope": "Static analysis only; hardware verification is separate.",
                         },

@@ -6,6 +6,9 @@
 
 from __future__ import annotations
 
+import sys
+from typing import TextIO
+
 from mxready.models import ScanReport, Severity
 
 _MAX_LISTED_FINDINGS = 5
@@ -19,6 +22,37 @@ _SEVERITY_LABELS_EN = {
     Severity.WARNING: "WARNING",
     Severity.INFO: "INFO",
 }
+
+
+def _can_encode(text: str, stream: TextIO) -> bool:
+    try:
+        text.encode(getattr(stream, "encoding", None) or "utf-8")
+    except (LookupError, UnicodeEncodeError):
+        return False
+    return True
+
+
+def terminal_text(text: str, *, english: str | None = None, file: TextIO | None = None) -> str:
+    stream = file if file is not None else sys.stdout
+    if _can_encode(text, stream):
+        return text
+    text = english if english is not None else text
+    encoding = getattr(stream, "encoding", None) or "ascii"
+    try:
+        return text.encode(encoding, errors="backslashreplace").decode(encoding)
+    except LookupError:
+        return text.encode("ascii", errors="backslashreplace").decode("ascii")
+
+
+def print_terminal(text: str, *, english: str | None = None, file: TextIO | None = None) -> None:
+    print(terminal_text(text, english=english, file=file), file=file)
+
+
+def terminal_summary(report: ScanReport, *, output_note: str) -> str:
+    return terminal_text(
+        render_terminal_summary(report, output_note=output_note),
+        english=render_terminal_summary(report, output_note=output_note, english=True),
+    )
 
 
 def render_terminal_summary(

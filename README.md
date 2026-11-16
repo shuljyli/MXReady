@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -109,16 +109,19 @@ CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS，另有 Python 3
 
 ## 安装与启动
 
+当前源码为 **1.0.2 候选**，尚未发布到 PyPI。PyPI 1.0.1 不包含本轮修复；
+测试候选请使用本地构建的 wheel/ZIP，安装前核对其版本与摘要。
+
 普通使用者直接安装包含网页的发布包即可，无需 Node.js，也无需安装 PyTorch 或 GPU 驱动；
 三平台均需预装 **Python 3.11+（含 pip/venv）和 Git**，首次安装默认联网下载 Python 依赖。
 
 | 平台 | 安装包 | 完整解压后，在包目录中执行 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.1-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
-| Linux | `mxready-1.0.1-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
-| macOS（Apple Silicon / Intel） | `mxready-1.0.1-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
+| Windows 10/11 | `mxready-1.0.2-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
+| Linux | `mxready-1.0.2-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
+| macOS（Apple Silicon / Intel） | `mxready-1.0.2-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
 | 自行管理 Python 环境 | PyPI 上的 `mxready` | `python -m pip install mxready`，然后 `mxready-serve` |
-| 已有 Python 环境 | `mxready-1.0.1-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
+| 已有 Python 环境 | `mxready-1.0.2-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
 
 启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。ZIP 是 Python 应用安装包，
 不附带 Python/Git，也不是原生 EXE、DMG 或系统包管理器安装程序。已发布的附件见
@@ -189,6 +192,8 @@ CI 配置覆盖三系统的 Python 3.11 / 3.12 / 3.13 自动化测试，实际�
 [命令行使用](docs/cli.md)。所有 CLI 只读分析，不执行被扫描代码。
 
 本地扫描每次使用独立 ID；同名输出会整组追加扫描 ID，保留旧报告与可信基线。
+本地报告会标明干净提交、未提交工作区或显式声明目录，并记录纳入分析的文件集合摘要；
+指定提交与实际 HEAD 不符时拒绝输出，旧报告缺少来源字段时仍可读取。
 
 ## 状态含义
 

@@ -153,10 +153,18 @@ export type ScanReport = {
   summary: ScanSummary;
   findings: Array<Finding>;
   coverage: ScanCoverage | null;
+  source: ScanSource | null;
   migration_checklist: Array<MigrationChecklistItem>;
   analysis_warnings: Array<AnalysisWarning>;
   static_status: StaticStatus;
   verification_status: VerificationStatus;
+};
+
+export type ScanSource = {
+  kind: "git-commit" | "working-tree" | "declared-directory";
+  actual_commit: string | null;
+  dirty: boolean | null;
+  input_digest: string | null;
 };
 
 export type ScanStatus = "queued" | "cloning" | "indexing" | "analyzing" | "completed" | "failed";

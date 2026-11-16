@@ -56,6 +56,7 @@ const completedReport = {
   },
   findings: [],
   coverage: null,
+  source: null,
   migration_checklist: [],
   analysis_warnings: [],
   static_status: "passed",

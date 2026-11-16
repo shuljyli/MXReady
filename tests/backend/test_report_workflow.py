@@ -61,11 +61,18 @@ def test_legacy_reports_keep_unknown_coverage_and_partial_locations(tmp_path):
     report = analyze(tmp_path)
     payload = report.model_dump(mode="json")
     payload.pop("coverage")
+    payload.pop("source")
     for finding in payload["findings"]:
         finding.pop("occurrences")
         finding["count"] = 3
     legacy = ScanReport.model_validate(payload)
     assert legacy.coverage is None
+    assert legacy.source is None
+    from mxready.reporting.html import render_html
+    from mxready.reporting.markdown import render_markdown
+
+    assert "旧报告未记录扫描范围" in render_markdown(legacy)
+    assert "旧报告未记录扫描范围" in render_html(legacy)
     results = json.loads(render_sarif(legacy))["runs"][0]["results"]
     assert results
     assert all(not r["properties"]["occurrencesComplete"] for r in results)

@@ -143,7 +143,7 @@ installed_ids = ','.join(rule.id for rule in load_rule_catalog(Settings().rules_
 assert installed_ids == sys.argv[3], installed_ids
 with TestClient(create_app()) as client:
     assert client.get('/api/health').status_code == 200
-report = ScanReport.model_validate_json(Path(sys.argv[2]).read_text())
+report = ScanReport.model_validate_json(Path(sys.argv[2]).read_text(encoding='utf-8'))
 with zipfile.ZipFile(io.BytesIO(build_verification_bundle(report))) as bundle:
     assert 'schemas/verification-result-v1.json' in bundle.namelist()
     bundle.extractall('bundle')

@@ -21,6 +21,7 @@ from mxready import __version__
 from mxready.cli.generate_public_report import generate_public_report
 from mxready.errors import MxReadyError
 from mxready.models import ScanReport, Severity
+from mxready.reporting.terminal import print_terminal
 from mxready.repository.identity import parse_repository_url
 
 _TOP_RULE_LIMIT = 3
@@ -265,7 +266,18 @@ def _markdown_row(outcome: BatchOutcome) -> str:
     )
 
 
-def format_progress_line(index: int, total: int, outcome: BatchOutcome) -> str:
+def format_progress_line(
+    index: int, total: int, outcome: BatchOutcome, *, english: bool = False
+) -> str:
+    if english:
+        if outcome.report is None:
+            return f"[{index}/{total}] {outcome.display} -> failed: {outcome.error}"
+        summary = outcome.report.summary
+        return (
+            f"[{index}/{total}] {outcome.display} -> {outcome.report.static_status.value} "
+            f"(blockers {summary.blocker_count}, warnings {summary.warning_count}, "
+            f"info {summary.info_count})"
+        )
     if outcome.report is None:
         return f"[{index}/{total}] {outcome.display} → 失败: {outcome.error}"
     summary = outcome.report.summary
@@ -282,10 +294,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         for source in arguments.sources:
             entries.extend(load_batch_entries(source))
     except ValueError as error:
-        print(f"MXReady batch error: {error}", file=sys.stderr)
+        print_terminal(f"MXReady batch error: {error}", file=sys.stderr)
         return 1
     if not entries:
-        print("MXReady batch error: 清单为空。", file=sys.stderr)
+        print_terminal(
+            "MXReady batch error: 清单为空。",
+            english="MXReady batch error: Empty list.",
+            file=sys.stderr,
+        )
         return 1
 
     output_dir = Path(arguments.output)
@@ -295,7 +311,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     def show(outcome: BatchOutcome) -> None:
         counter["index"] += 1
-        print(format_progress_line(counter["index"], total, outcome))
+        print_terminal(
+            format_progress_line(counter["index"], total, outcome),
+            english=format_progress_line(counter["index"], total, outcome, english=True),
+        )
 
     try:
         outcomes = scan_batch(
@@ -319,7 +338,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             encoding="utf-8",
         )
     except OSError as error:
-        print(f"MXReady batch error: {error}", file=sys.stderr)
+        print_terminal(f"MXReady batch error: {error}", file=sys.stderr)
         return 1
 
     succeeded_count = sum(1 for outcome in outcomes if outcome.report is not None)
@@ -328,10 +347,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         for outcome in outcomes
         if outcome.report is not None and outcome.report.static_status.value == "blocked"
     )
-    print(
-        f"汇总: 成功 {succeeded_count} · 失败 {total - succeeded_count}（其中阻塞 {blocked_count}）"
+    print_terminal(
+        f"汇总: 成功 {succeeded_count} · 失败 {total - succeeded_count}"
+        f"（其中阻塞 {blocked_count}）",
+        english=(
+            f"Summary: succeeded {succeeded_count}, failed {total - succeeded_count}, "
+            f"blocked {blocked_count}"
+        ),
     )
-    print(f"报告: {output_dir / 'batch-summary.csv'} 与 {output_dir / 'batch-summary.md'}")
+    print_terminal(
+        f"报告: {output_dir / 'batch-summary.csv'} 与 {output_dir / 'batch-summary.md'}",
+        english=f"Reports: {output_dir / 'batch-summary.csv'} / {output_dir / 'batch-summary.md'}",
+    )
     if succeeded_count < total:
         return 1
     if blocked_count:

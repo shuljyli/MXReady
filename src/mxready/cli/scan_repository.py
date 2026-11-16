@@ -12,12 +12,13 @@ from uuid import uuid4
 from mxready import __version__
 from mxready.config import Settings
 from mxready.errors import MxReadyError
-from mxready.models import ScanReport
+from mxready.models import AnalysisWarning, ScanReport, ScanSource
 from mxready.reporting.badge import render_badge
 from mxready.reporting.comparison import new_blockers
 from mxready.reporting.markdown import render_markdown
 from mxready.reporting.sarif import render_sarif
-from mxready.reporting.terminal import render_terminal_summary
+from mxready.reporting.terminal import print_terminal
+from mxready.reporting.terminal import terminal_summary as _terminal_summary
 from mxready.repository.identity import parse_repository_url
 from mxready.scanning.analyzer import ScanAnalyzer
 from mxready.scanning.rule_loader import load_rule_catalog
@@ -37,6 +38,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         baseline = _load_baseline(arguments.baseline, fail_on=arguments.fail_on)
         repository_root = _local_repository(arguments.local_path)
         commit = _commit_sha(arguments.commit or _detect_commit(repository_root))
+        source = _source_state(repository_root, commit)
         identity = parse_repository_url(
             arguments.repo_url or _detect_repository_url(repository_root)
         )
@@ -53,7 +55,30 @@ def main(argv: Sequence[str] | None = None) -> int:
             commit=commit,
             scan_id=uuid4(),
             stage_callback=lambda status: None,
+            source=source,
         )
+        if _source_state(repository_root, commit) != source:
+            raise ValueError("Local HEAD or worktree state changed during the scan; retry it")
+        if source.kind != "git-commit":
+            report = report.model_copy(
+                update={
+                    "analysis_warnings": [
+                        *report.analysis_warnings,
+                        AnalysisWarning(
+                            code=(
+                                "LOCAL_WORKTREE_SNAPSHOT"
+                                if source.dirty
+                                else "LOCAL_SOURCE_DECLARED"
+                            ),
+                            message=(
+                                "本报告分析当前工作区，包含未提交内容；提交号不代表这些改动。"
+                                if source.dirty
+                                else "本地目录未核对 Git 来源；仓库地址和提交号仅作来源声明。"
+                            ),
+                        ),
+                    ]
+                }
+            )
         blockers = [f for f in report.findings if f.severity.value == "blocker"]
         if baseline is not None:
             blockers = new_blockers(baseline, report)
@@ -64,7 +89,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if baseline is not None:
             print(f"New or increased blocker groups: {len(blockers)}")
     except (MxReadyError, OSError, ValueError) as error:
-        print(f"MXReady scan error: {error}", file=sys.stderr)
+        print_terminal(f"MXReady scan error: {error}", file=sys.stderr)
         return 1
 
     print(
@@ -88,29 +113,6 @@ def _load_baseline(value: str | None, *, fail_on: str) -> ScanReport | None:
     if len(content) > maximum:
         raise ValueError("Baseline exceeds 20 MiB")
     return ScanReport.model_validate_json(content)
-
-
-def _terminal_summary(report: ScanReport, *, output_note: str) -> str:
-    """按标准输出编码选取摘要语言；旧代码页无法编码中文时回退纯 ASCII。"""
-    summary = render_terminal_summary(report, output_note=output_note)
-    if _can_encode(summary):
-        return summary
-    summary = render_terminal_summary(report, output_note=output_note, english=True)
-    if _can_encode(summary):
-        return summary
-    encoding = getattr(sys.stdout, "encoding", None) or "ascii"
-    return summary.encode(encoding, errors="backslashreplace").decode(encoding)
-
-
-def _can_encode(text: str) -> bool:
-    encoding = getattr(sys.stdout, "encoding", None)
-    if not encoding:
-        return True
-    try:
-        text.encode(encoding)
-    except (LookupError, UnicodeEncodeError):
-        return False
-    return True
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -153,7 +155,7 @@ def _commit_sha(value: str) -> str:
     return value
 
 
-def _run_git(repository_root: Path, *arguments: str) -> str:
+def _run_git(repository_root: Path, *arguments: str, required: bool = False) -> str:
     """在只读模式下询问本地仓库；git 不可用或命令失败时返回空字符串。"""
     try:
         completed = subprocess.run(
@@ -167,8 +169,35 @@ def _run_git(repository_root: Path, *arguments: str) -> str:
             timeout=10,
         )
     except (OSError, subprocess.SubprocessError):
+        if required:
+            raise ValueError("Cannot verify the local Git worktree state") from None
         return ""
+    if required and completed.returncode != 0:
+        raise ValueError("Cannot verify the local Git worktree state")
     return completed.stdout.strip() if completed.returncode == 0 else ""
+
+
+def _source_state(repository_root: Path, commit: str) -> ScanSource:
+    git_root = _run_git(repository_root, "rev-parse", "--show-toplevel")
+    if not git_root or Path(git_root).resolve() != repository_root:
+        # Fixture/subdirectory scans must not inherit an enclosing checkout's identity.
+        return ScanSource(kind="declared-directory")
+    head = _run_git(repository_root, "rev-parse", "HEAD")
+    if not head:
+        return ScanSource(kind="declared-directory")
+    if head != commit:
+        raise ValueError("Declared --commit does not match the local HEAD")
+    status = _run_git(
+        repository_root,
+        "status",
+        "--porcelain",
+        "--untracked-files=all",
+        "--ignore-submodules=none",
+        required=True,
+    )
+    return ScanSource(
+        kind="working-tree" if status else "git-commit", actual_commit=head, dirty=bool(status)
+    )
 
 
 def _detect_commit(repository_root: Path) -> str:

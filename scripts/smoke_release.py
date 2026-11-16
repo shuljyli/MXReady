@@ -116,12 +116,37 @@ Path('fixture').mkdir()
 Path('fixture/setup.py').write_text('from torch.utils.cpp_extension import CUDAExtension')
 assert main(['fixture', '--repo-url', 'https://github.com/example/project',
              '--commit', 'a'*40, '--output', 'reports']) in (0, 2)
-report = ScanReport.model_validate_json(next(Path('reports').glob('*.json')).read_text())
+previous = {path.name: path.read_bytes() for path in Path('reports').iterdir()}
+assert len(previous) == 4
+assert main(['fixture', '--repo-url', 'https://github.com/example/project',
+             '--commit', 'a'*40, '--output', 'reports']) in (0, 2)
+assert len(list(Path('reports').iterdir())) == 8
+assert all((Path('reports') / name).read_bytes() == data for name, data in previous.items())
+ids = {ScanReport.model_validate_json(path.read_bytes()).scan_id
+       for path in Path('reports').glob('*.json')}
+assert len(ids) == 2
+report = ScanReport.model_validate_json(
+    next(Path('reports').glob('*.json')).read_text(encoding='utf-8'))
 payload = build_verification_bundle(report)
 Path('verification.zip').write_bytes(payload)
 with zipfile.ZipFile(io.BytesIO(payload)) as bundle:
     assert 'schemas/verification-result-v1.json' in bundle.namelist()
     bundle.extractall('bundle')
+"""
+
+ENTRY_POINT_SMOKE = """
+import subprocess, sys
+from pathlib import Path
+from mxready import __version__
+for command in ('mxready', 'mxready-serve', 'mxready-scan', 'mxready-scan-public',
+                'mxready-scan-batch', 'mxready-build-bundle', 'mxready-runner'):
+    suffix = '.exe' if sys.platform == 'win32' else ''
+    executable = Path(sys.executable).parent / (command + suffix)
+    result = subprocess.run([str(executable), '--version'], capture_output=True,
+                            text=True, encoding='utf-8', timeout=15, shell=False)
+    assert result.returncode == 0, (command, result.stderr)
+    assert result.stdout.strip().endswith(' ' + __version__), (command, result.stdout)
+    print(command + ': ' + result.stdout.strip())
 """
 
 
@@ -182,6 +207,13 @@ def smoke(archive: Path, wheelhouse: Path | None, evidence: Evidence) -> None:
             timeout=15,
         )
         evidence.run(
+            "cli-versions",
+            [str(python), "-I", "-c", ENTRY_POINT_SMOKE],
+            cwd=work,
+            env=env,
+            timeout=90,
+        )
+        evidence.run(
             "resources-scan-bundle",
             [str(python), "-I", "-c", RESOURCE_SMOKE],
             cwd=work,
@@ -210,7 +242,8 @@ from mxready.models import ScanReport, ScanStatus
 from mxready.persistence.sqlite import SQLiteStore
 store = SQLiteStore(Path(sys.argv[1]))
 store.initialize()
-report = ScanReport.model_validate_json(next(Path('reports').glob('*.json')).read_text())
+report = ScanReport.model_validate_json(
+    next(Path('reports').glob('*.json')).read_text(encoding='utf-8'))
 job = store.create_job(report.repository.url, None)
 report = report.model_copy(update={'scan_id': job.id})
 store.save_report(report)

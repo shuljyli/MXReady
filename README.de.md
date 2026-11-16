@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -149,11 +149,11 @@ vorinstalliert sein; die erste Installation lädt Python-Abhängigkeiten standar
 
 | Plattform | Paket | Nach dem Entpacken im Paketverzeichnis ausführen |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.1-windows.zip` | PowerShell: `.\install.ps1`, dann `.\start.ps1` |
-| Linux | `mxready-1.0.1-linux.zip` | `bash install.sh`, dann `bash start.sh` |
-| macOS (Apple Silicon / Intel) | `mxready-1.0.1-macos.zip` | `bash install.sh`, dann `bash start.sh` |
+| Windows 10/11 | `mxready-1.0.2-windows.zip` | PowerShell: `.\install.ps1`, dann `.\start.ps1` |
+| Linux | `mxready-1.0.2-linux.zip` | `bash install.sh`, dann `bash start.sh` |
+| macOS (Apple Silicon / Intel) | `mxready-1.0.2-macos.zip` | `bash install.sh`, dann `bash start.sh` |
 | Eigenverwaltete Python-Umgebung | `mxready` auf PyPI | `python -m pip install mxready`, dann `mxready-serve` |
-| Vorhandene Python-Umgebung | `mxready-1.0.1-py3-none-any.whl` | in einer eigenen venv: `python -m pip install <wheel-Pfad>`, dann `mxready-serve` |
+| Vorhandene Python-Umgebung | `mxready-1.0.2-py3-none-any.whl` | in einer eigenen venv: `python -m pip install <wheel-Pfad>`, dann `mxready-serve` |
 
 Öffnen Sie nach dem Start <http://127.0.0.1:8000>; im Terminal beendet `Ctrl+C` den Dienst. Die ZIPs sind
 Python-Anwendungspakete: Sie enthalten weder Python noch Git und sind keine nativen EXE-/DMG-Pakete oder

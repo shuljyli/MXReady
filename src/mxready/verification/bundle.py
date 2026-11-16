@@ -18,6 +18,7 @@ _RUNNER_FILES = (
     "inspect.py",
     "contracts.py",
     "process.py",
+    "_windows_job.py",
     "redact.py",
     "schema.py",
 )

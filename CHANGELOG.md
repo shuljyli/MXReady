@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 
+## [1.0.2] - 候选，尚未发布
+
+本节描述当前源码与本地候选包；PyPI 上的 1.0.1 不会自动获得这些修复。
+
+
 ### Added
 
 - 新增可选 `.[tui]` 的 `mxready` / `python -m mxready` 全屏终端：持续命令输入、可滚动结果区、
@@ -15,6 +20,15 @@
 - 报告新增 HTML 导出（`GET /api/scans/{scan_id}/report.html`）：自包含、无外链的可打印文件，浏览器打开后可直接打印为 PDF；旧报告（无 occurrences / coverage 元数据）也能正常渲染。
 
 ### Fixed
+
+- 正则匹配在可终止的独立进程中执行，共享整轮规则预算；单次失败搜索也可超时，保留原有规则和预过滤结论。
+- 本地扫描新增可选来源元数据与已索引文件集合摘要，区分干净提交、工作区与显式声明目录；
+  显式提交与实际 HEAD 不符或扫描期间 HEAD/工作区状态变化时，在写报告前失败。旧报告仍可读取。
+- Windows runner 使用标准库 Job Object 监督进程管理全部后代，命令与输出排空共享截止时间；
+  修复父进程先退出后超时失效及部分输出丢失，验证 ZIP 同步包含监督模块。
+- 公开仓库、批量与验证包 CLI 统一使用编码安全的终端输出，支持 cp1252/ASCII 等旧代码页与中文路径。
+- 发布安装验收脚本显式按 UTF-8 读取报告，避免 Windows 默认编码导致安装冒烟误报失败。
+
 
 - 修复命令面板的 Esc 被主界面优先快捷键拦截而无法关闭的问题；缩放回归等待屏幕实际调整尺寸，
   并覆盖延迟缩放，避免 Windows CI 偶发读取旧布局。
@@ -365,7 +379,8 @@ MXMACA；正式版本将在后续发布。
 - Web 扫描路径永不执行被扫描仓库中的代码。
 - 仓库地址主机白名单、受限 Git 获取、只读索引与上传结果严格校验。
 
-[Unreleased]: https://github.com/shuljyli/MXReady/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/shuljyli/MXReady/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/shuljyli/MXReady/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/shuljyli/MXReady/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/shuljyli/MXReady/compare/v0.3.1...v1.0.0
 [0.3.1]: https://github.com/shuljyli/MXReady/compare/v0.3.0...v0.3.1
