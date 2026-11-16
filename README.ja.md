@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.3-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -114,11 +114,11 @@ CI は Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS をカバーし、�
 
 | プラットフォーム | パッケージ | 展開後、パッケージのディレクトリで実行 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.2-windows.zip` | PowerShell：`.\install.ps1`、次に `.\start.ps1` |
-| Linux | `mxready-1.0.2-linux.zip` | `bash install.sh`、次に `bash start.sh` |
-| macOS（Apple Silicon / Intel） | `mxready-1.0.2-macos.zip` | `bash install.sh`、次に `bash start.sh` |
+| Windows 10/11 | `mxready-1.0.3-windows.zip` | PowerShell：`.\install.ps1`、次に `.\start.ps1` |
+| Linux | `mxready-1.0.3-linux.zip` | `bash install.sh`、次に `bash start.sh` |
+| macOS（Apple Silicon / Intel） | `mxready-1.0.3-macos.zip` | `bash install.sh`、次に `bash start.sh` |
 | Python 環境を自分で管理 | PyPI の `mxready` | `python -m pip install mxready`、次に `mxready-serve` |
-| 既存の Python 環境 | `mxready-1.0.2-py3-none-any.whl` | 専用 venv 内で `python -m pip install <wheel のパス>`、次に `mxready-serve` |
+| 既存の Python 環境 | `mxready-1.0.3-py3-none-any.whl` | 専用 venv 内で `python -m pip install <wheel のパス>`、次に `mxready-serve` |
 
 起動後 <http://127.0.0.1:8000> を開き、ターミナルで `Ctrl+C` を押してサービスを停止します。ZIP は Python アプリケーションのインストールパッケージであり、
 Python/Git は同梱していません。ネイティブの EXE、DMG、システムのパッケージマネージャー用インストーラでもありません。公開済みの添付ファイルは

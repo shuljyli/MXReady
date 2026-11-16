@@ -356,7 +356,7 @@ export function ReportView({
               <button type="button" className="text-button compact-button" onClick={clearFilters}>清除筛选</button></div>
             {visibleFindings.length ? (
               <div className="finding-list">{visibleFindings.slice(pageOffset, pageOffset + 50).map((finding, index) => (
-                <FindingCard finding={finding} repository={report.repository} onOpenRule={onOpenRule}
+                <FindingCard finding={finding} repository={report.repository} source={report.source} onOpenRule={onOpenRule}
                   key={finding.rule_id + "-" + finding.relative_path + "-" + finding.line_start + "-" + index} />
               ))}</div>
             ) : (

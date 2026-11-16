@@ -1,7 +1,7 @@
 # MXReady
 
 [![CI](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml/badge.svg)](https://github.com/shuljyli/MXReady/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.3-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -109,7 +109,7 @@ CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS，另有 Python 3
 
 ## 安装与启动
 
-当前源码为 **1.0.2 候选**，尚未发布到 PyPI。PyPI 1.0.1 不包含本轮修复；
+当前源码为 **1.0.3 候选**，尚未发布到 PyPI。PyPI 1.0.1 不包含本轮修复；
 测试候选请使用本地构建的 wheel/ZIP，安装前核对其版本与摘要。
 
 普通使用者直接安装包含网页的发布包即可，无需 Node.js，也无需安装 PyTorch 或 GPU 驱动；
@@ -117,11 +117,11 @@ CI 覆盖 Python 3.11 / 3.12 / 3.13 × Windows / Linux / macOS，另有 Python 3
 
 | 平台 | 安装包 | 完整解压后，在包目录中执行 |
 | --- | --- | --- |
-| Windows 10/11 | `mxready-1.0.2-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
-| Linux | `mxready-1.0.2-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
-| macOS（Apple Silicon / Intel） | `mxready-1.0.2-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
+| Windows 10/11 | `mxready-1.0.3-windows.zip` | PowerShell：`.\install.ps1`，然后 `.\start.ps1` |
+| Linux | `mxready-1.0.3-linux.zip` | `bash install.sh`，然后 `bash start.sh` |
+| macOS（Apple Silicon / Intel） | `mxready-1.0.3-macos.zip` | `bash install.sh`，然后 `bash start.sh` |
 | 自行管理 Python 环境 | PyPI 上的 `mxready` | `python -m pip install mxready`，然后 `mxready-serve` |
-| 已有 Python 环境 | `mxready-1.0.2-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
+| 已有 Python 环境 | `mxready-1.0.3-py3-none-any.whl` | 在专用 venv 中 `python -m pip install <wheel路径>`，然后 `mxready-serve` |
 
 启动后打开 <http://127.0.0.1:8000>，终端中按 `Ctrl+C` 停止服务。ZIP 是 Python 应用安装包，
 不附带 Python/Git，也不是原生 EXE、DMG 或系统包管理器安装程序。已发布的附件见
@@ -173,6 +173,11 @@ python -m mxready
 支持 `/` 命令提示、Tab 补全、↑↓ 历史、Ctrl+P 命令面板；Ctrl+C 取消任务，Ctrl+Q 退出。
 也可用 `mxready /path/to/project` 指定项目；报告默认写入用户数据目录下的 `reports`，
 `--output-dir ./reports` 可覆盖。开发环境安装 `.[dev]` 已包含终端依赖。
+
+终端支持 `/findings --severity blocker --query warp` 筛选、`/reports` 选择报告与批次结果，
+以及 `/compare baseline.json` 对比当前报告。重启可恢复历史、输出偏好与摘要索引；
+`--no-state` 关闭本次持久化。TUI / Web 详情展示报告记录的源码来源，缺失或矛盾值会明确提示。
+状态目录、隐私与对比边界见 [CLI 文档](docs/cli.md)。
 
 终端按 **macOS、Windows、Linux** 三平台实现，需要 Git 和支持 ANSI / Unicode 的交互终端；
 终端功能本身无需 Node.js、PyTorch 或 GPU 驱动。当前平台验证证据如下：
