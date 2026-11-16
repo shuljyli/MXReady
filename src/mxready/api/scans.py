@@ -11,6 +11,7 @@ from starlette.concurrency import run_in_threadpool
 from mxready.errors import MxReadyError
 from mxready.models import ScanJob, ScanReport, StrictModel
 from mxready.reporting.badge import render_badge
+from mxready.reporting.html import render_html
 from mxready.reporting.markdown import render_markdown
 from mxready.reporting.sarif import render_sarif
 from mxready.verification.bundle import build_verification_bundle
@@ -51,6 +52,16 @@ def download_markdown_report(scan_id: UUID, request: Request) -> Response:
         content=render_markdown(report),
         media_type="text/markdown",
         headers=_attachment_headers(report, "md"),
+    )
+
+
+@router.get("/{scan_id}/report.html")
+def download_html_report(scan_id: UUID, request: Request) -> Response:
+    report = request.app.state.scan_service.get_report(scan_id)
+    return Response(
+        content=render_html(report),
+        media_type="text/html",
+        headers=_attachment_headers(report, "html"),
     )
 
 

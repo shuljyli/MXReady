@@ -15,6 +15,7 @@ import { ScanForm } from "./components/ScanForm";
 import { ScanProgress } from "./components/ScanProgress";
 import { TaskDetails } from "./components/TaskDetails";
 import { ScanHistory } from "./components/ScanHistory";
+import { MigrationDashboard } from "./components/MigrationDashboard";
 import { useScan } from "./hooks/useScan";
 import { useWorkspacePage, workspaceHref, type WorkspacePage } from "./hooks/useWorkspacePage";
 
@@ -23,6 +24,7 @@ const pages: Array<{ page: WorkspacePage; label: string; icon: "scan" | "file" |
   { page: "scan", label: "源码体检", icon: "scan" },
   { page: "batch", label: "批量扫描", icon: "scan" },
   { page: "history", label: "扫描历史", icon: "file" },
+  { page: "dashboard", label: "迁移进度", icon: "file" },
   { page: "rules", label: "规则库", icon: "file" },
   { page: "mcp", label: "MCP 接入", icon: "chip" },
   { page: "cli", label: "命令行使用", icon: "file" },
@@ -133,6 +135,7 @@ export function App({ initialJob, pollIntervalMs = 1_500 }: AppProps) {
         <main id="main-content" tabIndex={-1}>
           <div hidden={page !== "batch"}><ErrorBoundary label="批量扫描"><BatchScans onOpen={id => { open(id); navigate("scan"); }} /></ErrorBoundary></div>
           {page === "history" ? <ErrorBoundary label="扫描历史"><ScanHistory onOpen={(id) => { open(id); navigate("scan"); }} /></ErrorBoundary> : null}
+          {page === "dashboard" ? <ErrorBoundary label="迁移进度"><MigrationDashboard onOpen={(id) => { open(id); navigate("scan"); }} /></ErrorBoundary> : null}
           {page === "rules" ? <ErrorBoundary label="规则库"><RuleCatalogView catalog={catalog}
             loading={catalogLoading} error={catalogError} onRetry={() => setCatalogAttempt((value) => value + 1)}
             selectedRule={ruleId} historicalVersion={ruleVersion} /></ErrorBoundary> : null}

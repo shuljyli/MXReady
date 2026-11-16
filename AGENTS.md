@@ -15,6 +15,7 @@ MXReady statically assesses PyTorch CUDA extensions for migration to MetaX MXMAC
 - `tests/integration/`: sdist/wheel and installation-independent smoke tests.
 - `frontend/src/hooks/`: scan lifecycle, URL restoration, cancellation, and bounded polling retries.
 - `docs/` and `examples/`: architecture/reference documentation and pinned evidence.
+- `docs/cli.md`: detailed CLI usage and local scan output naming; keep the README overview aligned when updating these behaviors.
 - `docs/development-plan-2026-11.md`: prioritized follow-up plan; check its baseline and distinguish proposed work from implemented behavior before using it.
 
 ## Build, Test, and Development Commands

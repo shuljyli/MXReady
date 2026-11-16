@@ -9,6 +9,7 @@ from typing import Any
 
 from mxready.models import (
     FindingReviewPage,
+    ProgressPage,
     ScanJob,
     ScanPage,
     ScanReport,
@@ -53,6 +54,7 @@ def artifacts() -> dict[Path, str]:
     definitions: dict[str, Any] = {}
     for model in (
         FindingReviewPage,
+        ProgressPage,
         ScanJob,
         ScanReport,
         RuleCatalog,
