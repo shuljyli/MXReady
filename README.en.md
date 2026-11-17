@@ -141,8 +141,8 @@ runner job.
 
 ## Installation and startup
 
-The current source is a **1.0.3 release candidate**, not yet published to PyPI.
-PyPI 1.0.1 does not contain these fixes; test the locally built wheel/ZIP and verify its hash.
+The current source version is **1.0.3**. Check GitHub Releases and PyPI for available artifacts,
+and verify the version and checksums when installing.
 
 Regular users can just install the UI-enabled release bundle: no Node.js, no PyTorch and no GPU
 driver needed. All three platforms require **Python 3.11+ (with pip/venv) and Git** to be
