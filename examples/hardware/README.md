@@ -32,3 +32,8 @@
 [数值比较](https://docs.pytorch.org/docs/stable/testing.html)、
 [异步计时](https://docs.pytorch.org/docs/stable/notes/cuda.html)、
 [cu-bridge 版本说明](https://gitee.com/metax-maca/cu-bridge/blob/master/README.md)。
+
+## 项目维护
+
+- **Endrasn** —— 改进 runner 的检出校验与验证流程。完整贡献见[项目 README](../../README.md#主要贡献人)。
+- **Zhimeng** —— 改进 Web 报告中的验证详情展示。

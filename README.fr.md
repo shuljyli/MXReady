@@ -285,7 +285,9 @@ primaires. Veuillez lire :
 
 ## Contributeurs principaux
 
-- **shuli-黍黎** — initiateur du projet et développeur principal.
+- **shuli-黍黎** — initiateur du projet, développeur principal et responsable de sa maintenance. A développé le moteur d’analyse et les règles de migration, et documenté des cas réels de migration et les résultats de vérification sur matériel MetaX.
+- **Endrasn** — maintenance du projet, développement de la TUI et amélioration de l’analyse, des rapports, de la vérification, de la CI multiplateforme et des outils de publication.
+- **Zhimeng** — refonte de l’interface web, amélioration de l’historique des analyses et des vues de rapport et de vérification, enrichissement de la TUI et contributions à la CI et aux publications.
 
 ## Licence
 

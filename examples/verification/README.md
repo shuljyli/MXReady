@@ -127,4 +127,7 @@ examples/verification/metax-verification-redacted.json
 
 > 跨平台注意：本仓库在 GitHub Actions 中对三个脚本执行 `bash -n` 语法检查（job `server-handover-scripts`）。Windows 本机生成的脚本若报 "bad interpreter"，请用 `dos2unix` 或 `sed -i 's/\r$//'` 去除 CRLF 后再在服务器运行。
 
+## 项目维护
 
+- **Endrasn** —— 改进验证包、runner 校验与验证结果处理流程。完整贡献见[项目 README](../../README.md#主要贡献人)。
+- **Zhimeng** —— 完善 Web 上的验证详情与历史记录。

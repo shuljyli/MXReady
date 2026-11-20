@@ -9,3 +9,8 @@
 `scripts/build_release.py` 把这些模板、wheel、许可证与安装说明组合为三平台 ZIP，
 统一输出至被 Git 忽略的 `dist/`。模板不需要复制进 Python 包。
 使用及维护流程见 [安装与发布方案](../docs/installation.md)。
+
+## 项目维护
+
+- **Endrasn** —— 开发 Windows、Linux 和 macOS 的安装入口，完善发布安装验收。完整贡献见[项目 README](../README.md#主要贡献人)。
+- **Zhimeng** —— 完善发布依赖锁定与版本发布流程。
