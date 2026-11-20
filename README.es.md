@@ -236,9 +236,11 @@ Las reglas nuevas deben incluir a la vez ejemplos positivos, ejemplos negativos 
 3. Enviar a un proyecto upstream un PR de migración acotado y fácil de revisar;
 4. Ampliar las reglas y las plantillas mínimas de verificación según la retroalimentación de adaptación real.
 
-## Contribuidor principal
+## Colaboradores principales
 
-- **shuli-黍黎** — Iniciador del proyecto y desarrollador principal.
+- **shuli-黍黎** — Iniciador del proyecto y desarrollador principal. Desarrolló el motor de análisis y las reglas de migración, y documentó casos reales de migración y resultados de verificación en hardware MetaX.
+- **Endrasn** — Mantenimiento del proyecto, desarrollo de la TUI y mejoras en el análisis, los informes, la verificación, la CI multiplataforma y las herramientas de publicación.
+- **Zhimeng** — Rediseño de la interfaz web, mejoras en el historial de análisis y en las vistas de informes y verificación, ampliación de la TUI y contribuciones a la CI y las publicaciones.
 
 ## Licencia
 

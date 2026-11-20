@@ -53,3 +53,8 @@ CAUSAL_CONV1D_FORCE_BUILD=TRUE python -m pip install --no-build-isolation .
 补丁只在验证时临时应用；runner 验证的仓库保持上游提交与干净状态。结论只覆盖该提交与该环境，未提交上游。
 
 拟议但未提交的上游 PR 标题与正文可直接参照本目录中的补丁文件。
+
+## 项目维护
+
+- **Endrasn** —— 改进迁移扫描、报告和基线对比流程。完整贡献见[项目 README](../../README.md#主要贡献人)。
+- **Zhimeng** —— 扩展 TUI 的报告筛选、历史与对比功能。

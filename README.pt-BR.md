@@ -230,7 +230,9 @@ Regras novas devem incluir exemplos positivos, exemplos negativos semelhantes e 
 
 ## Principais colaboradores
 
-- **shuli-黍黎** — idealizador e principal desenvolvedor do projeto.
+- **shuli-黍黎** — idealizador e principal desenvolvedor do projeto. Desenvolveu o mecanismo de análise e as regras de migração, e documentou casos reais de migração e resultados de verificação em hardware MetaX.
+- **Endrasn** — manutenção do projeto, desenvolvimento da TUI e melhorias na análise, nos relatórios, na verificação, na CI multiplataforma e nas ferramentas de lançamento.
+- **Zhimeng** — reformulação da interface web, melhorias no histórico de análises e nas telas de relatórios e verificação, ampliação da TUI e contribuições para a CI e os lançamentos.
 
 ## Licença
 
