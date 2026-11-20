@@ -323,7 +323,7 @@ Please read:
 
 ## Main contributors
 
-- **shuli-黍黎** — project initiator and lead developer who built the core scanner and migration rules and documented real-world migration cases and MetaX hardware verification results.
+- **shuli-黍黎** — project initiator, lead developer, and maintainer who built the core scanner and migration rules and documented real-world migration cases and MetaX hardware verification results.
 - **Endrasn** — project maintainer who developed the TUI and improved scanning, reporting, verification, cross-platform CI, and release tooling.
 - **Zhimeng** — redesigned the web frontend, improved scan history and the views for reports and verification results, extended the TUI, and contributed to CI and release maintenance.
 

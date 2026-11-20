@@ -294,7 +294,7 @@ lesen Sie:
 
 ## Hauptmitwirkende
 
-- **shuli-黍黎** — Projektautor und Hauptentwickler. Entwickelte den Kern der Scan-Engine und die Migrationsregeln und dokumentierte praktische Migrationsfälle sowie Prüfergebnisse auf MetaX-Hardware.
+- **shuli-黍黎** — Projektautor und Hauptentwickler, zuständig für die Projektpflege. Entwickelte den Kern der Scan-Engine und die Migrationsregeln und dokumentierte praktische Migrationsfälle sowie Prüfergebnisse auf MetaX-Hardware.
 - **Endrasn** — Projektpflege, Entwicklung der TUI und Verbesserungen an Scan-, Berichts- und Prüfabläufen sowie an der plattformübergreifenden CI und den Release-Werkzeugen.
 - **Zhimeng** — Neugestaltung des Web-Frontends, Ausbau des Scanverlaufs und der Berichts- und Prüfansichten, Erweiterung der TUI sowie Mitarbeit an CI und Releases.
 

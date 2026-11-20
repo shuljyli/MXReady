@@ -238,7 +238,7 @@ Las reglas nuevas deben incluir a la vez ejemplos positivos, ejemplos negativos 
 
 ## Colaboradores principales
 
-- **shuli-黍黎** — Iniciador del proyecto y desarrollador principal. Desarrolló el motor de análisis y las reglas de migración, y documentó casos reales de migración y resultados de verificación en hardware MetaX.
+- **shuli-黍黎** — Iniciador del proyecto, desarrollador principal y responsable de su mantenimiento. Desarrolló el motor de análisis y las reglas de migración, y documentó casos reales de migración y resultados de verificación en hardware MetaX.
 - **Endrasn** — Mantenimiento del proyecto, desarrollo de la TUI y mejoras en el análisis, los informes, la verificación, la CI multiplataforma y las herramientas de publicación.
 - **Zhimeng** — Rediseño de la interfaz web, mejoras en el historial de análisis y en las vistas de informes y verificación, ampliación de la TUI y contribuciones a la CI y las publicaciones.
 
