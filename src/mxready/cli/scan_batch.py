@@ -99,6 +99,8 @@ def scan_batch(
     """逐仓扫描并收集结果；单仓失败不中断批量，错误记录进汇总。"""
     scan_fn: ScanOne = scan_one if scan_one is not None else generate_public_report
     outcomes: list[BatchOutcome] = []
+    repository_labels: dict[str, str] = {}
+    used_labels: set[str] = set()
     for entry in entries:
         try:
             identity = parse_repository_url(entry.repository_url)
@@ -115,12 +117,21 @@ def scan_batch(
                 progress(outcome)
             continue
 
-        base = _LABEL_SANITIZE.sub("-", f"{identity.owner}-{identity.name}".casefold()).strip("-")
-        label_base = base[:48] or "repository"
+        label = repository_labels.get(identity.clone_url)
+        if label is None:
+            base = _LABEL_SANITIZE.sub("-", f"{identity.owner}-{identity.name}".casefold())
+            base = base.strip("-")[:48].rstrip("-") or "repository"
+            label = base
+            suffix = 2
+            while label in used_labels:
+                label = f"{base}-{suffix}"
+                suffix += 1
+            repository_labels[identity.clone_url] = label
+            used_labels.add(label)
         try:
             report = scan_fn(
                 entry.repository_url,
-                label=label_base,
+                label=label,
                 output_dir=output_dir,
                 work_dir=work_dir,
                 requested_ref=entry.requested_ref,
@@ -128,7 +139,7 @@ def scan_batch(
             )
             outcome = BatchOutcome(
                 display=f"{identity.owner}/{identity.name}",
-                label=f"{label_base}-{report.repository.commit[:12]}",
+                label=f"{label}-{report.repository.commit[:12]}",
                 entry=entry,
                 report=report,
                 error=None,
@@ -293,7 +304,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         entries: list[BatchEntry] = []
         for source in arguments.sources:
             entries.extend(load_batch_entries(source))
-    except ValueError as error:
+    except (OSError, ValueError) as error:
         print_terminal(f"MXReady batch error: {error}", file=sys.stderr)
         return 1
     if not entries:

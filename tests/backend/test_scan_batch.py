@@ -282,6 +282,21 @@ def test_cli_reports_empty_or_invalid_sources_without_traceback(tmp_path: Path, 
     assert "Traceback" not in captured.err
 
 
+def test_cli_reports_unreadable_manifest_without_traceback(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    listing = tmp_path / "repos.txt"
+    listing.touch()
+
+    def unreadable(*args, **kwargs):
+        raise PermissionError("manifest is unreadable")
+
+    monkeypatch.setattr(Path, "read_text", unreadable)
+
+    assert main([str(listing)]) == 1
+    assert "MXReady batch error: manifest is unreadable" in capsys.readouterr().err
+
+
 def test_batch_writes_each_commit_and_csv_points_to_real_reports(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -307,6 +322,43 @@ def test_batch_writes_each_commit_and_csv_points_to_real_reports(
         payload = json.loads(markdown.with_suffix(".json").read_text(encoding="utf-8"))
         assert payload["repository"]["commit"] == row["commit"]
     assert len(list(output.glob("*.json"))) == 2
+
+
+@pytest.mark.parametrize(
+    "repositories",
+    [
+        (
+            "https://github.com/example-team/project",
+            "https://github.com/example/team-project-2",
+            "https://github.com/example/team-project",
+            "https://gitee.com/example-team/project",
+        ),
+        (f"https://github.com/example/{'a' * 39}-project",),
+    ],
+    ids=["colliding-labels-at-same-commit", "truncated-label"],
+)
+def test_batch_csv_links_each_repository_to_its_own_exports(tmp_path, monkeypatch, repositories):
+    class FixtureGitClient:
+        def clone(self, identity, requested_ref, destination):
+            destination.mkdir(parents=True)
+            (destination / "module.py").write_text("print(1)\n", encoding="utf-8")
+            return "a" * 40
+
+    monkeypatch.setattr("mxready.cli.generate_public_report.GitClient", FixtureGitClient)
+    output = tmp_path / "reports"
+
+    assert main([*repositories, "--output", str(output), "--work-dir", str(tmp_path)]) == 0
+
+    with (output / "batch-summary.csv").open(encoding="utf-8-sig", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    assert len({row["report"] for row in rows}) == len(repositories)
+    for row, url in zip(rows, repositories, strict=True):
+        markdown = output / row["report"]
+        assert markdown.is_file()
+        assert markdown.with_suffix(".sarif").is_file()
+        report = ScanReport.model_validate_json(markdown.with_suffix(".json").read_bytes())
+        assert report.repository.url == row["repository"] == url
+        assert report.repository.commit == row["commit"]
 
 
 def test_batch_cli_handles_legacy_output_encoding(tmp_path, monkeypatch):

@@ -3,7 +3,7 @@
 PYTHON ?= python3
 VENV := .venv
 PIP := $(VENV)/bin/pip
-PYTEST := $(VENV)/bin/pytest
+PYTEST := $(VENV)/bin/python -m pytest
 RUFF := $(VENV)/bin/ruff
 MYPY := $(VENV)/bin/mypy
 
