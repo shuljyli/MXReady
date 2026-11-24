@@ -290,3 +290,7 @@ npm run build
 
 - shuli_ljy@outlook.com
 - 2199553510@qq.com
+
+## 实验性分支
+
+`feat/agent-harness` 是实验性 harness 分支，功能与接口可能变化。

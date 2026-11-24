@@ -338,3 +338,7 @@ Questions, suggestions and collaboration are welcome — open a GitHub Issue, or
 
 - shuli_ljy@outlook.com
 - 2199553510@qq.com
+
+## Experimental branch
+
+`feat/agent-harness` is experimental harness work; interfaces may change.
