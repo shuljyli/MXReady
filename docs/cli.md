@@ -1,7 +1,8 @@
 # MXReady 命令行使用
 
-`mxready`、`mxready-scan`、`mxready-scan-public`、`mxready-build-bundle`、`mxready-scan-batch`、`mxready-mcp`
-与 `mxready-runner` 随安装包和开发环境提供（安装方式见[安装与发布方案](installation.md)）。
+`mxready`、`mxready-agent`、`mxready-scan`、`mxready-scan-public`、`mxready-build-bundle`、
+`mxready-scan-batch`、`mxready-mcp` 与 `mxready-runner` 随安装包和开发环境提供
+（安装方式见[安装与发布方案](installation.md)）。
 本地 CLI 只用于开发者信任的本地目录；公开 Web API 不接受本地路径。
 所有命令只读分析被扫描代码，不导入、安装、构建或执行它；分析边界与 Web 服务一致。
 
@@ -16,6 +17,7 @@ python -m pip install -e ".[tui]"
 mxready
 mxready /path/to/project --output-dir ./reports
 mxready /path/to/project --no-state  # 本次不读写历史或报告目录索引
+mxready --lang en /path/to/project    # 本次会话使用英文界面（zh|en）
 # 源码开发环境（Windows 使用 .venv\Scripts\python.exe）
 python -m pip install -e ".[dev]"
 .venv/bin/python -m mxready
@@ -39,6 +41,7 @@ CI 三系统自动化结果以对应提交的 Checks 为准，不替代目标终
 | `/compare [基线JSON] [当前JSON]` | 对比同仓库报告；单路径与当前报告比较，无参数选择基线 |
 | `/bundle [JSON路径]` | 生成验证 ZIP，默认最近一次报告 |
 | `/output [目录]` | 查看或设置后续任务的输出目录 |
+| `/lang [zh\|en]` | 查看或切换界面语言；无参数时在中/英之间切换，选择会保存到状态库 |
 | `/help` | 查看全部命令 |
 | `/clear` | 清空屏幕，保留文件与命令历史 |
 | `/cancel` | 取消当前任务并终止子进程树 |
@@ -52,6 +55,8 @@ CI 三系统自动化结果以对应提交的 Checks 为准，不替代目标终
 
 键盘操作：输入 `/` 显示命令建议，↑↓ 选择、Tab 补全；无建议时 ↑↓ 浏览恢复的历史及本次输入。
 Enter 执行命令，Ctrl+P 打开可搜索命令面板，PgUp/PgDn 滚动结果，Esc 收起建议。
+`/lang` 无参数时在中/英之间切换；也可用 `/lang zh|en`，或启动时传 `--lang zh|en`。
+界面语言默认中文，选择保存到 TUI 状态库并在重启后恢复；`--lang` 只影响本次会话且优先于保存值。
 Ctrl+C 中断当前任务（空闲时清空输入），Ctrl+L 清屏，Ctrl+Q 退出。
 选择器中 ↑↓ 导航、Enter 打开、Tab 搜索、PgUp/PgDn 翻页、Esc 关闭并返回输入焦点；
 长条目可按 `i` 打开完整缓存摘要并用 ↑↓ / PgUp/PgDn 滚动，Esc 返回列表。
@@ -76,6 +81,58 @@ JSON 报告最多读取 20 MiB，兼容缺少 coverage / occurrences 的旧报�
 
 全屏入口要求 stdin / stdout 为终端。CI、管道与脚本请继续使用下方单次命令；
 `mxready --help` 与 `mxready --version` 可在非交互环境使用，且无需安装 Textual。
+
+### AI 代码工作区（`/code` 与 `mxready-agent`）
+
+这是一个可选的 BYOK（Bring Your Own Key）代码助手工作区，交互方式接近 opencode：
+用户自行填写 OpenAI 兼容或 Anthropic Messages 端点、模型名与 API Key，程序不内置任何厂商
+Key、默认端点或遥测。它不替代扫描器，也不改变“不执行被扫描仓库代码”的保证。
+
+```bash
+python -m pip install -e ".[agent]"
+mxready-agent /path/to/project         # 独立入口，启动即进入代码工作区
+mxready-agent /path/to/project --lang en
+mxready --code /path/to/project        # 从 mxready 入口直接进入代码工作区
+mxready-agent --agent-dir /secure/agent   # 覆盖配置与审计目录
+```
+
+扫描工作区与代码工作区各自保留输出和输入历史，使用 `/code`、`/scan` 往返切换；
+切换时若任务正在运行会被拒绝，避免输出串台。代码工作区命令：
+
+| 命令 | 用途 |
+| --- | --- |
+| `/code [消息]` | 在扫描工作区进入代码工作区；带消息时立即发送 |
+| `/scan` | 返回扫描工作区（扫描上下文仍然保留） |
+| `/provider add <名称> --protocol openai\|anthropic --base-url URL --model MODEL` | 添加服务并弹出隐藏输入框录入 API Key |
+| `/provider list` / `use <名称>` / `test [名称]` / `remove <名称>` | 查看、切换、连通性测试与删除服务 |
+| `/model [名称]` | 查看当前模型，或修改当前服务的模型名 |
+| `/permissions` | 查看只读状态、可用工具与审批规则 |
+| `/elevate` / `/restrict` | 提权写文件/执行命令；每次操作仍需逐条批准 / 立即收回 |
+| `/new` | 清空当前对话上下文（不删除配置） |
+| `/clear` | 清空屏幕，保留对话上下文 |
+| `/cancel` | 取消正在进行的模型请求或工具执行 |
+| `/lang [zh\|en]` | 查看或切换界面语言 |
+| `/help` / `/quit` | 代码工作区帮助 / 退出 |
+
+默认只读工具为 `read_file`、`list_dir`、`search_text`、`report_summary`、`search_findings`；
+提权后增加 `write_file`、`apply_patch`、`run_command`，三者都要求每次操作单独确认。
+文件访问被限制在启动时的工作区内，拒绝 `..`、绝对路径逃逸、符号链接，以及 `.git`、`.ssh`、
+`.env*`、`.mxready-agent`、`secrets.vault`、`audit.jsonl`、`state.db` 等敏感路径。
+命令以参数数组、`shell=False` 执行，拒绝 `bash`/`cmd.exe`/`powershell` 等 shell 宿主，
+默认超时 60 秒（可设 1–600 秒），stdout/stderr 各截断 16 KiB（合计 40 KiB），并剥离包含 key、
+token、secret、password 等字样的环境变量。提权状态不会跨重启保存。
+
+API Key 优先写入系统凭据库；不可用时回退到 `agent-dir/secrets.vault`，主密码仅在会话内存中，
+使用 scrypt 派生密钥与 AES-GCM 加密。配置 `agent-dir/config.json` 只保存 `key_ref` 和
+Key 的 12 位 SHA-256 指纹，绝不保存明文 Key；Key 也不会进入命令行参数、输入历史、界面回显或
+`agent-dir/audit.jsonl`。`MXREADY_AGENT_API_KEY` 可仅为当前进程提供临时 Key，优先级最高且不落盘。
+默认 `agent-dir` 为用户数据目录下的 `agent/`（与安装目录、Web 数据库分开），
+可用 `--agent-dir` 覆盖；`MXREADY_DATA_DIR` 同时影响默认值。
+
+模型请求使用 HTTPS（仅回环地址允许 HTTP），校验 TLS、忽略代理环境变量、不跟随重定向、
+连接 10 秒、读取 180 秒；请求开始后不自动重试。一次对话最多 8 轮工具调用、20 万 token 预算，
+单条消息最多 32 KiB。详细的密钥、网络、工具与审计边界见[安全模型](security.md)。
+
 
 ### 筛选、历史和报告选择
 

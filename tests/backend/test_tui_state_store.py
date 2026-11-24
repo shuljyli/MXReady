@@ -211,3 +211,49 @@ def test_sensitive_url_commands_are_never_persisted(tmp_path, target):
     store = StateStore(tmp_path / "state.db")
     store.add_history(tmp_path, Command("public", target))
     assert not store.initialize(tmp_path).history
+
+
+def test_language_setting_survives_reopen(tmp_path):
+    db = tmp_path / "state.db"
+    store = StateStore(db)
+    store.initialize(tmp_path)
+    store.set_language("en")
+    assert store.language == "en"
+    store.close()
+    reopened = StateStore(db)
+    assert reopened.initialize(tmp_path).language == "en"
+    assert reopened.language == "en"
+
+
+def test_v1_database_migrates_and_adds_language_setting(tmp_path):
+    db = tmp_path / "state.db"
+    store = StateStore(db)
+    store.initialize(tmp_path)
+    store.close()
+    with sqlite3.connect(db) as conn:
+        conn.execute("DROP TABLE settings")
+        conn.execute("PRAGMA user_version=1")
+    migrated = StateStore(db)
+    restored = migrated.initialize(tmp_path)
+    assert restored.language is None
+    assert migrated.persistent
+    migrated.set_language("zh")
+    migrated.close()
+    with sqlite3.connect(db) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert conn.execute("SELECT value FROM settings WHERE key='language'").fetchone()[0] == "zh"
+
+
+def test_workspace_mode_setting_survives_reopen_and_rejects_unknown(tmp_path):
+    db = tmp_path / "state.db"
+    store = StateStore(db)
+    assert store.initialize(tmp_path).workspace_mode is None
+    store.set_workspace_mode("code")
+    store.close()
+    reopened = StateStore(db)
+    assert reopened.initialize(tmp_path).workspace_mode == "code"
+    reopened.set_workspace_mode("scan")
+    with pytest.raises(ValueError):
+        reopened.set_workspace_mode("report")
+    reopened.close()
+    assert StateStore(db).initialize(tmp_path).workspace_mode == "scan"

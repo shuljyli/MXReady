@@ -1,6 +1,7 @@
 import pytest
 
-from mxready.tui.commands import make_scan_job, parse_command, read_report, safe_text
+from mxready.sanitize import safe_text
+from mxready.tui.commands import make_scan_job, parse_code_command, parse_command, read_report
 
 
 def test_scan_parser_preserves_spaces_backslashes_and_shell_characters():
@@ -81,3 +82,57 @@ def test_public_and_batch_jobs_delegate_to_existing_commands(tmp_path, value, mo
         assert "--ref=release" in job.arguments
     else:
         assert job.arguments[-1] == str(tmp_path / "repo list.txt")
+
+
+def test_language_command_toggles_and_normalizes_aliases():
+    assert parse_command("/lang").target is None
+    assert parse_command("/lang EN-us").target == "en"
+    assert parse_command("/lang 中文").target == "zh"
+
+
+def test_language_command_rejects_unsupported_values():
+    with pytest.raises(ValueError, match="zh"):
+        parse_command("/lang fr")
+
+
+def test_english_parse_errors_are_localized():
+    with pytest.raises(ValueError, match="Unknown command"):
+        parse_command("/unknown", language="en")
+    with pytest.raises(ValueError, match="cannot be combined"):
+        parse_command("/findings --reset 2", language="en")
+
+
+def test_code_workspace_commands_parse_without_shell_expansion():
+    command = parse_code_command("/code explain $(rm -rf /) `whoami`")
+    assert command.name == "code"
+    assert command.target == "explain $(rm -rf /) `whoami`"
+    assert parse_code_command("/scan").name == "scan"
+    assert parse_code_command("/elevate").name == "elevate"
+    assert parse_code_command("/model gpt-x").model == "gpt-x"
+    assert parse_command("/code").name == "code"
+
+
+def test_provider_add_validates_names_urls_and_models():
+    command = parse_code_command(
+        "/provider add work --protocol openai --base-url https://api.example.com/v1 "
+        "--model gpt-x"
+    )
+    assert (command.action, command.target) == ("add", "work")
+    assert command.base_url == "https://api.example.com/v1"
+    with pytest.raises(ValueError):
+        parse_code_command(
+            "/provider add bad.name --protocol openai --base-url https://example.com --model m"
+        )
+    with pytest.raises(ValueError):
+        parse_code_command(
+            "/provider add work --protocol openai --base-url http://example.com --model m"
+        )
+    with pytest.raises(ValueError, match="Usage"):
+        parse_code_command("/provider add work --protocol openai", language="en")
+
+
+def test_code_command_rejects_unknown_and_oversized_messages():
+    with pytest.raises(ValueError, match="Unknown code command"):
+        parse_code_command("/shell rm -rf /", language="en")
+    with pytest.raises(ValueError, match="32768"):
+        parse_code_command("/code " + "x" * 32769)

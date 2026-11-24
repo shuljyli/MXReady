@@ -14,6 +14,7 @@ from typing import TypeVar
 from urllib.parse import urlsplit
 from uuid import uuid4
 
+from mxready.i18n import DEFAULT_LANGUAGE, normalize_language, tr
 from mxready.tui.commands import Command, format_command, parse_command
 from mxready.tui.report_catalog import (
     MAX_BATCH_ITEMS,
@@ -27,7 +28,7 @@ MAX_HISTORY = 200
 MAX_PROJECTS = 100
 MAX_REPORTS = 2000
 MAX_BATCHES = 200
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 T = TypeVar("T")
 
 _SCHEMA = (
@@ -51,6 +52,7 @@ _SCHEMA = (
     "ordinal INTEGER NOT NULL, repository TEXT NOT NULL, ref TEXT NOT NULL, status TEXT NOT NULL, "
     "error TEXT NOT NULL, entry_id INTEGER REFERENCES report_entries(id) ON DELETE SET NULL, "
     "PRIMARY KEY(batch_id, ordinal))",
+    "CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
 )
 
 
@@ -66,6 +68,8 @@ def _now() -> str:
 class RestoredState:
     history: tuple[str, ...]
     output_dir: Path | None
+    language: str | None = None
+    workspace_mode: str | None = None
 
 
 @dataclass(frozen=True)
@@ -103,6 +107,7 @@ class StateStore:
         self.path = path
         self.persistent = path is not None
         self.warning: str | None = None
+        self.language: str = DEFAULT_LANGUAGE
         self._ready = False
         self._lock = threading.RLock()
         self._uri = f"file:mxready-tui-{uuid4().hex}?mode=memory&cache=shared"
@@ -129,10 +134,23 @@ class StateStore:
                 conn.execute("BEGIN IMMEDIATE")
                 version = conn.execute("PRAGMA user_version").fetchone()[0]
                 if version > SCHEMA_VERSION:
-                    raise sqlite3.DatabaseError("状态库 schema 比当前实现更新")
+                    raise sqlite3.DatabaseError(
+                        tr(
+                            self.language,
+                            "状态库 schema 比当前实现更新",
+                            "State database schema is newer than this implementation",
+                        )
+                    )
                 if version == 0:
                     for statement in _SCHEMA:
                         conn.execute(statement)
+                    conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+                elif version < SCHEMA_VERSION:
+                    # v1 -> v2: add settings without touching existing catalog tables.
+                    conn.execute(
+                        "CREATE TABLE IF NOT EXISTS settings "
+                        "(key TEXT PRIMARY KEY, value TEXT NOT NULL)"
+                    )
                     conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
                 conn.commit()
                 self._ready = True
@@ -162,7 +180,12 @@ class StateStore:
                 if not was_persistent:
                     raise
                 if self.persistent:
-                    self.warning = f"状态库不可用，已降级为本次会话内存模式: {str(error)[:500]}"
+                    self.warning = tr(
+                        self.language,
+                        f"状态库不可用，已降级为本次会话内存模式: {str(error)[:500]}",
+                        "State database unavailable; using in-memory state for this session: "
+                        f"{str(error)[:500]}",
+                    )
                     self.persistent = False
                     self._ready = False
             return self._run(operation, write=write)
@@ -192,6 +215,18 @@ class StateStore:
         key = project_key(project)
 
         def operation(conn: sqlite3.Connection) -> RestoredState:
+            stored_language: str | None = None
+            setting = conn.execute("SELECT value FROM settings WHERE key='language'").fetchone()
+            if setting is not None:
+                stored_language = normalize_language(setting[0])
+                if stored_language is not None:
+                    self.language = stored_language
+            stored_mode: str | None = None
+            mode_setting = conn.execute(
+                "SELECT value FROM settings WHERE key='workspace_mode'"
+            ).fetchone()
+            if mode_setting is not None and mode_setting[0] in {"scan", "code"}:
+                stored_mode = mode_setting[0]
             self._project(conn, key)
             self._prune(conn)
             row = conn.execute(
@@ -205,10 +240,47 @@ class StateStore:
                 try:
                     history.append(format_command(Command(**json.loads(record[0]))))
                 except (ValueError, TypeError):
-                    self.warning = "部分历史命令无法无损恢复，已跳过。"
-            return RestoredState(tuple(history), Path(row[0]) if row[0] else None)
+                    self.warning = tr(
+                        self.language,
+                        "部分历史命令无法无损恢复，已跳过。",
+                        "Some history commands could not be restored losslessly and were skipped.",
+                    )
+            return RestoredState(
+                tuple(history),
+                Path(row[0]) if row[0] else None,
+                stored_language,
+                stored_mode,
+            )
 
         return self._run(operation)
+
+    def set_workspace_mode(self, mode: str) -> None:
+        if mode not in {"scan", "code"}:
+            raise ValueError(f"Unsupported workspace mode: {mode}")
+
+        def operation(conn: sqlite3.Connection) -> None:
+            conn.execute(
+                "INSERT INTO settings(key,value) VALUES('workspace_mode',?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (mode,),
+            )
+
+        self._run(operation)
+
+    def set_language(self, language: str) -> None:
+        normalized = normalize_language(language)
+        if normalized is None:
+            raise ValueError(f"Unsupported language: {language}")
+        self.language = normalized
+
+        def operation(conn: sqlite3.Connection) -> None:
+            conn.execute(
+                "INSERT INTO settings(key,value) VALUES('language',?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (normalized,),
+            )
+
+        self._run(operation)
 
     def set_output(self, project: Path, output: Path) -> None:
         key = project_key(project)
@@ -268,8 +340,15 @@ class StateStore:
             row["error"],
         )
 
-    def register(self, project: Path, loaded: LoadedReport, *, visited: bool = True) -> ReportEntry:
-        key, meta = project_key(project), metadata(loaded)
+    def register(
+        self,
+        project: Path,
+        loaded: LoadedReport,
+        *,
+        visited: bool = True,
+        language: str = DEFAULT_LANGUAGE,
+    ) -> ReportEntry:
+        key, meta = project_key(project), metadata(loaded, language)
         canonical_path = project_key(meta.path)
         values = asdict(meta) | {"path": str(meta.path)}
 

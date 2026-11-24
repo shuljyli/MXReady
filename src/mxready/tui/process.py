@@ -43,7 +43,11 @@ async def _stop(process: asyncio.subprocess.Process) -> None:
     await process.wait()
 
 
-async def _drain(process: asyncio.subprocess.Process, on_output: Callable[[str], None]) -> int:
+async def _drain(
+    process: asyncio.subprocess.Process,
+    on_output: Callable[[str], None],
+    truncated_message: str,
+) -> int:
     assert process.stdout is not None
     decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
     budget = 256 * 1024
@@ -54,7 +58,7 @@ async def _drain(process: asyncio.subprocess.Process, on_output: Callable[[str],
             on_output(decoder.decode(chunk[:allowed]))
             budget -= allowed
         if allowed < len(chunk) and not truncated:
-            on_output("\n[TRUNCATED: 终端输出已达 256 KiB，完整结果请查看报告文件]\n")
+            on_output(truncated_message)
             truncated = True
         # Continue draining discarded bytes so a full pipe cannot stall the child.
     tail = decoder.decode(b"", final=True)
@@ -69,6 +73,7 @@ async def run_tool(
     cwd: Path,
     cancel: asyncio.Event,
     on_output: Callable[[str], None],
+    truncated_message: str = "[TRUNCATED: 终端输出已达 256 KiB，完整结果请查看报告文件]",
 ) -> ToolResult:
     if cancel.is_set():
         return ToolResult(return_code=-1, cancelled=True)
@@ -94,7 +99,7 @@ async def run_tool(
     try:
         # Shield creation so cancellation cannot lose a process created just before assignment.
         process = await asyncio.shield(launch)
-        drain = asyncio.create_task(_drain(process, on_output))
+        drain = asyncio.create_task(_drain(process, on_output, truncated_message))
         cancellation = asyncio.create_task(cancel.wait())
         done, _ = await asyncio.wait({drain, cancellation}, return_when=asyncio.FIRST_COMPLETED)
         cancelled = cancellation in done

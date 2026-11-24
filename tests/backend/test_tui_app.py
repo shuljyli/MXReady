@@ -5,6 +5,8 @@ from textual.geometry import Size
 from textual.widgets import Input, OptionList, RichLog
 
 from mxready.tui.app import MXReadyApp, TranscriptLog
+from mxready.tui.approval import ApprovalScreen
+from mxready.tui.commands import parse_code_command
 from mxready.tui.process import ToolResult
 
 
@@ -198,5 +200,162 @@ def test_queued_resize_after_transcript_removal_does_not_crash(tmp_path):
             await log.remove()
             app.post_message(TranscriptLog.Resized())
             await pilot.pause()
+
+    asyncio.run(scenario())
+
+
+async def _submit_command(app: MXReadyApp, pilot, value: str) -> None:
+    entry = app.query_one("#command", Input)
+    entry.focus()
+    entry.value = value
+    await _after_refresh(app)
+    await pilot.press("enter")
+    await _after_refresh(app)
+    await app.workers.wait_for_complete()
+
+
+def test_language_command_switches_interface_and_back(tmp_path):
+    async def scenario():
+        app = MXReadyApp(project_dir=tmp_path, output_dir=tmp_path / "reports")
+        async with app.run_test() as pilot:
+            await app._state_ready.wait()
+            await _after_refresh(app)
+            assert app.language == "zh"
+            assert "迁移检查" in str(app.query_one("#mode").render())
+
+            await _submit_command(app, pilot, "/lang en")
+            assert app.language == "en"
+            assert str(app.query_one("#mode").render()) == (
+                "Migration check  ·  read-only static analysis"
+            )
+            assert "project path" in app.query_one("#command", Input).placeholder
+            assert str(app.query_one("#projects-heading").render()) == "PROJECT"
+            assert all("迁移检查" not in str(item) for item in app._transcript)
+
+            await _submit_command(app, pilot, "/lang")
+            assert app.language == "zh"
+            assert "迁移检查" in str(app.query_one("#mode").render())
+
+    asyncio.run(scenario())
+
+
+def test_invalid_language_keeps_current_language_and_explains_support(tmp_path):
+    async def scenario():
+        app = MXReadyApp(project_dir=tmp_path, output_dir=tmp_path / "reports")
+        async with app.run_test() as pilot:
+            await app._state_ready.wait()
+            await _submit_command(app, pilot, "/lang fr")
+            assert app.language == "zh"
+            error = str(app._transcript[-1])
+            assert "zh" in error and "en" in error
+
+    asyncio.run(scenario())
+
+
+def test_language_choice_restores_from_state_database(tmp_path):
+    state_path = tmp_path / "state.db"
+    project = tmp_path / "project"
+    project.mkdir()
+
+    async def first():
+        app = MXReadyApp(project_dir=project, output_dir=project / "reports", state_path=state_path)
+        async with app.run_test() as pilot:
+            await app._state_ready.wait()
+            await _submit_command(app, pilot, "/lang en")
+            assert app.language == "en"
+
+    async def second():
+        app = MXReadyApp(project_dir=project, output_dir=project / "reports", state_path=state_path)
+        async with app.run_test():
+            await app._state_ready.wait()
+            await _after_refresh(app)
+            assert app.language == "en"
+            assert str(app.query_one("#mode").render()) == (
+                "Migration check  ·  read-only static analysis"
+            )
+
+    asyncio.run(first())
+    asyncio.run(second())
+
+
+def test_code_workspace_switches_help_elevates_and_returns(tmp_path):
+    state_path = tmp_path / "state.db"
+
+    async def scenario():
+        app = MXReadyApp(
+            project_dir=tmp_path,
+            output_dir=tmp_path / "reports",
+            state_path=state_path,
+            agent_dir=tmp_path / "agent",
+        )
+        async with app.run_test(size=(110, 36)) as pilot:
+            await app._state_ready.wait()
+            await _after_refresh(app)
+            await _submit_command(app, pilot, "/code")
+            assert app.workspace_mode == "code"
+            assert app.query_one("#sidebar-code").display
+            assert not app.query_one("#sidebar-scan").display
+            assert "CODE" in str(app.query_one("#mode").render())
+            transcript = "".join(str(item) for item in app._transcript)
+            assert "/provider add" in transcript
+
+            await _submit_command(app, pilot, "/help")
+            transcript = "".join(str(item) for item in app._transcript)
+            assert "/elevate" in transcript and "/scan" in transcript
+
+            # Opening a modal from an Enter press would make Pilot.press wait for a
+            # screen update that never settles, so start the command directly.
+            task = asyncio.create_task(
+                app._execute_code_command(parse_code_command("/elevate"))
+            )
+            await _after_refresh(app)
+            assert isinstance(app.screen, ApprovalScreen)
+            await pilot.press("y")
+            await _after_refresh(app)
+            await asyncio.wait_for(task, timeout=5)
+            assert app.agent_elevated
+
+            await _submit_command(app, pilot, "/restrict")
+            assert not app.agent_elevated
+
+            await _submit_command(app, pilot, "/scan")
+            assert app.workspace_mode == "scan"
+            assert app.query_one("#sidebar-scan").display
+            assert not app.query_one("#sidebar-code").display
+
+    asyncio.run(scenario())
+
+    async def restored():
+        app = MXReadyApp(
+            project_dir=tmp_path,
+            output_dir=tmp_path / "reports",
+            state_path=state_path,
+            agent_dir=tmp_path / "agent",
+        )
+        async with app.run_test(size=(110, 36)):
+            await app._state_ready.wait()
+            await _after_refresh(app)
+            assert app.workspace_mode == "scan"
+
+    asyncio.run(restored())
+
+
+def test_start_flag_opens_code_even_with_stale_state(tmp_path):
+    state_path = tmp_path / "state.db"
+
+    async def scenario():
+        app = MXReadyApp(
+            project_dir=tmp_path,
+            output_dir=tmp_path / "reports",
+            state_path=state_path,
+            agent_dir=tmp_path / "agent",
+            workspace_mode="code",
+        )
+        async with app.run_test(size=(110, 36)):
+            await app._state_ready.wait()
+            await _after_refresh(app)
+            assert app.workspace_mode == "code"
+            assert app.query_one("#sidebar-code").display
+            assert not app.query_one("#sidebar-scan").display
 
     asyncio.run(scenario())

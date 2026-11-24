@@ -27,7 +27,62 @@ def test_launcher_passes_project_and_output(monkeypatch, tmp_path):
         output_dir=tmp_path / "results",
         default_output_dir=tmp_path / "data" / "reports",
         state_path=tmp_path / "data" / "tui" / "state.db",
+        agent_dir=tmp_path / "data" / "agent",
+        workspace_mode=None,
     )
+    launch.return_value.run.assert_called_once_with()
+
+
+def test_launcher_can_start_in_code_mode(monkeypatch, tmp_path):
+    from mxready.tui import app
+
+    launch = Mock()
+    monkeypatch.setattr(app, "MXReadyApp", launch)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    monkeypatch.setenv("MXREADY_DATA_DIR", str(tmp_path / "data"))
+    assert terminal.main([str(tmp_path), "--code"]) == 0
+    assert launch.call_args.kwargs["workspace_mode"] == "code"
+    assert launch.call_args.kwargs["agent_dir"] == tmp_path / "data" / "agent"
+    launch.return_value.run.assert_called_once_with()
+
+
+def test_agent_launcher_forces_code_mode(monkeypatch, tmp_path):
+    from mxready.cli import agent
+    from mxready.tui import app
+
+    launch = Mock()
+    monkeypatch.setattr(app, "MXReadyApp", launch)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    monkeypatch.setenv("MXREADY_DATA_DIR", str(tmp_path / "data"))
+    assert agent.main([str(tmp_path), "--agent-dir", str(tmp_path / "keys")]) == 0
+    assert launch.call_args.kwargs["workspace_mode"] == "code"
+    assert launch.call_args.kwargs["agent_dir"] == tmp_path / "keys"
+    launch.return_value.run.assert_called_once_with()
+
+
+def test_agent_launcher_help_has_no_code_flag(capsys):
+    from mxready.cli import agent
+
+    with pytest.raises(SystemExit) as result:
+        agent.main(["--help"])
+    assert result.value.code == 0
+    output = capsys.readouterr().out
+    assert "mxready-agent" in output
+    assert "--code" not in output
+
+
+def test_launcher_passes_explicit_language(monkeypatch, tmp_path):
+    from mxready.tui import app
+
+    launch = Mock()
+    monkeypatch.setattr(app, "MXReadyApp", launch)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    monkeypatch.setenv("MXREADY_DATA_DIR", str(tmp_path / "data"))
+    assert terminal.main([str(tmp_path), "--lang", "en"]) == 0
+    assert launch.call_args.kwargs["language"] == "en"
     launch.return_value.run.assert_called_once_with()
 
 
@@ -73,3 +128,20 @@ def test_no_state_does_not_create_user_data(monkeypatch, tmp_path):
     assert terminal.main([str(tmp_path), "--no-state"]) == 0
     assert launch.call_args.kwargs["state_path"] is None
     assert not (tmp_path / "private").exists()
+
+
+def test_code_mode_missing_terminal_mentions_agent_extra(monkeypatch, tmp_path, capsys):
+    import builtins
+
+    real_import = builtins.__import__
+
+    def without_textual(name, *args, **kwargs):
+        if name == "mxready.tui.app":
+            raise ModuleNotFoundError("No module named textual", name="textual")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", without_textual)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    assert terminal.main([str(tmp_path), "--code"]) == 1
+    assert "mxready[agent]" in capsys.readouterr().err

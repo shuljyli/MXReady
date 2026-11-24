@@ -88,6 +88,7 @@ Python 代码统一放在 `src/`；默认规则和验证 schema 随安装包发�
 | React 单页界面 | 可用 | Vitest + TypeScript 严格模式 |
 | 批量评估（`mxready-scan-batch`） | 可用 | CLI 回归 |
 | MCP 工具（`mxready-mcp`，需 `.[mcp]`） | 可用 | 后端测试 + 实际 stdio 握手 |
+| BYOK AI 代码工作区（`mxready --code` / `mxready-agent`，需 `.[agent]`） | 可用 | agent 单元测试 + TUI 工作区切换回归 |
 | 真机沐曦 GPU 验证 | 已完成两次脱敏验证（MetaX C500：`pytorch/extension-cpp` @ `1c325b2`、`causal-conv1d` @ `cd81f04`） | runner `inspect` 五项环境检查与单卡 smoke 全部 `passed`；causal-conv1d 的构建使用了未提交上游的临时补丁，其他项目仍需各自验证 |
 
 工程状态：`ruff`、`mypy`、契约校验与 `pytest` 全绿（540 余条用例，分支覆盖率 90%）；
@@ -171,6 +172,7 @@ python -m mxready
 也可运行 `mxready` 进入全屏终端工作区：底部持续输入 `/scan .`、`/public URL`、`/report` 等命令，
 中间查看扫描输出与整改建议，侧栏显示项目、任务和最近报告。
 支持 `/` 命令提示、Tab 补全、↑↓ 历史、Ctrl+P 命令面板；Ctrl+C 取消任务，Ctrl+Q 退出。
+界面支持中文 / English：`/lang` 切换，或启动时加 `--lang en`，选择会保存并在重启后恢复。
 也可用 `mxready /path/to/project` 指定项目；报告默认写入用户数据目录下的 `reports`，
 `--output-dir ./reports` 可覆盖。开发环境安装 `.[dev]` 已包含终端依赖。
 
@@ -195,6 +197,26 @@ CI 配置覆盖三系统的 Python 3.11 / 3.12 / 3.13 自动化测试，实际�
 `mxready-scan`（本地目录）、`mxready-scan-public`（公开仓库证据）、`mxready-build-bundle`（验证包）、
 `mxready-scan-batch`（批量评估）与 `mxready-mcp`（供编码 Agent）的详细用法与退出码约定见
 [命令行使用](docs/cli.md)。所有 CLI 只读分析，不执行被扫描代码。
+
+### AI 代码工作区（自带 API Key）
+
+终端还提供一个可选的、类似 opencode 的 BYOK（Bring Your Own Key）代码工作区；不内置任何厂商
+Key、默认端点或遥测。安装 `.[agent]` 后，用 `mxready --code` 直接启动，或使用独立命令：
+
+```bash
+python -m pip install -e ".[agent]"
+mxready-agent /path/to/project          # 独立入口，启动即进入代码工作区
+mxready --code /path/to/project         # 从终端入口直接进入代码工作区
+```
+
+`/code` 与扫描工作区是两套独立上下文，用 `/scan` 和 `/code` 互相切换，切换不丢失已有对话或扫描输出。
+工作区默认**只读**：模型只能读取工作区文件、列出目录、搜索文本，并查询当前报告；
+`/elevate` 后才允许写文件、应用补丁或执行命令，而且每次操作仍需在弹出的确认框中逐条批准，
+`/restrict` 立即收回权限。OpenAI 兼容接口与 Anthropic Messages 接口都由用户填写 base URL、模型名
+和 API Key；Key 只进入系统凭据库或本地加密 vault，不出现在命令行参数、历史、日志或审计记录中。
+模型 API 调用是本工作区唯一的网络请求；Web 扫描服务与 runner 不会导入该模块，
+“不执行被扫描仓库代码”的保证不变。命令一览、密钥目录与安全边界见
+[命令行使用](docs/cli.md#ai-代码工作区code-与-mxready-agent) 和[安全模型](docs/security.md)。
 
 本地扫描每次使用独立 ID；同名输出会整组追加扫描 ID，保留旧报告与可信基线。
 本地报告会标明干净提交、未提交工作区或显式声明目录，并记录纳入分析的文件集合摘要；

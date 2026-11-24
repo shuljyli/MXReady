@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- TUI 新增 `/lang` 与 `--lang` 中英界面切换；语言选择保存到 TUI 状态库并在重启后恢复。
+- 新增可选 `.[agent]` 的 BYOK 代码工作区：`mxready --code` 或独立 `mxready-agent` 启动，
+  通过 `/code` / `/scan` 在扫描与代码两套常驻上下文间切换；支持 OpenAI 兼容与 Anthropic
+  Messages、`/provider add|list|use|test|remove`、`/model`、`/permissions`、`/elevate`、
+  `/restrict`、`/new`、`/cancel`，并用模态框逐次确认写入、补丁与命令执行。
+- Agent 默认只读，工作区路径守卫拒绝逃逸、符号链接与敏感文件；命令以参数数组、
+  `shell=False`、有界输出和进程树终止执行。API Key 优先写入系统凭据库，回退到
+  scrypt + AES-GCM 加密 vault；配置仅保存 Key 引用与指纹，审计日志脱敏并轮转。
+  Web 服务与 runner 不导入 agent，原有“不执行被扫描仓库代码”的保证不变。
+
 ### Fixed
 
 - 修复长仓库名截断后因尾部连字符而无法批量扫描的问题。同批次内标签冲突的仓库使用不同文件名，

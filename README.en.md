@@ -112,6 +112,7 @@ regenerate the interface contracts.
 | React single-page UI | Available | Vitest + TypeScript strict mode |
 | Batch assessment (`mxready-scan-batch`) | Available | CLI regression |
 | MCP tools (`mxready-mcp`, requires `.[mcp]`) | Available | Backend tests and a real stdio handshake |
+| BYOK AI code workspace (`mxready --code` / `mxready-agent`, requires `.[agent]`) | Available | Agent unit tests and TUI workspace-switch regression |
 | Real MetaX GPU verification | Two redacted runs completed (MetaX C500: `pytorch/extension-cpp` @ `1c325b2`, `causal-conv1d` @ `cd81f04`) | All five runner `inspect` environment checks and the single-GPU smoke all `passed`; the causal-conv1d build used a temporary patch that was not submitted upstream, and every other project still needs its own run |
 
 Engineering status: `ruff`, `mypy`, contract checks and `pytest` are all green (540+ test cases, 90%
@@ -232,6 +233,26 @@ Detailed usage and exit-code conventions for `mxready-scan` (local directories),
 `mxready-scan-public` (public repository evidence), `mxready-build-bundle` (verification bundle),
 `mxready-scan-batch` (batch assessment) and `mxready-mcp` (for coding agents) are in the
 [CLI guide](docs/cli.md). All CLIs analyze read-only and never execute scanned code.
+
+### BYOK AI code workspace
+
+The terminal also offers an optional opencode-style workspace where you supply your own
+OpenAI-compatible or Anthropic Messages endpoint, model and API key. No vendor key, default
+endpoint or telemetry is built in.
+
+```bash
+python -m pip install -e ".[agent]"
+mxready-agent /path/to/project     # standalone entry point, starts in the code workspace
+mxready --code /path/to/project    # or start there from the mxready terminal
+```
+
+`/code` and `/scan` switch between two persistent contexts without discarding either transcript.
+The workspace is read-only by default; `/elevate` unlocks file writes, patches and commands, and
+each such call still requires its own confirmation; `/restrict` revokes access immediately.
+Keys go to the OS keyring or the scrypt + AES-GCM vault, never to argv, history, logs or the
+audit log. The model API is the only network egress. `mxready.agent` is not imported by the Web
+service or runner, so the "never execute scanned repository code" guarantee is unchanged.
+See the [CLI guide](docs/cli.md) and [security model](docs/security.md).
 
 Each local scan gets a fresh ID. If an output name already exists, all four exports append the
 scan ID without hyphens, preserving earlier reports and trusted baselines. The terminal prints

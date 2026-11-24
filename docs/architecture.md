@@ -6,7 +6,8 @@ MXReady 使用模块化单体，扫描服务只做静态分析；标准库 runne
 src/
   mxready/
     api/             HTTP 契约、路由和请求防护
-    cli/             扫描、报告、验证包与 Web 启动命令入口
+    cli/             扫描、报告、验证包、终端与 Web 启动命令入口
+    agent/           可选 BYOK 代码工作区：配置、密钥、Provider、工具与审计
     services/        扫描编排、心跳和 SQLite 队列消费者
     persistence/     SQLite 适配器、顺序迁移和租约原子操作
     repository/      URL/ref 校验、受限 Git 与归档获取
@@ -19,6 +20,7 @@ src/
     app.py           应用组合与生命周期
     config.py        环境变量配置
     models.py        后端领域模型和对外契约
+    tui/             可选 Textual 工作区（扫描与代码两套上下文）
   mxready_runner/
     contracts.py     环境检查约定，供后端和 runner 共用
     process.py       参数数组执行、采集上限与超时处理
@@ -46,8 +48,14 @@ API 和 CLI 调用应用服务或分析器；扫描器依赖领域模型，不�
 应用服务负责工作流，通过 SQLite 适配器保存状态。runner 不导入 Web 包，也不依赖 Pydantic、
 FastAPI 或 PyYAML。后端读取 runner 的 `contracts.py` 和包资源来构建可离线运行的 ZIP。
 
-命令实现从 `scripts.*` 移入 `mxready.cli.*`，对外的 `mxready-scan`、
-`mxready-scan-public`、`mxready-build-bundle`、`mxready-runner` 名称保持一致。
+`mxready.agent` 是面向本地终端的可选层：`mxready.tui` 在代码工作区按需导入它，
+`mxready-agent` 只包装终端启动器；`mxready.api`、`mxready.services`、`mxready.cli.serve`
+与 `mxready_runner` 都不导入该包。因此未安装 `.[agent]` 时 Web、扫描 CLI 与 runner 行为不变，
+安装后也不会让 Web 获得文件写入或命令执行能力。agent 的配置、密钥与审计存储在独立
+`agent-dir` 中，不复用 Web 的 SQLite 数据库或扫描报告目录。
+
+命令实现从 `scripts.*` 移入 `mxready.cli.*`，对外的 `mxready`、`mxready-agent`、
+`mxready-scan`、`mxready-scan-public`、`mxready-build-bundle`、`mxready-runner` 名称保持一致。
 直接导入旧 `mxready.storage` 的内部代码应改为 `mxready.persistence.sqlite`。
 
 ## 扫描任务生命周期

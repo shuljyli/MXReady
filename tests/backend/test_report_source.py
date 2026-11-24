@@ -34,3 +34,12 @@ def test_unknown_incomplete_and_contradictory_sources(report_factory):
         report.model_copy(update={"source": ScanSource(kind="git-commit")})
     )
     assert any("不完整" in warning for warning in incomplete.warnings)
+
+
+def test_english_source_description(report_factory):
+    report = report_factory()
+    view = describe_source(report, "en")
+    assert view.label == "Source metadata not recorded"
+    assert ("Reported/declared commit", report.repository.commit) in view.fields
+    assert ("Detected HEAD", "not recorded") in view.fields
+    assert ("Worktree state", "unknown") in view.fields

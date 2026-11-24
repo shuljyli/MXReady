@@ -5,6 +5,7 @@
 MXReady statically assesses PyTorch CUDA extensions for migration to MetaX MXMACA.
 
 - `src/mxready/`: FastAPI endpoints, domain models, scanning, reporting, and CLI entry points.
+- `src/mxready/agent/`: optional BYOK code workspace (provider config, keyring/encrypted vault, model providers, read-only/elevated tools, approvals, audit); never imported by Web or the runner.
 - `src/mxready_runner/`: user-controlled hardware verification CLI.
 - `frontend/src/`: React/TypeScript components, API client, styles, and colocated tests; builds to `frontend/dist/`.
 - `src/mxready/resources/rules/v1/` and `src/mxready/resources/schemas/`: versioned YAML rules and verification-result schema.
@@ -17,6 +18,9 @@ MXReady statically assesses PyTorch CUDA extensions for migration to MetaX MXMAC
 - `docs/` and `examples/`: architecture/reference documentation and pinned evidence.
 - `docs/cli.md`: detailed CLI usage and local scan output naming; keep the README overview aligned when updating these behaviors.
 - `src/mxready/tui/`: optional Textual full-screen `mxready` / `python -m mxready` command workspace; launcher in `cli/terminal.py` must keep help/version usable without the `tui` extra.
+- The TUI keeps scan and `/code` transcripts in separate sessions; `/scan` and `/code` switch without discarding either context. `mxready --code` and the standalone `mxready-agent` start in the code workspace.
+- The agent workspace is read-only by default. `/elevate` only unlocks write/patch/command tools, and every such call still requires a per-call approval; `/restrict` revokes immediately. Never persist elevation.
+- Provider credentials live in the OS keyring or the scrypt + AES-GCM vault; config files may store only `key_ref` and a truncated fingerprint. Keys must never appear in argv, history, UI echo, errors, logs, or the audit JSONL.
 - TUI screenshot exports must use terminal cell widths and preserve combining characters; verify mixed CJK/Latin text visually rather than treating codepoint counts as glyph widths.
 - TUI resize messages may arrive after a widget unmounts; ignore those stale notifications. Screenshot tests must capture after a completed refresh rather than relying on a timer delay or CPU-idle pause alone.
 - Modal screens must retain their Escape handling. Resize tests must wait for the screen's target size as well as refresh completion because Textual debounces resize delivery.
@@ -54,6 +58,7 @@ Use short conventional subjects: `feat:`, `fix:`, `docs:`, `test:`, or `chore:`;
 ## Security & Agent Instructions
 
 Never execute scanned repository code in the Web service. Preserve runner confirmation, command allowlists, `shell=False`, timeouts, redaction, and output limits. Keep static findings separate from hardware verification; never introduce percentage compatibility scores. See `CONTRIBUTING.md` and `docs/security.md`. Synchronize `AGENTS.md` and `CLAUDE.md` when both exist.
+Keep `mxready.agent` out of the Web service and runner import graph. Preserve the workspace path guard, approval checks, command allowlists, `shell=False`, process-tree termination, bounded output, environment stripping, and audit redaction. Adding the agent must not weaken the Web guarantee that scanned repositories are never executed.
 
 Finding reviews are append-only annotations bound to scan/rule/path and must never suppress static findings or alter verification. CI baseline policies must reject mismatched repositories or analysis conditions. Web batch submission reuses scan admission limits and must not silently retry uncertain POST requests.
 Keep review pagination counts and rows in one read snapshot. Dashboard blocker trends include only completed scans with usable counts and timezone-aware timestamps; preserve total scan counts and latest task status when skipping invalid trend records.

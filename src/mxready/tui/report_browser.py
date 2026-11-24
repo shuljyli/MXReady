@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from mxready.i18n import DEFAULT_LANGUAGE, normalize_language, tr
 from mxready.models import ScanReport, Severity
 from mxready.tui.commands import Command
 
@@ -61,7 +62,9 @@ def browse(
     cached: tuple[int, ...] | None = None,
     *,
     restore: bool = False,
+    language: str = DEFAULT_LANGUAGE,
 ) -> tuple[FindingFilter, FindingPage, tuple[int, ...]]:
+    language = normalize_language(language) or DEFAULT_LANGUAGE
     updated = (
         FindingFilter()
         if command.reset
@@ -86,7 +89,13 @@ def browse(
     if restore:
         target = max(1, min(target, page_count))
     if not 1 <= target <= page_count:
-        raise ValueError(f"页码范围: 1-{page_count}；当前条件与页码未改变。")
+        raise ValueError(
+            tr(
+                language,
+                f"页码范围: 1-{page_count}；当前条件与页码未改变。",
+                f"Page range: 1-{page_count}; current filters and page are unchanged.",
+            )
+        )
     return (
         updated,
         FindingPage(
