@@ -1,6 +1,6 @@
 import pytest
 
-from mxready.models import Finding, FindingOccurrence, Severity
+from mxready.models import CompatibleAlternative, Finding, FindingOccurrence, Severity
 from mxready.tui.commands import parse_command
 from mxready.tui.report_browser import FindingFilter, browse, matching_indices
 
@@ -67,3 +67,21 @@ def test_filter_validation_is_atomic(value):
 def test_filter_clear_and_rule_normalization():
     command = parse_command('/findings --rule " mxr-warp-001 " --file "" --severity all')
     assert command.rule == "MXR-WARP-001" and command.file == "" and command.severity == "all"
+
+
+def test_text_filter_matches_compatible_alternatives(report_factory):
+    with_alt = finding(
+        compatible_alternatives=[
+            CompatibleAlternative(
+                operator="scaled_dot_product_attention",
+                summary="Cross-platform attention kernel",
+                applies_when="Standard attention",
+                caveat="Verify parity",
+            )
+        ]
+    )
+    report = report_factory(findings=[with_alt, finding(relative_path="plain.cu")])
+    assert matching_indices(report, FindingFilter(text_query="scaled_dot_product_attention")) == (
+        0,
+    )
+    assert matching_indices(report, FindingFilter(text_query="cross-platform")) == (0,)

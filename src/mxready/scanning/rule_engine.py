@@ -237,6 +237,7 @@ def _evaluate_rules(
                     message=message,
                     recommendation=rule.recommendation,
                     references=list(rule.references),
+                    compatible_alternatives=list(rule.compatible_alternatives),
                 )
                 key = (
                     finding.rule_id,

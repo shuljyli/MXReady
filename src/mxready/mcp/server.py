@@ -157,6 +157,9 @@ def _finding_payload(finding: Finding) -> dict[str, Any]:
         "evidence": finding.evidence,
         "message": finding.message,
         "recommendation": finding.recommendation,
+        "compatible_alternatives": [
+            item.model_dump(mode="json") for item in finding.compatible_alternatives
+        ],
         "references": [{"title": item.title, "url": item.url} for item in finding.references],
     }
 
@@ -409,6 +412,9 @@ def build_server() -> FastMCP:
                     "file_globs": list(rule.file_globs),
                     "message": rule.message,
                     "recommendation": rule.recommendation,
+                    "compatible_alternatives": [
+                        item.model_dump(mode="json") for item in rule.compatible_alternatives
+                    ],
                     "confidence": rule.confidence,
                     "references": [
                         {"title": item.title, "url": item.url} for item in rule.references

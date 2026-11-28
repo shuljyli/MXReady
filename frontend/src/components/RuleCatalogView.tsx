@@ -65,6 +65,35 @@ export function RuleCatalogView({ catalog, loading, error, onRetry, selectedRule
           {rule.id === selectedRule && historicalVersion !== undefined && historicalVersion !== rule.version
             ? <p className="notice">历史报告使用 v{historicalVersion}，当前规则为 v{rule.version}。以下为当前规则定义，不会覆盖历史发现。</p> : null}
           <p>{rule.message}</p><p><strong>建议：</strong>{rule.recommendation}</p>
+          {rule.compatible_alternatives?.length ? (
+            <div className="compatible-alternatives">
+              <span>推荐通用兼容算子</span>
+              <p className="muted">静态通用替代建议，须在目标环境完成数值与功能验证</p>
+              <ul>
+                {rule.compatible_alternatives.map((alt) => (
+                  <li key={alt.operator}>
+                    <code>{alt.operator}</code>
+                    <p>{alt.summary}</p>
+                    <p className="muted">适用条件：{alt.applies_when}</p>
+                    <p className="muted">注意事项：{alt.caveat}</p>
+                    {alt.reference ? (
+                      referenceUrl(alt.reference.url) ? (
+                        <a
+                          href={referenceUrl(alt.reference.url)}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {alt.reference.title}
+                        </a>
+                      ) : (
+                        <span className="muted">{alt.reference.title}（无有效 HTTPS 链接）</span>
+                      )
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <dl className="detail-list">
             <div><dt>适用文件</dt><dd>{rule.file_globs.join(" · ")}</dd></div>
             <div><dt>依据状态</dt><dd>{rule.confidence === "documented" ? "有资料依据" : "需人工复核"}</dd></div>

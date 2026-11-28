@@ -226,6 +226,13 @@ main > *, .workspace, .scan-workspace, .report-main, .report-tools { min-width: 
 .recommendation { display: grid; gap: 6px; font-size: 13px; }
 .recommendation > span { font-size: 12px; font-weight: 650; }
 .recommendation p { color: var(--muted); overflow-wrap: anywhere; }
+.compatible-alternatives { display: grid; gap: 6px; margin-top: 12px; padding: 12px 14px; background: #f8faf9; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
+.compatible-alternatives > span { font-size: 12px; font-weight: 650; }
+.compatible-alternatives ul { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 10px; }
+.compatible-alternatives li { display: grid; gap: 4px; overflow-wrap: anywhere; }
+.compatible-alternatives code { justify-self: start; overflow-wrap: anywhere; }
+.compatible-alternatives p { margin: 0; overflow-wrap: anywhere; }
+.compatible-alternatives a { justify-self: start; font-size: 12px; overflow-wrap: anywhere; }
 .finding-references { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 12px; font-size: 12px; }
 .finding-references > span { color: var(--muted); }
 .finding-references a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; overflow-wrap: anywhere; }

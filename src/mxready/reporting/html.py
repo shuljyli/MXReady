@@ -38,6 +38,9 @@ pre { background: #f0f4f8; border: 1px solid #d9e2ec; border-radius: 4px;
 .finding.warning { border-left: 4px solid #b7791f; }
 .finding.info { border-left: 4px solid #2b6cb0; }
 .meta { color: #52606d; font-size: .9rem; }
+.alternatives { background: #f8fafc; border: 1px solid #d9e2ec; border-radius: 4px;
+    padding: .5rem .8rem; margin: .6rem 0; }
+.alternatives ul { margin: .3rem 0 0; padding-left: 1.2rem; }
 .note { background: #f0f4f8; border-radius: 6px; padding: .6rem 1rem; }
 @media print {
     @page { size: A4; margin: 16mm; }
@@ -175,6 +178,26 @@ def _render_finding(finding: Finding) -> str:
         parts.append(f"<pre>{_e(occurrence.evidence)}</pre>")
     if not finding.occurrences and finding.count > 1:
         parts.append('<p class="meta">旧报告仅保留聚合证据，无法恢复所有命中位置。</p>')
+    if finding.compatible_alternatives:
+        parts.append(
+            '<div class="alternatives"><p>推荐通用兼容算子（静态建议，须在目标环境验证）：</p><ul>'
+        )
+        for alt in finding.compatible_alternatives:
+            if alt.reference is not None:
+                if alt.reference.url.startswith(("http://", "https://")):
+                    ref_html = (
+                        f'（参考：<a href="{_e(alt.reference.url)}">{_e(alt.reference.title)}</a>）'
+                    )
+                else:
+                    ref_html = f"（参考：{_e(alt.reference.title)}（{_e(alt.reference.url)}））"
+            else:
+                ref_html = ""
+            parts.append(
+                f"<li><code>{_e(alt.operator)}</code>：{_e(alt.summary)}"
+                f'<br><span class="meta">适用条件：{_e(alt.applies_when)}'
+                f" · 注意事项：{_e(alt.caveat)}</span>{ref_html}</li>"
+            )
+        parts.append("</ul></div>")
     if finding.references:
         parts.append("<p>参考：</p><ul>")
         for reference in finding.references:

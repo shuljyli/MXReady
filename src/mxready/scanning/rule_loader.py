@@ -11,7 +11,7 @@ import yaml
 from pydantic import Field, ValidationError, field_validator, model_validator
 
 from mxready.errors import MxReadyError
-from mxready.models import Severity, SourceReference, StrictModel
+from mxready.models import CompatibleAlternative, Severity, SourceReference, StrictModel
 
 _RULE_ID = re.compile(r"MXR-[A-Z]+-[0-9]{3}")
 _CATEGORY = re.compile(r"[a-z][a-z0-9-]*")
@@ -93,6 +93,7 @@ class RuleDefinition(StrictModel):
     message: str
     recommendation: str
     references: list[SourceReference] = Field(min_length=1)
+    compatible_alternatives: list[CompatibleAlternative] = Field(default_factory=list)
     updated: str | None = None
     confidence: Literal["documented", "needs-review"] = "documented"
 
@@ -148,21 +149,18 @@ class RuleDefinition(StrictModel):
         value: list[SourceReference],
     ) -> list[SourceReference]:
         for reference in value:
-            try:
-                parsed = urlsplit(reference.url)
-                port = parsed.port
-            except ValueError as error:
-                raise ValueError("invalid reference URL") from error
-            if (
-                not reference.title.strip()
-                or not reference.url.startswith("https://")
-                or parsed.scheme != "https"
-                or not parsed.hostname
-                or parsed.username is not None
-                or parsed.password is not None
-                or port is not None
-            ):
-                raise ValueError("rule references must use public HTTPS URLs")
+            _validate_https_reference(reference)
+        return value
+
+    @field_validator("compatible_alternatives")
+    @classmethod
+    def compatible_alternatives_have_https_references(
+        cls,
+        value: list[CompatibleAlternative],
+    ) -> list[CompatibleAlternative]:
+        for item in value:
+            if item.reference is not None:
+                _validate_https_reference(item.reference)
         return value
 
 
@@ -273,6 +271,24 @@ def _load_yaml(path: Path) -> Any:
     if path.stat().st_size > _MAX_RULE_FILE_BYTES:
         raise ValueError("rule file is too large")
     return yaml.safe_load(path.read_text(encoding="utf-8-sig"))
+
+
+def _validate_https_reference(reference: SourceReference) -> None:
+    try:
+        parsed = urlsplit(reference.url)
+        port = parsed.port
+    except ValueError as error:
+        raise ValueError("invalid reference URL") from error
+    if (
+        not reference.title.strip()
+        or not reference.url.startswith("https://")
+        or parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or port is not None
+    ):
+        raise ValueError("rule references must use public HTTPS URLs")
 
 
 def _ruleset_invalid() -> MxReadyError:

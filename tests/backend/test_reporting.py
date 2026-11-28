@@ -7,6 +7,7 @@ import pytest
 
 from mxready.models import (
     AnalysisWarning,
+    CompatibleAlternative,
     Finding,
     MigrationChecklistItem,
     ScanStatus,
@@ -18,6 +19,7 @@ from mxready.models import (
 from mxready.reporting.badge import COLORS, render_badge
 from mxready.reporting.html import render_html
 from mxready.reporting.markdown import render_markdown
+from mxready.reporting.sarif import render_sarif
 from mxready.reporting.terminal import render_terminal_summary
 
 
@@ -390,3 +392,55 @@ def test_terminal_summary_english_fallback_is_ascii_only(report_factory) -> None
     assert text.splitlines()[0] == "MXReady: blocked | blockers 1, warnings 0, info 0"
     assert "BLOCKER MXR-TOOLCHAIN-001 (setup.py:2)" in text
     assert text.splitlines()[-1] == "Report: r.json / .md / .svg"
+
+
+def test_reports_render_and_escape_compatible_alternatives(report_factory) -> None:
+    import json
+
+    finding = Finding(
+        rule_id="MXR-DEPENDENCY-001",
+        rule_version=1,
+        severity=Severity.WARNING,
+        category="dependency",
+        title="检测 flash-attn 依赖",
+        relative_path="requirements.txt",
+        line_start=1,
+        line_end=1,
+        evidence="flash-attn>=2.0",
+        message="依赖原生扩展。",
+        recommendation="复核替代路径。",
+        references=[],
+        compatible_alternatives=[
+            CompatibleAlternative(
+                operator="torch.nn.functional.scaled_dot_product_attention",
+                summary="PyTorch 原生注意力算子 <script>alert(1)</script> | table",
+                applies_when="标准注意力路径",
+                caveat="需在目标设备实测数值",
+                reference=SourceReference(
+                    title="Unsafe Ref",
+                    url="javascript:alert(1)",
+                ),
+            )
+        ],
+    )
+    report = report_factory(findings=[finding], static_status=StaticStatus.WARNINGS)
+
+    markdown = render_markdown(report)
+    html_text = render_html(report)
+    sarif_data = json.loads(render_sarif(report))
+
+    assert "推荐通用兼容算子" in markdown
+    assert "`torch.nn.functional.scaled_dot_product_attention`" in markdown
+    assert "<script>alert(1)</script>" not in markdown
+    assert "\\| table" in markdown
+
+    assert "推荐通用兼容算子" in html_text
+    assert "<code>torch.nn.functional.scaled_dot_product_attention</code>" in html_text
+    assert "<script>alert(1)</script>" not in html_text
+    assert '<a href="javascript' not in html_text
+
+    sarif_alts = sarif_data["runs"][0]["tool"]["driver"]["rules"][0]["properties"][
+        "compatibleAlternatives"
+    ]
+    assert len(sarif_alts) == 1
+    assert sarif_alts[0]["operator"] == "torch.nn.functional.scaled_dot_product_attention"

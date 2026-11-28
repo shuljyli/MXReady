@@ -15,11 +15,18 @@ export const catalogFixture: RuleCatalog = {
       type: "regex", expression: "nvcc", flags: [], name: null, equals: null,
     }], message: "需要复核编译器。", recommendation: "参数化工具链。",
     references: [{ title: "官方依据", url: "https://example.com/reference" }],
+    compatible_alternatives: [{
+      operator: "torch.amp.autocast",
+      summary: "PyTorch 原生混合精度接口。",
+      applies_when: "使用标准自动混合精度时。",
+      caveat: "需在目标设备验证收敛与精度。",
+      reference: { title: "PyTorch AMP", url: "https://docs.pytorch.org/docs/stable/amp.html" },
+    }],
     updated: "2026-10-31", confidence: "needs-review",
   }, {
     id: "MXR-PATH-001", version: 1, title: "CUDA 路径", category: "build",
     severity: "warning", file_globs: ["*.txt"], patterns: [], message: "路径需复核。",
-    recommendation: "配置路径。", references: [], updated: null, confidence: "documented",
+    recommendation: "配置路径。", references: [], compatible_alternatives: [], updated: null, confidence: "documented",
   }],
 };
 
@@ -68,6 +75,11 @@ it("filters complete rules and warns about historical rule versions", async () =
     onRetry={vi.fn()} selectedRule="MXR-TOOLCHAIN-001" historicalVersion={1} />);
   expect(screen.getByText(/历史报告使用 v1/)).toBeVisible();
   expect(screen.getByText("需人工复核")).toBeVisible();
+  expect(screen.getByText("torch.amp.autocast")).toBeVisible();
+  expect(screen.getByRole("link", { name: "PyTorch AMP" })).toHaveAttribute(
+    "href",
+    "https://docs.pytorch.org/docs/stable/amp.html",
+  );
   await user.selectOptions(screen.getByLabelText("规则严重级别"), "warning");
   const results = screen.getByRole("region", { name: "规则列表" });
   expect(within(results).getByText("CUDA 路径")).toBeInTheDocument();

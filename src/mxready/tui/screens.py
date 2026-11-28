@@ -261,6 +261,9 @@ class ComparisonScreen(ModalScreen[None]):
                     f"现在 {item.severity.value} ×{item.count}"
                 )
             write(f"证据: {item.evidence[:600]}\n建议: {item.recommendation[:1000]}")
+            if item.compatible_alternatives:
+                operators = " / ".join(alt.operator for alt in item.compatible_alternatives)
+                write(f"兼容算子建议: {operators[:600]}")
         self.query_one("#compare-page", Static).update(
             f"{self.GROUPS[self.group]} {self.page}/{pages} 页 · "
             "←→ 切组 · ↑↓ 滚动 · PgUp/PgDn 翻页 · Esc 返回"

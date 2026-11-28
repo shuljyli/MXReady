@@ -4,6 +4,7 @@ from pydantic import ValidationError
 from mxready.errors import MxReadyError
 from mxready.models import (
     BadgeStatus,
+    CompatibleAlternative,
     Finding,
     Severity,
     StaticStatus,
@@ -107,3 +108,18 @@ def test_mxready_error_carries_safe_structured_details():
     assert error.code == "INVALID_REPOSITORY_URL"
     assert error.message == "The repository URL is invalid."
     assert error.details == {"field": "repo_url"}
+
+
+def test_compatible_alternative_rejects_blank_fields_and_legacy_finding_defaults_empty():
+    with pytest.raises(ValidationError):
+        CompatibleAlternative(
+            operator="   ",
+            summary="Summary",
+            applies_when="Condition",
+            caveat="Caveat",
+        )
+
+    legacy_payload = make_finding(Severity.WARNING).model_dump(mode="json")
+    legacy_payload.pop("compatible_alternatives")
+    restored = Finding.model_validate(legacy_payload)
+    assert restored.compatible_alternatives == []

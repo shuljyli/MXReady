@@ -6,6 +6,14 @@ export type AnalysisWarning = {
   message: string;
 };
 
+export type CompatibleAlternative = {
+  operator: string;
+  summary: string;
+  applies_when: string;
+  caveat: string;
+  reference: SourceReference | null;
+};
+
 export type Finding = {
   rule_id: string;
   rule_version: number;
@@ -19,6 +27,7 @@ export type Finding = {
   message: string;
   recommendation: string;
   references: Array<SourceReference>;
+  compatible_alternatives: Array<CompatibleAlternative>;
   count: number;
   occurrences: Array<FindingOccurrence>;
 };
@@ -100,6 +109,7 @@ export type RuleDefinition = {
   message: string;
   recommendation: string;
   references: Array<SourceReference>;
+  compatible_alternatives: Array<CompatibleAlternative>;
   updated: string | null;
   confidence: "documented" | "needs-review";
 };

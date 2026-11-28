@@ -45,6 +45,8 @@ def matching_indices(report: ScanReport, filters: FindingFilter) -> tuple[int, .
                 item.evidence,
                 item.message,
                 item.recommendation,
+                *(alt.operator for alt in item.compatible_alternatives),
+                *(alt.summary for alt in item.compatible_alternatives),
                 *(occurrence.evidence for occurrence in item.occurrences),
             )
         ):

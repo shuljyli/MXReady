@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- 规则定义与扫描发现新增可选结构化字段 `compatible_alternatives`（`CompatibleAlternative`），针对 `flash-attn`、`xformers`、`bitsandbytes`、`tensorrt`、`apex`、`torch.distributed` NCCL、CUDA 数学库头文件、warp 宽度/内建函数与内联 PTX 等高频项提供跨 NVIDIA CUDA 与沐曦 MXMACA 的通用兼容算子推荐及适用条件与验证提示；同步覆盖 JSON、Markdown、HTML、SARIF 报告、MCP 工具、TUI 与 Web 前端展示，并保持旧报告兼容读取。
+
 ### Fixed
 
 - 修复长仓库名截断后因尾部连字符而无法批量扫描的问题。同批次内标签冲突的仓库使用不同文件名，

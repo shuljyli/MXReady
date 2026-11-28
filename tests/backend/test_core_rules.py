@@ -50,7 +50,7 @@ PRIMARY_SOURCE_PREFIXES = {
     # cu-bridge 用户手册（make_maca / cucc / conf.json 三段变换的出处）
     "https://gitee.com/p4ul/cu-bridge",
     "https://gitee.com/metax-maca/mxmaca-performance-tuning-guide",
-    "https://docs.pytorch.org/docs/stable/cpp_extension.html",
+    "https://docs.pytorch.org/docs/stable/",
     "https://cmake.org/cmake/help/latest/module/FindCUDAToolkit.html",
     "https://docs.nvidia.com/cuda/cuda-programming-guide/",
     "https://docs.pytest.org/",
@@ -270,6 +270,26 @@ def test_mvp_rule_pack_has_exact_documented_inventory() -> None:
     assert all(
         "复核" in rule.recommendation or "验证" in rule.recommendation for rule in catalog.rules
     )
+    assert all(
+        any(alt.reference.url.startswith(prefix) for prefix in PRIMARY_SOURCE_PREFIXES)
+        for rule in catalog.rules
+        for alt in rule.compatible_alternatives
+        if alt.reference is not None
+    )
+    curated_ids = {
+        "MXR-DEPENDENCY-001",
+        "MXR-DEPENDENCY-002",
+        "MXR-DEPENDENCY-003",
+        "MXR-DEPENDENCY-004",
+        "MXR-DEPENDENCY-005",
+        "MXR-LIBRARY-001",
+        "MXR-WARP-001",
+        "MXR-INTRINSIC-001",
+        "MXR-PTX-001",
+        "MXR-COMM-002",
+    }
+    by_id = {rule.id: rule for rule in catalog.rules}
+    assert all(by_id[rule_id].compatible_alternatives for rule_id in curated_ids)
 
 
 @pytest.mark.parametrize("rule_id", RULE_CASES)

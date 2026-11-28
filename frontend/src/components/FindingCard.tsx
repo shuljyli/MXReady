@@ -91,6 +91,37 @@ export function FindingCard({ finding, onOpenRule, repository, source }: Finding
             <p>{finding.recommendation}</p>
           </div>
 
+          {finding.compatible_alternatives?.length ? (
+            <div className="compatible-alternatives">
+              <span>推荐通用兼容算子</span>
+              <p className="muted">静态通用替代建议，须在目标环境完成数值与功能验证</p>
+              <ul>
+                {finding.compatible_alternatives.map((alt) => (
+                  <li key={alt.operator}>
+                    <code>{alt.operator}</code>
+                    <p>{alt.summary}</p>
+                    <p className="muted">适用条件：{alt.applies_when}</p>
+                    <p className="muted">注意事项：{alt.caveat}</p>
+                    {alt.reference ? (
+                      referenceUrl(alt.reference.url) ? (
+                        <a
+                          href={referenceUrl(alt.reference.url)}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {alt.reference.title}
+                          <span aria-hidden="true">↗</span>
+                        </a>
+                      ) : (
+                        <span className="muted">{alt.reference.title}（无有效 HTTPS 链接）</span>
+                      )
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           <RemediationGuide finding={finding} />
           {finding.references.length ? (
             <div className="finding-references">

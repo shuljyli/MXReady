@@ -101,6 +101,24 @@ class SourceReference(StrictModel):
     url: str
 
 
+class CompatibleAlternative(StrictModel):
+    """Generic cross-platform operator/API recommendation (static guidance only)."""
+
+    operator: str
+    summary: str
+    applies_when: str
+    caveat: str
+    reference: SourceReference | None = None
+
+    @field_validator("operator", "summary", "applies_when", "caveat")
+    @classmethod
+    def nonblank_text(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("compatible alternative fields must not be empty")
+        return stripped
+
+
 class RepositorySnapshot(StrictModel):
     provider: str
     owner: str
@@ -142,6 +160,7 @@ class Finding(StrictModel):
     message: str
     recommendation: str
     references: list[SourceReference]
+    compatible_alternatives: list[CompatibleAlternative] = Field(default_factory=list)
     count: int = Field(default=1, ge=1)
     occurrences: list[FindingOccurrence] = Field(default_factory=list)
 

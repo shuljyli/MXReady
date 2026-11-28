@@ -76,3 +76,35 @@ it("expands individual evidence and links the exact commit", async () => {
   expect(screen.getByText("second")).toBeVisible();
   expect(screen.getByRole("link", { name: /setup.py:28-28/ })).toHaveAttribute("href", `https://github.com/example/project/blob/${blockedReportFixture.repository.commit}/setup.py#L28`);
 });
+
+it("renders compatible operator alternatives with safe reference links", () => {
+  render(<FindingCard finding={{
+    ...finding,
+    compatible_alternatives: [
+      {
+        operator: "torch.nn.functional.scaled_dot_product_attention",
+        summary: "PyTorch 原生注意力算子。",
+        applies_when: "标准注意力",
+        caveat: "需在目标设备实测数值。",
+        reference: { title: "PyTorch SDPA", url: "https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html" },
+      },
+      {
+        operator: "unsafe-link-op",
+        summary: "测试不安全链接回退。",
+        applies_when: "测试",
+        caveat: "不可执行",
+        reference: { title: "Bad Ref", url: "javascript:alert(1)" },
+      },
+    ],
+  }} />);
+
+  expect(screen.getByText("推荐通用兼容算子")).toBeInTheDocument();
+  expect(screen.getByText("torch.nn.functional.scaled_dot_product_attention")).toBeInTheDocument();
+  expect(screen.getByText("适用条件：标准注意力")).toBeInTheDocument();
+  expect(screen.getByText("注意事项：需在目标设备实测数值。")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /PyTorch SDPA/ })).toHaveAttribute(
+    "href",
+    "https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html",
+  );
+  expect(screen.getByText("Bad Ref（无有效 HTTPS 链接）")).toBeInTheDocument();
+});

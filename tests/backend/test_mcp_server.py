@@ -134,6 +134,7 @@ def test_payload_keeps_file_and_line_for_each_finding() -> None:
     assert finding["file"] == "csrc/kernel.cu"
     assert finding["line_start"] == 42
     assert finding["recommendation"]
+    assert finding["compatible_alternatives"] == []
 
 
 def test_error_payload_preserves_mxready_codes() -> None:
@@ -203,6 +204,7 @@ def test_explain_rule_returns_the_rationale(monkeypatch: pytest.MonkeyPatch) -> 
 
     assert payload["id"] == "MXR-WARP-001"
     assert payload["recommendation"]
+    assert payload["compatible_alternatives"]
     assert payload["references"]
 
 

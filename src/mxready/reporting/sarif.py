@@ -20,7 +20,12 @@ def render_sarif(report: ScanReport) -> str:
                 "id": finding.rule_id,
                 "shortDescription": {"text": finding.title},
                 "help": {"text": finding.recommendation},
-                "properties": {"ruleVersion": finding.rule_version},
+                "properties": {
+                    "ruleVersion": finding.rule_version,
+                    "compatibleAlternatives": [
+                        alt.model_dump(mode="json") for alt in finding.compatible_alternatives
+                    ],
+                },
             },
         )
         occurrences = finding.occurrences or [

@@ -665,6 +665,9 @@ class MXReadyApp(App[None]):
             self._write(f"{finding.relative_path}:{finding.line_start}  ×{finding.count}", _MUTED)
             self._write(f"证据: {finding.evidence[:600]}")
             self._write(f"建议: {finding.recommendation[:1000]}")
+            if finding.compatible_alternatives:
+                operators = " / ".join(alt.operator for alt in finding.compatible_alternatives)
+                self._write(f"兼容算子建议: {operators[:600]}")
         if page.page < page.page_count:
             self._write(f"下一页: /findings {page.page + 1}  ·  完整内容保留在报告文件", _MUTED)
 

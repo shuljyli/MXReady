@@ -72,7 +72,7 @@ beforeEach(() => {
     rules: ["MXR-TEST-001", "MXR-TEST-002", "MXR-TEST-003"].map((id) => ({
       id, version: 1, title: id, category: "build", severity: "warning",
       file_globs: ["*.py"], patterns: [], message: "复核构建", recommendation: "检查工具链",
-      references: [], updated: null, confidence: "documented",
+      references: [], compatible_alternatives: [], updated: null, confidence: "documented",
     })),
   });
 });

@@ -120,6 +120,21 @@
   references:
     - title: PyTorch C++/CUDA extensions
       url: https://docs.pytorch.org/docs/stable/cpp_extension.html
+  compatible_alternatives:
+    - operator: torch.nn.functional.scaled_dot_product_attention
+      summary: PyTorch 原生注意力算子，在 NVIDIA CUDA 与沐曦 MXMACA PyTorch 环境下均提供统一 Python 接口，由后端调度可用实现。
+      applies_when: 常规因果/非因果注意力计算且不依赖 flash-attn 特有变长打包或自定义 ALiBi/滑动窗口扩展参数时。
+      caveat: 不同后端（Flash/MemEfficient/Math）可用性与数值精度取决于 PyTorch 与驱动版本，迁移后需实测数值与显存占用。
+      reference:
+        title: PyTorch scaled_dot_product_attention
+        url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html
+    - operator: PyTorch 显式注意力参考实现（matmul + softmax）
+      summary: 使用标准张量矩阵乘、掩码与 softmax 组合实现，不依赖第三方原生 CUDA 扩展，可在 CUDA 与 MXMACA 间一致运行。
+      applies_when: 作为缺少融合内核时的回退路径或用于小规模输入与数值对拍基线。
+      caveat: 显存与吞吐显著高于融合注意力实现，仅建议用于回退路径或最小一致性校验。
+      reference:
+        title: PyTorch Testing
+        url: https://docs.pytorch.org/docs/stable/testing.html
 
 - id: MXR-CMAKE-001
   version: 1
@@ -242,6 +257,14 @@
   references:
     - title: MetaX-MACA cu-bridge
       url: https://gitee.com/metax-maca/cu-bridge
+  compatible_alternatives:
+    - operator: PyTorch 原生半精度路径（torch.bfloat16 / torch.float16）或通用量化回退
+      summary: 在缺少目标平台 bitsandbytes 预编译内核时，通过 PyTorch 原生半精度张量或标准量化接口保持跨 CUDA/MXMACA 可运行性。
+      applies_when: 模型支持以 FP16/BF16 加载或可通过配置关闭 4bit/8bit bitsandbytes 线性层。
+      caveat: 显存需求会高于低比特量化，且不同平台半精度累加行为需结合业务精度阈值实测验证。
+      reference:
+        title: PyTorch Automatic Mixed Precision
+        url: https://docs.pytorch.org/docs/stable/amp.html
 
 - id: MXR-DEPENDENCY-003
   version: 1
@@ -257,6 +280,14 @@
   references:
     - title: PyTorch C++/CUDA extensions
       url: https://docs.pytorch.org/docs/stable/cpp_extension.html
+  compatible_alternatives:
+    - operator: torch.nn.functional.scaled_dot_product_attention
+      summary: 替代 xformers.ops.memory_efficient_attention 的 PyTorch 原生跨平台接口，可在 CUDA 与 MXMACA PyTorch 中统一调用。
+      applies_when: 项目主要使用 xformers 的注意力计算且掩码格式可映射到 attn_mask 或 is_causal。
+      caveat: 自定义 bias 布局、dropout 生成器或 SwiGLU 等扩展算子无直接一对一替代时仍需保留条件分支并在目标设备验证。
+      reference:
+        title: PyTorch scaled_dot_product_attention
+        url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html
 
 - id: MXR-DEPENDENCY-004
   version: 1
@@ -275,6 +306,14 @@
   references:
     - title: MetaX-MACA cu-bridge
       url: https://gitee.com/metax-maca/cu-bridge
+  compatible_alternatives:
+    - operator: PyTorch 原生推理路径（torch.inference_mode / torch.compile）
+      summary: 以 PyTorch 原生 eager 或编译推理路径隔离 TensorRT 引擎依赖，便于在 NVIDIA CUDA 与沐曦推理栈间切换。
+      applies_when: 模型已有标准 PyTorch 前向定义，且推理部署允许绕开 TensorRT 序列化计划文件。
+      caveat: 不同平台 torch.compile 后端支持度和延迟特征存在差异，须在目标 GPU 上重新验证吞吐与精度。
+      reference:
+        title: PyTorch Compiler
+        url: https://docs.pytorch.org/docs/stable/torch.compiler.html
 
 - id: MXR-HEADER-001
   version: 1
@@ -322,6 +361,21 @@
       url: https://docs.nvidia.com/cuda/cuda-programming-guide/
     - title: MXMACA performance tuning guide
       url: https://gitee.com/metax-maca/mxmaca-performance-tuning-guide
+  compatible_alternatives:
+    - operator: 共享内存（__shared__）+ __syncthreads() 通用归约
+      summary: 使用线程块共享内存与显式同步替代 warp 级洗牌/投票内建函数，消除 32 线程束宽度与掩码耦合。
+      applies_when: 内核需要同时兼容 NVIDIA CUDA（warp=32）与 MXMACA（wave=64）且允许以块内规约替代跨线程直接寄存器交换。
+      caveat: 共享内存占用与同步开销高于寄存器洗牌，需结合块尺寸和寄存器压力实测性能与结果。
+      reference:
+        title: CUDA Programming Guide
+        url: https://docs.nvidia.com/cuda/cuda-programming-guide/
+    - operator: CUB / Thrust 块级原语（cub::BlockReduce / thrust::reduce）
+      summary: 借助模板化块级/设备级原语，由 CUDA CUB 与 MXMACA mcCUB 在编译期分别按硬件宽度展开。
+      applies_when: 代码实现归约、前缀和或排序等标准模式，且目标环境已启用 mcCUB/mcThrust 映射。
+      caveat: 模板参数中的线程数、对齐和头文件版本需与目标工具链匹配并在真机验证编译与数值。
+      reference:
+        title: MXMACA AI training manual
+        url: https://developer.metax-tech.com/api/client/document/preview/587/C500_AITrainningMaunal_CN.html
 
 - id: MXR-KERNEL-001
   version: 1
@@ -469,10 +523,18 @@
     - type: regex
       expression: '\b(?:init_process_group|new_group)\s*\([^\n]{0,200}\bbackend\s*=\s*[''"]nccl[''"]'
   message: 项目将分布式通信后端指定为 NCCL，迁移到沐曦环境需要确认通信库与后端的等价映射。
-  recommendation: 请复核通信后端选择、初始化参数与多卡拓扑，并在沐曦多卡环境验证集合通信行为。
+  recommendation: 请复核通信后端、环境变量和拓扑配置，并在沐曦多卡环境进行针对性验证。
   references:
     - title: MetaX-MACA cu-bridge
       url: https://gitee.com/metax-maca/cu-bridge
+  compatible_alternatives:
+    - operator: 可配置分布式后端（按环境注入 backend，支持 nccl / gloo 回退）
+      summary: 避免在代码内硬编码 "nccl" 字面量，改由环境变量或配置传入后端名，由各平台 PyTorch 通信层调度对应集合通信实现。
+      applies_when: 多卡训练或推理仅依赖 torch.distributed 标准集合通信原语（all_reduce / broadcast / all_gather）。
+      caveat: 不同通信后端在张量类型、P2P 与超时环境变量上的行为可能不同，需在目标多卡拓扑下实测验证。
+      reference:
+        title: PyTorch Distributed
+        url: https://docs.pytorch.org/docs/stable/distributed.html
 
 - id: MXR-DEPENDENCY-005
   version: 1
@@ -493,6 +555,21 @@
   references:
     - title: MetaX-MACA cu-bridge
       url: https://gitee.com/metax-maca/cu-bridge
+  compatible_alternatives:
+    - operator: torch.amp.autocast 与 torch.amp.GradScaler
+      summary: 使用 PyTorch 内置自动混合精度替代 apex.amp，在 CUDA 与 MXMACA PyTorch 上使用一致的训练与缩放接口。
+      applies_when: 项目仅依赖 apex 的自动混合精度（O1/O2 语义）及梯度缩放功能。
+      caveat: apex.amp 的部分旧参数语义与 torch.amp 不完全一致，替换后需比对损失收敛与溢出行为。
+      reference:
+        title: PyTorch Automatic Mixed Precision
+        url: https://docs.pytorch.org/docs/stable/amp.html
+    - operator: torch.nn.LayerNorm / torch.nn.RMSNorm 与 torch.optim.AdamW
+      summary: 以 PyTorch 原生归一化与优化器算子替代 apex.normalization 及 FusedAdam 等原生扩展算子。
+      applies_when: 可接受使用 PyTorch 内置实现替代 apex 自定义 CUDA 融合内核时。
+      caveat: 状态字典键名或融合更新步的吞吐可能与 apex 实现不同，需校验权重加载兼容性与性能。
+      reference:
+        title: PyTorch torch.nn
+        url: https://docs.pytorch.org/docs/stable/nn.html
 
 - id: MXR-LIBRARY-001
   version: 1
@@ -510,6 +587,21 @@
       url: https://gitee.com/metax-maca/cu-bridge
     - title: MXMACA performance tuning guide
       url: https://gitee.com/metax-maca/mxmaca-performance-tuning-guide
+  compatible_alternatives:
+    - operator: PyTorch ATen / torch.linalg / torch.fft 通用算子
+      summary: 在 Python 或 C++ 扩展层调用 ATen / PyTorch 标准线性代数与傅里叶算子，由后端统一分派至 cuBLAS/cuFFT 或 mcBLAS/mcFFT。
+      applies_when: 算子逻辑以矩阵乘、卷积、FFT 或求解器为主，且无需精细控制底层数学库私有句柄或工作区策略时。
+      caveat: 包装为 ATen 调用可能改变内存布局或中间张量分配策略，须验证边界形状与数值误差。
+      reference:
+        title: PyTorch C++/CUDA extensions
+        url: https://docs.pytorch.org/docs/stable/cpp_extension.html
+    - operator: cu-bridge 数学库映射（mcBLAS / mcDNN / mcFFT 等）
+      summary: 保留标准 CUDA 数学库头文件与 API 调用，通过 cu-bridge 构建包装器在编译期映射至 MXMACA 对应库，同时保留 NVIDIA CUDA 原生构建。
+      applies_when: 必须保留 C++ 层直接调用且所使用的具体 API 处于当前 cu-bridge 支持列表中。
+      caveat: 需逐项核对所用 API、枚举值及链接库名称在目标 cu-bridge 版本中的支持状态。
+      reference:
+        title: MetaX-MACA cu-bridge
+        url: https://gitee.com/metax-maca/cu-bridge
 
 - id: MXR-RUNTIME-001
   version: 1
@@ -581,6 +673,14 @@
       url: https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html
     - title: MXMACA runtime API guide
       url: https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html
+  compatible_alternatives:
+    - operator: 标准 CUDA/C++ 数学内建函数与条件编译分支
+      summary: 将内联 PTX 替换为可移植的 CUDA/C++ 设备内建函数或常规 C++ 算术；确需保留 PTX 优化时通过架构宏隔离通用回退分支。
+      applies_when: PTX 指令用于常见原子操作、位运算、字节序转换或数学近似，且存在标准设备函数或可移植 C++ 实现。
+      caveat: 特殊底层指令（如异步拷贝或特定矩阵指令）可能存在吞吐差异，迁移后需同时完成功能对拍与性能基准测试。
+      reference:
+        title: NVIDIA Inline PTX Assembly
+        url: https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html
 
 - id: MXR-WARP-001
   version: 1
@@ -600,6 +700,21 @@
   references:
     - title: MXMACA runtime API guide
       url: https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html
+  compatible_alternatives:
+    - operator: 运行时 warpSize 常量与动态 lane 计算（threadIdx.x % warpSize）
+      summary: 用 CUDA/MXMACA 均提供的内建变量 warpSize 替代写死的 32 或 31，使同一份源码在 32 宽度 CUDA 与 64 宽度 MXMACA 上按实际硬件宽度运行。
+      applies_when: 内核需要手写 CUDA/C++ 线程束内索引、掩码或子块切分逻辑时。
+      caveat: 若线程块大小、共享内存数组维度或位掩码类型（如 32 位 unsigned 与 64 位 uint64_t）隐含 32 限制，也需同步扩展并实测。
+      reference:
+        title: MXMACA runtime API guide
+        url: https://developer.metax-tech.com/api/client/document/preview/567/C500_RuntimeAPIProgrammingGuide_CN.html
+    - operator: PyTorch ATen 归约/扫描算子（torch.sum / torch.cumsum 等）
+      summary: 当手写内核仅用于常见规约或前缀扫描时，直接复用 PyTorch 原生张量算子即可自动适配不同设备的线程束宽度。
+      applies_when: 归约逻辑无需与复杂自定义前后处理融合为单个核函数。
+      caveat: 拆分为多个 PyTorch 算子可能增加全局显存读写，需在目标设备确认精度与耗时。
+      reference:
+        title: PyTorch Tensor Operations
+        url: https://docs.pytorch.org/docs/stable/torch.html
 
 - id: MXR-THRUST-001
   version: 1

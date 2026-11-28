@@ -144,6 +144,19 @@ def _render_finding(finding: Finding) -> list[str]:
         lines.append("")
     if not finding.occurrences and finding.count > 1:
         lines.append("旧报告仅保留聚合证据，无法恢复所有命中位置。")
+    if finding.compatible_alternatives:
+        lines.extend(["", "- 推荐通用兼容算子（静态建议，须在目标环境验证）："])
+        for alt in finding.compatible_alternatives:
+            ref_suffix = (
+                f"（参考：[{_markdown_text(alt.reference.title)}]({alt.reference.url})）"
+                if alt.reference is not None
+                else ""
+            )
+            lines.append(
+                f"  - {_inline_code(alt.operator)}：{_markdown_text(alt.summary)}"
+                f" 适用条件：{_markdown_text(alt.applies_when)}。"
+                f" 注意事项：{_markdown_text(alt.caveat)}{ref_suffix}"
+            )
     if finding.references:
         lines.extend(["", "- 参考："])
         for reference in finding.references:

@@ -234,6 +234,46 @@ def test_extra_directory_conflicting_rule_is_rejected(tmp_path: Path) -> None:
     assert error.value.code == "RULESET_INVALID"
 
 
+def test_compatible_alternatives_load_and_reject_insecure_references(tmp_path: Path) -> None:
+    valid_rule = """
+- id: MXR-TEST-001
+  version: 1
+  title: Compatible alt
+  category: dependency
+  severity: warning
+  file_globs: ["**/*.py"]
+  patterns:
+    - type: dependency
+      name: flash-attn
+  message: Check dependency.
+  recommendation: Review it.
+  references:
+    - title: Primary
+      url: https://example.com/docs
+  compatible_alternatives:
+    - operator: torch.nn.functional.scaled_dot_product_attention
+      summary: Standard PyTorch attention operator.
+      applies_when: Standard attention without custom packing.
+      caveat: Verify numeric parity on target hardware.
+      reference:
+        title: PyTorch SDPA
+        url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html
+"""
+    _write_catalog(tmp_path, valid_rule)
+    catalog = load_rule_catalog(tmp_path)
+    assert len(catalog.rules[0].compatible_alternatives) == 1
+    assert (
+        catalog.rules[0].compatible_alternatives[0].operator
+        == "torch.nn.functional.scaled_dot_product_attention"
+    )
+
+    insecure_rule = valid_rule.replace("https://docs.pytorch.org", "http://docs.pytorch.org")
+    _write_catalog(tmp_path, insecure_rule)
+    with pytest.raises(MxReadyError) as error:
+        load_rule_catalog(tmp_path)
+    assert error.value.code == "RULESET_INVALID"
+
+
 def _rule_document(rule_id: str, title: str) -> str:
     return f"""
 - id: {rule_id}
